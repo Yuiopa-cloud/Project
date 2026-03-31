@@ -13,7 +13,7 @@ async function main() {
   const adminPass = await argon2.hash('Admin123!');
   const admin = await prisma.user.upsert({
     where: { phone: adminPhone },
-    update: {},
+    update: { role: UserRole.ADMIN },
     create: {
       phone: adminPhone,
       email: 'admin@atlas-auto.ma',
