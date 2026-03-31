@@ -19,9 +19,9 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["api/*"]
     }
   },
-  "include": ["src/**/*.ts", "prisma/**/*.ts"],
+  "include": ["api/**/*.ts", "prisma/**/*.ts"],
   "exclude": ["node_modules", "dist", "frontend"]
 }
