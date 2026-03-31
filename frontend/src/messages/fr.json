@@ -58,7 +58,12 @@
     "sort": "Tri",
     "search": "Rechercher un produit…",
     "empty": "Aucun produit ne correspond.",
-    "from": "À partir de"
+    "from": "À partir de",
+    "previewCount": "produits (aperçu hors API)",
+    "apiUnreachable": "Impossible de joindre l’API produits depuis le serveur.",
+    "apiErrorStatus": "Réponse HTTP {status}. Vérifiez NEXT_PUBLIC_API_URL / BACKEND_PROXY_URL sur Vercel et que l’API Railway tourne.",
+    "apiErrorGeneric": "Erreur réseau ou timeout. Vérifiez la configuration Vercel → Railway.",
+    "catalogEmpty": "Le catalogue API est vide. Après déploiement Railway, un jeu minimal de produits est créé automatiquement ; sinon lancez : npx prisma db seed"
   },
   "product": {
     "addToCart": "Ajouter au panier",
@@ -111,6 +116,10 @@
     "payment": "Paiement",
     "fillRequired": "Veuillez remplir les champs obligatoires.",
     "orderError": "Impossible de valider la commande. Réessayez.",
+    "errZone": "Ville / zone de livraison inconnue ou inactive. Rechargez la page ou choisissez une autre ville.",
+    "errProducts": "Un ou plusieurs produits ne sont plus disponibles. Videz le panier et rajoutez depuis la boutique.",
+    "errStock": "Stock insuffisant pour un article. Réduisez les quantités.",
+    "errCoupon": "Code promo invalide ou expiré.",
     "linesOrdered": "{count} article(s) dans cette commande",
     "submitting": "Validation…",
     "address": {

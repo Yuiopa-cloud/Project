@@ -17,6 +17,14 @@ export function normalizeApiBaseFromEnv(): string | null {
   return `${normalized}/api`;
 }
 
+/** Server-side: Vercel build sets BACKEND_PROXY_URL for rewrites; use same origin for SSR fetches. */
+export function apiBaseFromBackendProxy(): string | null {
+  const u = process.env.BACKEND_PROXY_URL?.trim().replace(/\/$/, "");
+  if (!u) return null;
+  if (u.endsWith("/api")) return u;
+  return `${u}/api`;
+}
+
 /** @deprecated use normalizeApiBaseFromEnv */
 export const normalizeEnvBase = normalizeApiBaseFromEnv;
 

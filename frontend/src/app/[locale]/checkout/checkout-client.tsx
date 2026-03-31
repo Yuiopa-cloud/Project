@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations, useLocale } from "next-intl";
 import { useCart } from "@/contexts/cart-context";
 import { logApiFailure } from "@/lib/api-config";
+import { parseNestErrorMessage } from "@/lib/parse-nest-error";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { MotionLink } from "@/components/motion-link";
 import { CheckoutCelebration } from "./checkout-celebration";
@@ -118,7 +119,7 @@ export function CheckoutClient() {
     }
     setBusy(true);
     try {
-      const body = {
+      const body: Record<string, unknown> = {
         items: shippableItems.map((l) => ({
           productId: l.product.id,
           quantity: l.quantity,
@@ -138,6 +139,9 @@ export function CheckoutClient() {
         },
       };
       const checkoutUrl = `${apiRoot}/orders/checkout`;
+      if (process.env.NODE_ENV === "development") {
+        console.log("[checkout] POST", checkoutUrl, body);
+      }
       const res = await fetch(checkoutUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,8 +149,12 @@ export function CheckoutClient() {
       });
       if (!res.ok) {
         const txt = await res.text();
-        logApiFailure(`POST ${checkoutUrl}`, { status: res.status, body: txt?.slice?.(0, 500) });
-        throw new Error(txt || res.statusText);
+        logApiFailure(`POST ${checkoutUrl}`, {
+          status: res.status,
+          body: txt?.slice?.(0, 500),
+        });
+        const parsed = parseNestErrorMessage(txt);
+        throw new Error(parsed || res.statusText);
       }
       const data = await res.json();
       setDone({
@@ -158,7 +166,35 @@ export function CheckoutClient() {
       await refresh();
     } catch (e: unknown) {
       logApiFailure("checkout submit", e);
-      setErr(e instanceof Error ? e.message : t("orderError"));
+      const raw = e instanceof Error ? e.message : "";
+      const lower = raw.toLowerCase();
+      let friendly = t("orderError");
+      if (
+        lower.includes("delivery zone") ||
+        lower.includes("zone de livraison") ||
+        lower.includes("livraison inconnue")
+      ) {
+        friendly = t("errZone");
+      } else if (
+        lower.includes("products unavailable") ||
+        lower.includes("one or more products") ||
+        (lower.includes("produit") && lower.includes("indisponible"))
+      ) {
+        friendly = t("errProducts");
+      } else if (
+        lower.includes("insufficient stock") ||
+        lower.includes("stock insuffisant")
+      ) {
+        friendly = t("errStock");
+      } else if (
+        lower.includes("invalid coupon") ||
+        (lower.includes("coupon") && lower.includes("invalide"))
+      ) {
+        friendly = t("errCoupon");
+      } else if (raw && raw.length < 400) {
+        friendly = raw;
+      }
+      setErr(friendly);
     } finally {
       setBusy(false);
     }

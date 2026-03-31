@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import {
   DEFAULT_BACKEND_DEV,
+  apiBaseFromBackendProxy,
   normalizeApiBaseFromEnv,
 } from "./api-config";
 
@@ -10,6 +11,8 @@ import {
 export async function getServerApiRoot(): Promise<string> {
   const fromEnv = normalizeApiBaseFromEnv();
   if (fromEnv) return fromEnv;
+  const fromProxy = apiBaseFromBackendProxy();
+  if (fromProxy) return fromProxy;
   try {
     const h = await headers();
     const host = h.get("x-forwarded-host") ?? h.get("host");

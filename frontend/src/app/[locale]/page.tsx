@@ -3,7 +3,7 @@ import { Link } from "@/i18n/navigation";
 import type { ProductList } from "@/lib/api";
 import { TrendingRail } from "@/components/trending-rail";
 import { TRENDING_FALLBACK } from "@/lib/trending-fallback";
-import { getServerApiRoot } from "@/lib/get-server-api-root";
+import { serverFetchApiJson } from "@/lib/server-fetch-api";
 import { HomeHeroCtas } from "@/components/home-hero-ctas";
 import { LandingHeroShowcase } from "@/components/landing-hero-showcase";
 import { WHATSAPP_CHAT_URL } from "@/lib/site-contact";
@@ -15,22 +15,18 @@ async function getTrending(): Promise<{
   items: ProductList["items"];
   isFallback: boolean;
 }> {
-  try {
-    const base = await getServerApiRoot();
-    const res = await fetch(`${base}/products?sort=popular&take=8`, {
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      return { items: TRENDING_FALLBACK.slice(0, 4), isFallback: true };
-    }
-    const data: ProductList = await res.json();
-    if (!data.items?.length) {
-      return { items: TRENDING_FALLBACK.slice(0, 4), isFallback: true };
-    }
-    return { items: data.items.slice(0, 8), isFallback: false };
-  } catch {
+  const r = await serverFetchApiJson<ProductList>(
+    "/products?sort=popular&take=8",
+  );
+  if (!r.ok) {
+    console.error("[home] trending fetch failed", r.url, r.status, r.cause);
     return { items: TRENDING_FALLBACK.slice(0, 4), isFallback: true };
   }
+  const data = r.data;
+  if (!data.items?.length) {
+    return { items: TRENDING_FALLBACK.slice(0, 4), isFallback: true };
+  }
+  return { items: data.items.slice(0, 8), isFallback: false };
 }
 
 export default async function HomePage({

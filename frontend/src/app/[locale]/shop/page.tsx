@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { ShopProductCard } from "./shop-product-card";
 import type { ProductList } from "@/lib/api";
 import { ALL_FALLBACK_PRODUCTS } from "@/lib/catalog-fallback";
-import { getServerApiRoot } from "@/lib/get-server-api-root";
+import { serverFetchApiJson } from "@/lib/server-fetch-api";
 
 export const dynamic = "force-dynamic";
 
@@ -25,18 +25,21 @@ export default async function ShopPage({
 
   let items: ProductList["items"] = [];
   let total = 0;
-  try {
-    const base = await getServerApiRoot();
-    const res = await fetch(`${base}/products?${qs}`, {
-      cache: "no-store",
+  let apiFailed = false;
+  let apiStatus: number | undefined;
+
+  const result = await serverFetchApiJson<ProductList>(`/products?${qs}`);
+  if (result.ok) {
+    items = result.data.items ?? [];
+    total = result.data.total ?? 0;
+  } else {
+    apiFailed = true;
+    apiStatus = result.status;
+    console.error("[shop] products fetch failed", {
+      url: result.url,
+      status: result.status,
+      cause: result.cause,
     });
-    if (res.ok) {
-      const data: ProductList = await res.json();
-      items = data.items;
-      total = data.total;
-    }
-  } catch {
-    items = [];
   }
 
   const usingFallback = items.length === 0;
@@ -57,11 +60,32 @@ export default async function ShopPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
+      {apiFailed ? (
+        <div
+          role="alert"
+          className="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
+        >
+          <p className="font-medium">{t("apiUnreachable")}</p>
+          <p className="mt-1 text-xs text-amber-200/90">
+            {apiStatus != null
+              ? t("apiErrorStatus", { status: String(apiStatus) })
+              : t("apiErrorGeneric")}
+          </p>
+        </div>
+      ) : null}
+      {!apiFailed && !usingFallback && total === 0 ? (
+        <div
+          role="status"
+          className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--card)]/60 px-4 py-3 text-sm text-[var(--muted)]"
+        >
+          {t("catalogEmpty")}
+        </div>
+      ) : null}
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-[var(--fg)]">{t("title")}</h1>
           <p className="text-sm text-[var(--muted)]">
-            {total} {usingFallback ? "produits (aperçu)" : "SKU"}
+            {total} {usingFallback ? t("previewCount") : "SKU"}
           </p>
         </div>
         <form

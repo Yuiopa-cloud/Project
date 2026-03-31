@@ -58,7 +58,12 @@
     "sort": "ترتيب",
     "search": "ابحث عن منتج…",
     "empty": "لا توجد منتجات مطابقة.",
-    "from": "ابتداءً من"
+    "from": "ابتداءً من",
+    "previewCount": "منتجات (معاينة بدون API)",
+    "apiUnreachable": "تعذر الاتصال بخادم المنتجات.",
+    "apiErrorStatus": "HTTP {status}. تحقق من NEXT_PUBLIC_API_URL على Vercel ومن Railway.",
+    "apiErrorGeneric": "خطأ شبكة أو انتهاء وقت. تحقق من إعدادات Vercel وRailway.",
+    "catalogEmpty": "الكتالوج فارغ. بعد نشر Railway يُنشأ حد أدنى من المنتجات تلقائياً؛ أو نفّذ: npx prisma db seed"
   },
   "product": {
     "addToCart": "أضف للسلة",
@@ -111,6 +116,10 @@
     "payment": "الدفع",
     "fillRequired": "يرجى ملء الحقول الإلزامية.",
     "orderError": "تعذّر إتمام الطلب. حاول مرة أخرى.",
+    "errZone": "منطقة التوصيل غير معروفة. حدّث الصفحة أو اختر مدينة أخرى.",
+    "errProducts": "منتج غير متوفر. أفرغ السلة وأعد الإضافة من المتجر.",
+    "errStock": "الكمية تتجاوز المخزون. قلّل الكميات.",
+    "errCoupon": "كوبون غير صالح أو منتهٍ.",
     "linesOrdered": "{count} منتج(ات)",
     "submitting": "جاري التأكيد…",
     "address": {

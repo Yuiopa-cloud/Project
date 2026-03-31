@@ -6,7 +6,7 @@
     "build": "nest build",
     "prestart": "node -e \"if(!process.env.DATABASE_URL){console.error('Missing DATABASE_URL in environment. Add it in Railway Variables.');process.exit(1)}\"",
     "start": "npm run start:railway",
-    "start:railway": "prisma db push && node prisma/ensure-admin.cjs && node dist/server/main.js",
+    "start:railway": "prisma db push && node prisma/ensure-admin.cjs && node prisma/ensure-catalog.cjs && node dist/server/main.js",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/server/main.js",
     "postinstall": "prisma generate",
@@ -18,7 +18,8 @@
     "prisma:studio": "prisma studio",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:ensure-admin": "node prisma/ensure-admin.cjs"
+    "db:ensure-admin": "node prisma/ensure-admin.cjs",
+    "db:ensure-catalog": "node prisma/ensure-catalog.cjs"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

@@ -5,23 +5,9 @@ import {
   ALL_FALLBACK_PRODUCTS,
   getFallbackProductDetail,
 } from "@/lib/catalog-fallback";
-import { getServerApiRoot } from "@/lib/get-server-api-root";
+import { serverFetchApiJson } from "@/lib/server-fetch-api";
 
 export const dynamic = "force-dynamic";
-
-async function safeFetchJson(
-  url: string,
-): Promise<{ ok: true; data: unknown } | { ok: false }> {
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return { ok: false };
-    const data = await res.json();
-    return { ok: true, data };
-  } catch {
-    /* ECONNREFUSED, DNS, aborted, etc. — Node fetch throws */
-    return { ok: false };
-  }
-}
 
 export default async function ProductPage({
   params,
@@ -30,15 +16,16 @@ export default async function ProductPage({
 }) {
   const { locale, slug } = await params;
   const t = await getTranslations("product");
-  const base = await getServerApiRoot();
 
-  const primary = await safeFetchJson(`${base}/products/${slug}`);
+  const primary = await serverFetchApiJson<Record<string, unknown>>(
+    `/products/${encodeURIComponent(slug)}`,
+  );
 
   let product: Record<string, unknown>;
   let demoMode = false;
 
   if (primary.ok) {
-    product = primary.data as Record<string, unknown>;
+    product = primary.data;
   } else {
     const fb = getFallbackProductDetail(slug);
     if (!fb) notFound();
@@ -52,11 +39,15 @@ export default async function ProductPage({
 
   if (!demoMode) {
     const [bundlesResult, relatedResult] = await Promise.all([
-      safeFetchJson(`${base}/recommendations/product/${pid}/bundles`),
-      safeFetchJson(`${base}/recommendations/product/${pid}/related`),
+      serverFetchApiJson<unknown[]>(
+        `/recommendations/product/${encodeURIComponent(pid)}/bundles`,
+      ),
+      serverFetchApiJson<unknown[]>(
+        `/recommendations/product/${encodeURIComponent(pid)}/related`,
+      ),
     ]);
-    bundles = bundlesResult.ok ? (bundlesResult.data as unknown[]) : [];
-    related = relatedResult.ok ? (relatedResult.data as unknown[]) : [];
+    bundles = bundlesResult.ok ? bundlesResult.data : [];
+    related = relatedResult.ok ? relatedResult.data : [];
 
     if (!bundles.length && !related.length) {
       const others = ALL_FALLBACK_PRODUCTS.filter((p) => p.slug !== slug);
