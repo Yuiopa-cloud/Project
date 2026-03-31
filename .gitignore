@@ -6,6 +6,6 @@ dist/
 *.log
 coverage/
 .DS_Store
-# Legacy copy; Nest API lives at repo root under api/
+# Legacy copy; Nest API lives at repo root under server/
 backend/
 frontend/.env.local

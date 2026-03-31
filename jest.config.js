@@ -4,8 +4,8 @@ module.exports = {
   rootDir: '.',
   testRegex: '.*\\.spec\\.ts$',
   transform: { '^.+\\.(t|j)s$': 'ts-jest' },
-  collectCoverageFrom: ['api/**/*.(t|j)s'],
+  collectCoverageFrom: ['server/**/*.(t|j)s'],
   coverageDirectory: './coverage',
   testEnvironment: 'node',
-  roots: ['<rootDir>/api'],
+  roots: ['<rootDir>/server'],
 };
