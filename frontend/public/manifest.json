@@ -1,0 +1,10 @@
+{
+  "name": "Atlas Auto Morocco",
+  "short_name": "Atlas Auto",
+  "description": "Accessoires automobile premium au Maroc",
+  "start_url": "/fr",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#c9a227",
+  "lang": "fr"
+}

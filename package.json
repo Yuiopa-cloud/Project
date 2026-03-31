@@ -1,0 +1,21 @@
+{
+  "name": "atlas-auto-morocco",
+  "private": true,
+  "description": "Monorepo : npm run dev à la racine démarre l’API (4000) + le site (3000).",
+  "scripts": {
+    "dev": "npx --yes concurrently@9 -k -n api,web -c cyan,magenta \"npm run dev:backend\" \"sh -c 'sleep 5 && npm run dev:frontend'\"",
+    "dev:stack": "npm run dev",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run start:dev --prefix backend",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "db:generate": "npm run prisma:generate --prefix backend",
+    "db:migrate": "npm run prisma:migrate --prefix backend",
+    "db:push": "npm run db:push --prefix backend",
+    "db:reset": "npm run db:push --prefix backend && npm run db:seed --prefix backend",
+    "db:seed": "npm run db:seed --prefix backend",
+    "db:studio": "npm run prisma:studio --prefix backend",
+    "db:up": "docker compose up -d postgres"
+  }
+}
