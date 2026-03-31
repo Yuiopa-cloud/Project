@@ -9,7 +9,9 @@ export const DEFAULT_BACKEND = "http://127.0.0.1:4000/api";
 export function normalizeEnvBase(): string | null {
   const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (!raw) return null;
-  return `${raw.replace(/\/$/, "")}/api`;
+  const normalized = raw.replace(/\/$/, "");
+  if (normalized.endsWith("/api")) return normalized;
+  return `${normalized}/api`;
 }
 
 /**
