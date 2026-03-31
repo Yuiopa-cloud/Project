@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Headers, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Logger,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import { OrdersService } from './orders.service';
@@ -11,6 +19,8 @@ import { Throttle } from '@nestjs/throttler';
 @ApiTags('orders')
 @Controller('orders')
 export class OrdersController {
+  private readonly log = new Logger(OrdersController.name);
+
   constructor(
     private readonly orders: OrdersService,
     private readonly jwt: JwtService,
@@ -37,7 +47,12 @@ export class OrdersController {
         /* guest checkout */
       }
     }
-    return this.orders.checkout(dto, userId);
+    try {
+      return await this.orders.checkout(dto, userId);
+    } catch (e) {
+      this.log.error(`checkout failed userId=${userId ?? 'guest'}`, e);
+      throw e;
+    }
   }
 
   @ApiBearerAuth()

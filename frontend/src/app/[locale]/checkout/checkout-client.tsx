@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations, useLocale } from "next-intl";
 import { useCart } from "@/contexts/cart-context";
+import { logApiFailure } from "@/lib/api-config";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { MotionLink } from "@/components/motion-link";
 import { CheckoutCelebration } from "./checkout-celebration";
@@ -77,10 +78,17 @@ export function CheckoutClient() {
   );
 
   useEffect(() => {
-    fetch(`${apiRoot}/delivery-zones`)
-      .then((r) => r.json())
+    const url = `${apiRoot}/delivery-zones`;
+    fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+        return r.json();
+      })
       .then(setZones)
-      .catch(() => setZones([]));
+      .catch((e) => {
+        logApiFailure(`GET ${url}`, e);
+        setZones([]);
+      });
   }, [apiRoot]);
 
   const items = cart?.items ?? [];
@@ -129,13 +137,15 @@ export function CheckoutClient() {
           phone: phone.trim(),
         },
       };
-      const res = await fetch(`${apiRoot}/orders/checkout`, {
+      const checkoutUrl = `${apiRoot}/orders/checkout`;
+      const res = await fetch(checkoutUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!res.ok) {
         const txt = await res.text();
+        logApiFailure(`POST ${checkoutUrl}`, { status: res.status, body: txt?.slice?.(0, 500) });
         throw new Error(txt || res.statusText);
       }
       const data = await res.json();
@@ -147,6 +157,7 @@ export function CheckoutClient() {
       });
       await refresh();
     } catch (e: unknown) {
+      logApiFailure("checkout submit", e);
       setErr(e instanceof Error ? e.message : t("orderError"));
     } finally {
       setBusy(false);

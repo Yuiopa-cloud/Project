@@ -8,26 +8,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(helmet());
-  const isProd = process.env.NODE_ENV === 'production';
-  const fromEnv =
-    process.env.FRONTEND_URL?.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean) ?? [];
-  const explicitOrigins = Array.from(
-    new Set([
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      ...fromEnv,
-    ]),
-  );
   app.enableCors({
-    // Dev: reflect any Origin (LAN IP, other ports) so direct API calls still work if needed.
-    origin: isProd
-      ? explicitOrigins.length
-        ? explicitOrigins
-        : true
-      : true,
+    // Reflect request `Origin` so credentials work with Vercel previews and custom domains.
+    // (`origin: '*'` is invalid together with `credentials: true`.)
+    origin: true,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   app.useGlobalPipes(

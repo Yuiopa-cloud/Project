@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { clientApiRoot } from "@/lib/api-config";
+import { clientApiRoot, logApiFailure } from "@/lib/api-config";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 
 const STORAGE_KEY = "atlas-cart-guest";
@@ -108,19 +108,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ? `${apiRoot}/cart?guestToken=${encodeURIComponent(stored)}`
         : `${apiRoot}/cart`;
       const res = await fetch(url);
-      if (!res.ok)
-        throw new Error(
-          res.status === 404
-            ? "API introuvable — démarrez le backend (port 4000) ou vérifiez NEXT_PUBLIC_API_URL."
-            : "panier",
-        );
+      if (!res.ok) {
+        const hint404 =
+          process.env.NODE_ENV === "production"
+            ? "API inaccessible — vérifiez NEXT_PUBLIC_API_URL / BACKEND_PROXY_URL sur Vercel et que l’API Railway tourne."
+            : "API introuvable — démarrez le backend (port 4000) ou vérifiez NEXT_PUBLIC_API_URL.";
+        throw new Error(res.status === 404 ? hint404 : "panier");
+      }
       const data: CartResponse = await res.json();
       if (data.guestToken) {
         localStorage.setItem(STORAGE_KEY, data.guestToken);
       }
       persistGuestToken(data.cart);
       setServerCart(data.cart);
-    } catch {
+    } catch (e) {
+      logApiFailure("cart refresh", e);
       setServerCart(null);
     } finally {
       setLoading(false);
@@ -176,6 +178,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) {
         const txt = (await res.text()).trim();
+        logApiFailure("POST /cart/items", { status: res.status, txt: txt.slice(0, 300) });
         if (res.status === 404 && /product not found/i.test(txt)) {
           throw new Error(
             "Produit inconnu en base — exécutez npm run db:seed (racine du projet) avec l’API arrêtée ou après migrate.",
@@ -222,6 +225,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) {
         const txt = (await res.text()).trim();
+        logApiFailure("POST /cart/items/qty", { status: res.status, txt: txt.slice(0, 300) });
         throw new Error(txt || "Échec mise à jour panier");
       }
       const next: CartModel = await res.json();

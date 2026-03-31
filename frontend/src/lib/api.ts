@@ -10,12 +10,17 @@ export async function api<T>(
   const { token: _t, ...rest } = init ?? {};
   const p = path.startsWith("/") ? path : `/${path}`;
   const root = await getServerApiRoot();
-  const res = await fetch(`${root}${p}`, {
-    ...rest,
-    headers,
-  });
+  const url = `${root}${p}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { ...rest, headers });
+  } catch (e) {
+    console.error("[api] fetch failed", url, e);
+    throw e;
+  }
   if (!res.ok) {
     const err = await res.text();
+    console.error("[api] HTTP error", url, res.status, err?.slice?.(0, 500));
     throw new Error(err || res.statusText);
   }
   return res.json() as Promise<T>;

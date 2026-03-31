@@ -1,12 +1,15 @@
 /**
  * Shared API base helpers — safe to import from Client Components (no `next/headers`).
  *
- * Server-only resolution (request host + `/api-proxy`) lives in `./get-server-api-root.ts`.
+ * - Browser code should use {@link clientApiRoot} (`/api-proxy`) so requests stay same-origin;
+ *   `next.config` rewrites `/api-proxy/*` → Railway (via `NEXT_PUBLIC_API_URL` or `BACKEND_PROXY_URL`).
+ * - Server Components use `./get-server-api-root.ts` (direct API URL when env is set, else request host).
  */
 
-export const DEFAULT_BACKEND = "http://127.0.0.1:4000/api";
+/** Dev-only fallback when no env and no request host (e.g. local `next dev`). */
+export const DEFAULT_BACKEND_DEV = "http://127.0.0.1:4000/api";
 
-export function normalizeEnvBase(): string | null {
+export function normalizeApiBaseFromEnv(): string | null {
   const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (!raw) return null;
   const normalized = raw.replace(/\/$/, "");
@@ -14,16 +17,17 @@ export function normalizeEnvBase(): string | null {
   return `${normalized}/api`;
 }
 
+/** @deprecated use normalizeApiBaseFromEnv */
+export const normalizeEnvBase = normalizeApiBaseFromEnv;
+
 /**
- * For Client Components. In **development**, always use same-origin `/api-proxy` so the browser
- * never calls `NEXT_PUBLIC_API_URL` directly (avoids CORS + localhost/127 mismatches and
- * “Failed to fetch” when that URL is wrong or unreachable).
+ * Client Components: always same-origin `/api-proxy` (dev + prod). Avoids CORS and mixed-content
+ * issues. Requires `NEXT_PUBLIC_API_URL` or `BACKEND_PROXY_URL` on Vercel so rewrites target Railway.
  */
 export function clientApiRoot(): string {
-  if (process.env.NODE_ENV === "development") {
-    return "/api-proxy";
-  }
-  const fromEnv = normalizeEnvBase();
-  if (fromEnv) return fromEnv;
   return "/api-proxy";
+}
+
+export function logApiFailure(context: string, detail: unknown): void {
+  console.error(`[atlas-api] ${context}`, detail);
 }

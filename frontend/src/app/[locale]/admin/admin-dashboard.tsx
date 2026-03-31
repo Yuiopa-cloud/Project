@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AtlasLogo } from "@/components/atlas-logo";
-import { clientApiRoot } from "@/lib/api-config";
+import { clientApiRoot, logApiFailure } from "@/lib/api-config";
 
 const TOKEN_KEY = "atlas-admin-jwt";
 const ORDER_STATUSES = [
@@ -47,7 +47,9 @@ function friendlyNetworkError(err: unknown): string {
     m.includes("load failed") ||
     m.includes("network request failed")
   ) {
-    return "Impossible de joindre l'API (port 4000). A la racine du projet, lancez npm run dev (demarre le site + l'API). Si ca echoue, corrigez DATABASE_URL dans backend/.env ou lancez PostgreSQL: npm run db:up.";
+    return process.env.NODE_ENV === "production"
+      ? "Impossible de joindre l'API. Sur Vercel: NEXT_PUBLIC_API_URL ou BACKEND_PROXY_URL + API Railway (FRONTEND_URL / CORS cote API)."
+      : "Impossible de joindre l'API (port 4000). À la racine du projet, lancez npm run dev (site + API). Vérifiez DATABASE_URL et PostgreSQL.";
   }
   return err.message;
 }
@@ -138,12 +140,15 @@ export function AdminDashboard() {
         setMsg(
           txt && !txt.startsWith("<")
             ? txt
-            : "API introuvable - verifiez que npm run dev tourne a la racine (API port 4000).",
+            : process.env.NODE_ENV === "production"
+              ? "Erreur API (dashboard). Vérifiez les variables Vercel et Railway."
+              : "API introuvable — lancez npm run dev à la racine (API port 4000).",
         );
         return;
       }
       setDash(await r.json());
     } catch (e) {
+      logApiFailure("admin dashboard", e);
       setMsg(friendlyNetworkError(e));
     }
   }, [apiRoot, token, authHeaders]);
@@ -159,12 +164,15 @@ export function AdminDashboard() {
         setMsg(
           txt && !txt.startsWith("<")
             ? txt
-            : "API introuvable - verifiez que npm run dev tourne a la racine (API port 4000).",
+            : process.env.NODE_ENV === "production"
+              ? "Erreur API (dashboard). Vérifiez les variables Vercel et Railway."
+              : "API introuvable — lancez npm run dev à la racine (API port 4000).",
         );
         return;
       }
       setOrders(await r.json());
     } catch (e) {
+      logApiFailure("admin orders", e);
       setMsg(friendlyNetworkError(e));
     }
   }, [apiRoot, token, authHeaders]);
@@ -181,7 +189,9 @@ export function AdminDashboard() {
     setLoading(true);
     setMsg(null);
     const apiDownMsg =
-      "Aucune API sur le port 4000 - a la racine du depot, relancez: npm run dev (site + API).";
+      process.env.NODE_ENV === "production"
+        ? "L'API ne répond pas (502/503/504). Vérifiez Railway et les URLs Vercel (proxy)."
+        : "Aucune API sur le port 4000 — à la racine du dépôt, relancez: npm run dev (site + API).";
     try {
       const r = await fetch(`${apiRoot}/auth/admin-login`, {
         method: "POST",
@@ -220,6 +230,7 @@ export function AdminDashboard() {
       setToken(access);
       setPassword("");
     } catch (e: unknown) {
+      logApiFailure("admin-login", e);
       setMsg(friendlyNetworkError(e));
     } finally {
       setLoading(false);

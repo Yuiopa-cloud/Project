@@ -12,6 +12,11 @@ function resolveBackendOrigin(): string {
     if (pub.endsWith("/api")) return pub.slice(0, -"/api".length);
     return pub;
   }
+  if (process.env.VERCEL === "1") {
+    throw new Error(
+      "Set NEXT_PUBLIC_API_URL or BACKEND_PROXY_URL in Vercel (Project → Settings → Environment Variables) so /api-proxy can reach your Railway API.",
+    );
+  }
   return "http://127.0.0.1:4000";
 }
 
