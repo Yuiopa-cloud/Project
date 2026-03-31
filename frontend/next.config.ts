@@ -3,9 +3,18 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
-const backendOrigin =
-  process.env.BACKEND_PROXY_URL?.replace(/\/$/, "") ??
-  "http://127.0.0.1:4000";
+function resolveBackendOrigin(): string {
+  const explicit = process.env.BACKEND_PROXY_URL?.trim().replace(/\/$/, "");
+  if (explicit) return explicit;
+  const pub = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "");
+  if (pub) {
+    if (pub.endsWith("/api")) return pub.slice(0, -"/api".length);
+    return pub;
+  }
+  return "http://127.0.0.1:4000";
+}
+
+const backendOrigin = resolveBackendOrigin();
 
 const nextConfig: NextConfig = {
   images: {
