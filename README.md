@@ -11,6 +11,10 @@ Plateforme e-commerce **production-oriented** pour accessoires automobile au Mar
 
 Documentation détaillée : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
+## Déploiement Vercel (frontend)
+
+Dans le projet Vercel, définir **Root Directory** sur `frontend` (Settings → General → Root Directory). Le dépôt contient aussi l’API Nest à la racine (`server/`, `package.json`) : sans ce réglage, Vercel tente une détection « serveur Node » sur la racine et échoue avec *No entrypoint found*. L’API se déploie séparément (ex. Railway).
+
 ## Prérequis
 
 - Node.js 20+ (22 recommandé)
