@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { timingSafeEqual } from 'node:crypto';
@@ -30,6 +31,8 @@ function normalizeMaPhone(raw: string): string {
 
 @Injectable()
 export class AuthService {
+  private readonly log = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -77,11 +80,14 @@ export class AuthService {
     const password = String(rawPassword ?? '')
       .trim()
       .replace(/^['"]+|['"]+$/g, '');
+    /** Railway injects `process.env` before ConfigService; prefer it for panel password. */
+    const fromProcess = process.env.ADMIN_PANEL_PASSWORD;
     const fromConfig = this.config.get<string | undefined>(
       'ADMIN_PANEL_PASSWORD',
     );
     let expected = String(
-      fromConfig ?? process.env.ADMIN_PANEL_PASSWORD ?? '16061606',
+      (fromProcess != null && fromProcess !== '' ? fromProcess : fromConfig) ??
+        '16061606',
     )
       .trim()
       .replace(/^['"]+|['"]+$/g, '');
@@ -90,14 +96,20 @@ export class AuthService {
     const a = Buffer.from(password, 'utf8');
     const b = Buffer.from(expected, 'utf8');
     if (a.length !== b.length || !timingSafeEqual(a, b)) {
-      throw new UnauthorizedException('Mot de passe incorrect');
+      this.log.warn('Admin panel login: password mismatch (check ADMIN_PANEL_PASSWORD on Railway)');
+      throw new UnauthorizedException(
+        'Mot de passe incorrect — utilisez la valeur de ADMIN_PANEL_PASSWORD (Railway), pas le mot de passe utilisateur seed.',
+      );
     }
     const admin = await this.prisma.user.findFirst({
       where: { role: UserRole.ADMIN },
     });
     if (!admin) {
+      this.log.warn(
+        'Admin panel login: no ADMIN user in database (run: npx prisma db seed)',
+      );
       throw new UnauthorizedException(
-        'Aucun compte ADMIN — exécutez prisma migrate + db:seed',
+        'Aucun compte ADMIN — sur Railway exécutez une fois : npx prisma db seed',
       );
     }
     const tokens = await this.issueTokens(

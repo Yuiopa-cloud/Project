@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { AtlasLogo } from "@/components/atlas-logo";
 import { clientApiRoot, logApiFailure } from "@/lib/api-config";
 
@@ -102,7 +103,26 @@ function toneBadgeClass(tone: ConfirmationTone): string {
   return "bg-zinc-500/15 text-zinc-200 border-zinc-300/30";
 }
 
+function nestErrorMessage(raw: string): string | undefined {
+  if (!raw?.trim()) return undefined;
+  try {
+    const data = JSON.parse(raw) as {
+      message?: string | string[];
+      error?: string;
+    };
+    const m = data.message;
+    if (Array.isArray(m) && m[0]) return String(m[0]);
+    if (typeof m === "string" && m.length) return m;
+  } catch {
+    /* plain text */
+  }
+  const t = raw.trim();
+  if (t.length > 0 && !t.startsWith("<")) return t.slice(0, 500);
+  return undefined;
+}
+
 export function AdminDashboard() {
+  const tAdmin = useTranslations("admin");
   const apiRoot = useMemo(() => clientApiRoot(), []);
   const [token, setToken] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -210,8 +230,7 @@ export function AdminDashboard() {
         data = {};
       }
       if (!r.ok) {
-        const m = data.message;
-        const apiMsg = Array.isArray(m) ? m[0] : m;
+        const apiMsg = nestErrorMessage(rawText) ?? (typeof data.message === "string" ? data.message : Array.isArray(data.message) ? data.message[0] : undefined);
         const hasNestJson = typeof apiMsg === "string" && apiMsg.length > 0;
         if ([500, 502, 503, 504].includes(r.status) && !hasNestJson) {
           setMsg(apiDownMsg);
@@ -306,18 +325,21 @@ export function AdminDashboard() {
             <AtlasLogo size={56} />
           </div>
           <h1 className="relative text-center text-xl font-semibold text-[var(--fg)]">
-            Console Admin
+            {tAdmin("title")}
           </h1>
           <p className="relative mt-2 text-center text-sm text-[var(--muted)]">
-            Interface controle Atlas Auto - acces securise.
+            {tAdmin("loginSubtitle")}
           </p>
-          <form onSubmit={login} className="relative mt-8 space-y-3">
+          <p className="relative mt-3 text-center text-xs leading-relaxed text-[var(--muted)]">
+            {tAdmin("loginHint")}
+          </p>
+          <form onSubmit={login} className="relative mt-6 space-y-3">
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="checkout-input w-full rounded-xl border border-[var(--border)] bg-black/30 px-3 py-2.5 text-sm"
-              placeholder="Mot de passe"
+              placeholder={tAdmin("loginPlaceholder")}
               autoComplete="current-password"
             />
             <motion.button
@@ -328,7 +350,7 @@ export function AdminDashboard() {
               transition={{ type: "spring", stiffness: 400, damping: 28 }}
               className="btn-primary-motion w-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] py-3 text-sm font-semibold text-slate-900"
             >
-              {loading ? "..." : "Connexion"}
+              {loading ? tAdmin("loginLoading") : tAdmin("loginCta")}
             </motion.button>
           </form>
           {msg ? (

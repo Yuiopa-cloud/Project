@@ -128,7 +128,12 @@
   "admin": {
     "title": "Console Atlas",
     "revenue": "Chiffre d’affaires approx.",
-    "fraud": "Dossiers fraude"
+    "fraud": "Dossiers fraude",
+    "loginSubtitle": "Interface contrôle Atlas Auto — accès sécurisé.",
+    "loginHint": "Mot de passe = variable Railway ADMIN_PANEL_PASSWORD (sans variable, défaut 16061606). Ce n’est pas le mot de passe du compte seed (Admin123!). Si erreur « aucun ADMIN », lancez sur Railway : npx prisma db seed",
+    "loginPlaceholder": "Mot de passe panneau admin",
+    "loginCta": "Connexion",
+    "loginLoading": "…"
   },
   "faq": {
     "title": "FAQ",

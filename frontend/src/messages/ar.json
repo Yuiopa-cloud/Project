@@ -128,7 +128,12 @@
   "admin": {
     "title": "لوحة أطلس",
     "revenue": "الإيرادات التقريبية",
-    "fraud": "ملفات الاحتيال"
+    "fraud": "ملفات الاحتيال",
+    "loginSubtitle": "واجهة التحكم — دخول آمن.",
+    "loginHint": "كلمة المرور = ADMIN_PANEL_PASSWORD على Railway (بلا متغيّر: 16061606). ليست كلمة مرور الحساب التجريبي Admin123!. لتعيين مسؤول في قاعدة البيانات: npx prisma db seed",
+    "loginPlaceholder": "كلمة مرور لوحة التحكم",
+    "loginCta": "دخول",
+    "loginLoading": "…"
   },
   "faq": {
     "title": "الأسئلة الشائعة",
