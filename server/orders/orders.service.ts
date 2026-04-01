@@ -291,72 +291,94 @@ export class OrdersService {
     }));
 
     console.log(
-      '[orders.checkout] Calling sendOrderConfirmationEmail (customer)',
-      { orderNumber: order.orderNumber, hasGuestEmail: Boolean(dto.guestEmail?.trim()) },
-    );
-    const customerEmailSent = await this.notify.sendOrderConfirmationEmail({
-      to: dto.guestEmail,
-      orderNumber: order.orderNumber,
-      totalMad: total.toFixed(2),
-      subtotalMad: subtotal.toFixed(2),
-      shippingMad: shipping.toFixed(2),
-      discountMad: discount.toFixed(2),
-      customerName: `${dto.firstName.trim()} ${dto.lastName.trim()}`,
-      paymentLabel,
-      lines: linesForEmail.map(({ title, qty, lineTotal }) => ({
-        title,
-        qty,
-        lineTotal,
-      })),
-      address: {
-        line1: dto.shipping.line1,
-        quarter: dto.shipping.quarter,
-        cityCode: dto.shipping.cityCode,
-        cityName: zone.cityNameFr,
-        postal: dto.shipping.postalCode,
-      },
-      shippingPhone: guestPhone,
-    });
-    console.log('[orders.checkout] sendOrderConfirmationEmail result', {
-      orderNumber: order.orderNumber,
-      sent: customerEmailSent,
-    });
-
-    console.log(
-      '[orders.checkout] Calling sendMerchantNewOrderEmail (merchant copy)',
+      '[orders.checkout] Queueing post-checkout notifications (non-blocking)',
       { orderNumber: order.orderNumber },
     );
-    const merchantEmailSent = await this.notify.sendMerchantNewOrderEmail({
-      orderNumber: order.orderNumber,
-      totalMad: total.toFixed(2),
-      subtotalMad: subtotal.toFixed(2),
-      shippingMad: shipping.toFixed(2),
-      discountMad: discount.toFixed(2),
-      paymentMethod: paymentLabel,
-      customer: {
-        firstName: dto.firstName.trim(),
-        lastName: dto.lastName.trim(),
-        email: dto.guestEmail,
-        phone: guestPhone,
-      },
-      address: {
-        line1: dto.shipping.line1,
-        quarter: dto.shipping.quarter,
-        cityCode: dto.shipping.cityCode,
-        cityName: zone.cityNameFr,
-        postal: dto.shipping.postalCode ?? null,
-      },
-      lines: linesForEmail,
-      couponCode: dto.couponCode?.trim() || null,
-    });
-    console.log('[orders.checkout] sendMerchantNewOrderEmail result', {
-      orderNumber: order.orderNumber,
-      sent: merchantEmailSent,
-    });
-    await this.notify.sendWhatsAppTemplate({
-      toE164: guestPhone.replace('+', ''),
-      orderNumber: order.orderNumber,
-    });
+    void this.notify
+      .sendOrderConfirmationEmail({
+        to: dto.guestEmail,
+        orderNumber: order.orderNumber,
+        totalMad: total.toFixed(2),
+        subtotalMad: subtotal.toFixed(2),
+        shippingMad: shipping.toFixed(2),
+        discountMad: discount.toFixed(2),
+        customerName: `${dto.firstName.trim()} ${dto.lastName.trim()}`,
+        paymentLabel,
+        lines: linesForEmail.map(({ title, qty, lineTotal }) => ({
+          title,
+          qty,
+          lineTotal,
+        })),
+        address: {
+          line1: dto.shipping.line1,
+          quarter: dto.shipping.quarter,
+          cityCode: dto.shipping.cityCode,
+          cityName: zone.cityNameFr,
+          postal: dto.shipping.postalCode,
+        },
+        shippingPhone: guestPhone,
+      })
+      .then((sent) => {
+        console.log('[orders.checkout] sendOrderConfirmationEmail result', {
+          orderNumber: order.orderNumber,
+          sent,
+        });
+      })
+      .catch((error) => {
+        console.error('[orders.checkout] sendOrderConfirmationEmail failed', {
+          orderNumber: order.orderNumber,
+          error,
+        });
+      });
+
+    void this.notify
+      .sendMerchantNewOrderEmail({
+        orderNumber: order.orderNumber,
+        totalMad: total.toFixed(2),
+        subtotalMad: subtotal.toFixed(2),
+        shippingMad: shipping.toFixed(2),
+        discountMad: discount.toFixed(2),
+        paymentMethod: paymentLabel,
+        customer: {
+          firstName: dto.firstName.trim(),
+          lastName: dto.lastName.trim(),
+          email: dto.guestEmail,
+          phone: guestPhone,
+        },
+        address: {
+          line1: dto.shipping.line1,
+          quarter: dto.shipping.quarter,
+          cityCode: dto.shipping.cityCode,
+          cityName: zone.cityNameFr,
+          postal: dto.shipping.postalCode ?? null,
+        },
+        lines: linesForEmail,
+        couponCode: dto.couponCode?.trim() || null,
+      })
+      .then((sent) => {
+        console.log('[orders.checkout] sendMerchantNewOrderEmail result', {
+          orderNumber: order.orderNumber,
+          sent,
+        });
+      })
+      .catch((error) => {
+        console.error('[orders.checkout] sendMerchantNewOrderEmail failed', {
+          orderNumber: order.orderNumber,
+          error,
+        });
+      });
+
+    void this.notify
+      .sendWhatsAppTemplate({
+        toE164: guestPhone.replace('+', ''),
+        orderNumber: order.orderNumber,
+      })
+      .catch((error) => {
+        console.error('[orders.checkout] sendWhatsAppTemplate failed', {
+          orderNumber: order.orderNumber,
+          error,
+        });
+      });
 
     const whatsappAdminLink = this.notify.buildWhatsAppOrderLink({
       phoneCustomer: guestPhone,
@@ -365,14 +387,17 @@ export class OrdersService {
     });
 
     return {
+      success: true,
+      orderId: order.id,
       order,
       fraud: fraudResult,
       stripeClientSecret,
       whatsappConfirmUrl: whatsappAdminLink,
       emailStatus: {
-        customerConfirmationSent: customerEmailSent,
-        merchantNotificationSent: merchantEmailSent,
+        customerConfirmationSent: null,
+        merchantNotificationSent: null,
         customerSkippedNoEmail: !dto.guestEmail?.trim(),
+        queuedAsync: true,
       },
     };
   }

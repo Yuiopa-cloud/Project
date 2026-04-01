@@ -10,6 +10,7 @@ import { clearBuyNow, getBuyNow, type BuyNowPayload } from "@/lib/buy-now";
 import type { CartLine } from "@/contexts/cart-context";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { MotionLink } from "@/components/motion-link";
+import { useRouter } from "@/i18n/navigation";
 import { CheckoutCelebration } from "./checkout-celebration";
 
 type Zone = {
@@ -56,6 +57,7 @@ export function CheckoutClient() {
   const t = useTranslations("checkout");
   const locale = useLocale();
   const { cart, apiRoot, refresh } = useCart();
+  const router = useRouter();
   const [zones, setZones] = useState<Zone[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -164,9 +166,7 @@ export function CheckoutClient() {
         },
       };
       const checkoutUrl = `${apiRoot}/orders/checkout`;
-      if (process.env.NODE_ENV === "development") {
-        console.log("[checkout] POST", checkoutUrl, body);
-      }
+      console.log("[checkout] Before request", { url: checkoutUrl, body });
       const res = await fetch(checkoutUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -182,6 +182,10 @@ export function CheckoutClient() {
         throw new Error(parsed || res.statusText);
       }
       const data = await res.json();
+      console.log("[checkout] Order response:", data);
+      if (!data?.success) {
+        throw new Error("Order failed");
+      }
       clearBuyNow();
       setBuyNowPayload(null);
       let emailNotice: string | null = null;
@@ -198,16 +202,24 @@ export function CheckoutClient() {
       ) {
         emailNotice = t("emailSkippedHint");
       }
+      const orderNumber = data.order?.orderNumber ?? "—";
+      const totalMad = formatOrderTotal(data.order?.totalMad);
       setDone({
-        orderNumber: data.order?.orderNumber ?? "—",
+        orderNumber,
         whatsapp: data.whatsappConfirmUrl,
-        totalMad: formatOrderTotal(data.order?.totalMad),
+        totalMad,
         firstName: firstName.trim() || undefined,
         emailNotice,
       });
       await refresh();
+      router.push(
+        `/thank-you?orderNumber=${encodeURIComponent(orderNumber)}${
+          totalMad ? `&totalMad=${encodeURIComponent(totalMad)}` : ""
+        }`,
+      );
     } catch (e: unknown) {
       logApiFailure("checkout submit", e);
+      console.error("[checkout] submit error", e);
       const raw = e instanceof Error ? e.message : "";
       const lower = raw.toLowerCase();
       let friendly = t("orderError");
