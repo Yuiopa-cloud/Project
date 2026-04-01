@@ -294,18 +294,13 @@ export function Navbar() {
           <>
             <motion.nav
               id="mobile-nav-drawer"
-              className="fixed inset-0 z-[100] flex flex-col bg-black/70 backdrop-blur-md md:hidden"
+              className="fixed inset-0 z-50 flex h-dvh w-full flex-col bg-black/75 backdrop-blur-md md:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div
-                className="nav-glass flex items-center justify-between border-b border-[var(--border)] px-4 py-3 pt-[max(0.9rem,env(safe-area-inset-top))] pe-[max(0.9rem,env(safe-area-inset-end))] ps-[max(0.9rem,env(safe-area-inset-start))]"
-              >
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  {t("drawerTitle")}
-                </span>
+              <div className="flex items-center justify-end px-6 pb-3 pt-[env(safe-area-inset-top)]">
                 <motion.button
                   type="button"
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-[var(--muted)]"
@@ -317,10 +312,10 @@ export function Navbar() {
                 </motion.button>
               </div>
               <motion.ul
-                className="flex flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3"
-                initial={{ y: 24, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 24, opacity: 0 }}
+                className="flex flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2"
+                initial={{ x: 28, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 20, opacity: 0 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               >
                 {mobileLinks.map((l) => (
@@ -328,7 +323,7 @@ export function Navbar() {
                     <MotionLink
                       href={l.href}
                       data-active={navActive(l.href) ? "true" : undefined}
-                      className={`relative flex min-h-[48px] items-center rounded-xl px-4 text-base font-medium transition ${
+                      className={`relative flex min-h-[52px] items-center rounded-xl px-4 text-base font-medium transition ${
                         navActive(l.href)
                           ? "bg-[var(--accent-dim)] text-[var(--accent)]"
                           : "text-[var(--fg)] hover:bg-[var(--press-bg)]"
