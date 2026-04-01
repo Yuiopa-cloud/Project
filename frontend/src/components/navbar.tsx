@@ -95,11 +95,14 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const links = [
+  const desktopLinks = [
     { href: "/", label: t("home") },
     { href: "/shop", label: t("shop") },
-    { href: "/faq", label: t("faq") },
+    { href: "/faq", label: locale === "fr" ? "A propos" : "من نحن" },
     { href: "/contact", label: t("contact") },
+  ];
+  const mobileLinks = [
+    ...desktopLinks,
     { href: "/cart", label: t("cart") },
     { href: "/admin", label: t("admin") },
   ];
@@ -147,92 +150,142 @@ export function Navbar() {
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       className={`nav-futuristic sticky top-0 z-50 pt-[env(safe-area-inset-top)] transition-[box-shadow] duration-300 ${scrolled ? "nav-scrolled" : ""}`}
     >
-      <div className="relative z-10 mx-auto flex max-w-6xl min-h-[52px] items-center justify-between gap-1.5 px-2 py-1.5 min-[400px]:px-3 min-[400px]:gap-2 md:min-h-0 md:gap-3 md:px-4 md:py-2">
-        <MotionLink
-          href="/"
-          className="group min-w-0 shrink-0 rounded-xl opacity-95 transition hover:opacity-100"
-          onClick={() => setMobileOpen(false)}
-        >
-          <div className="origin-left scale-[0.92] min-[400px]:scale-[0.96] md:scale-100">
-            <AtlasLogo size={34} />
-          </div>
-        </MotionLink>
-
-        <nav className="nav-dock hidden max-w-[min(72vw,44rem)] items-center justify-center overflow-x-auto md:flex md:max-w-none md:flex-1 md:overflow-visible">
-          {links.map((l) => (
-            <MotionLink
-              key={l.href}
-              href={l.href}
-              data-active={navActive(l.href) ? "true" : undefined}
-              className="nav-dock-link relative shrink-0 whitespace-nowrap"
-              whileHover={{ y: 0 }}
-              whileTap={{ scale: 0.96 }}
-            >
-              {l.label}
-              {l.href === "/cart" && itemCount > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.55rem] font-bold leading-none text-[var(--bg)] shadow-[0_0_8px_var(--accent-glow)]">
-                  {itemCount > 9 ? "9+" : itemCount}
-                </span>
-              ) : null}
-            </MotionLink>
-          ))}
-        </nav>
-
-        <div className="ms-1 flex shrink-0 items-center gap-0.5 min-[400px]:gap-1 md:ms-0 md:gap-1.5">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-2">
+        <div className="flex h-14 items-center justify-between md:hidden">
           <motion.button
             type="button"
-            className="nav-icon-toggle flex h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center md:hidden"
+            className="nav-icon-toggle flex h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav-drawer"
             aria-label={mobileOpen ? t("closeMenu") : t("openMenu")}
             onClick={() => setMobileOpen((o) => !o)}
             whileTap={{ scale: 0.92 }}
           >
-            {mobileOpen ? <IconClose /> : <IconMenuLines />}
+            {mobileOpen ? <IconClose className="h-5 w-5" /> : <IconMenuLines className="h-5 w-5" />}
           </motion.button>
 
-          <div className="nav-util-pill">
-            <motion.button
-              type="button"
-              className="nav-icon-toggle"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              whileTap={{ scale: 0.9 }}
-              aria-label={
-                theme === "dark" ? tTheme("light") : tTheme("dark")
-              }
-              title={
-                theme === "dark" ? tTheme("light") : tTheme("dark")
-              }
-            >
-              {theme === "dark" ? <IconSun /> : <IconMoon />}
-            </motion.button>
-            <div className="nav-util-divider" aria-hidden />
-            <Link
-              href={pathname}
-              locale={otherLocale}
-              className="nav-util-locale hover:text-[var(--accent)]"
-              title={localeTitle}
-              aria-label={localeTitle}
-            >
-              {otherLocale.toUpperCase()}
-            </Link>
-          </div>
-
           <MotionLink
-            href="/cart"
-            className="relative flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-base md:h-8 md:w-8 md:min-h-0 md:min-w-0 md:text-sm"
-            style={{ boxShadow: "0 0 20px -10px var(--accent-glow-soft)" }}
-            aria-label={t("cart")}
+            href="/"
+            className="absolute left-1/2 -translate-x-1/2 rounded-xl opacity-95 transition hover:opacity-100"
+            onClick={() => setMobileOpen(false)}
           >
-            <span className="leading-none" aria-hidden>
-              🛒
-            </span>
-            {itemCount > 0 ? (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.5rem] font-bold text-[var(--bg)]">
-                {itemCount > 9 ? "9+" : itemCount}
-              </span>
-            ) : null}
+            <AtlasLogo size={34} />
           </MotionLink>
+
+          <div className="flex items-center gap-2">
+            <div className="nav-util-pill">
+              <motion.button
+                type="button"
+                className="nav-icon-toggle h-11 w-11"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                whileTap={{ scale: 0.9 }}
+                aria-label={
+                  theme === "dark" ? tTheme("light") : tTheme("dark")
+                }
+                title={
+                  theme === "dark" ? tTheme("light") : tTheme("dark")
+                }
+              >
+                {theme === "dark" ? <IconSun className="h-4 w-4" /> : <IconMoon className="h-4 w-4" />}
+              </motion.button>
+              <div className="nav-util-divider" aria-hidden />
+              <Link
+                href={pathname}
+                locale={otherLocale}
+                className="nav-util-locale min-h-[44px] min-w-[44px] hover:text-[var(--accent)]"
+                title={localeTitle}
+                aria-label={localeTitle}
+              >
+                {otherLocale.toUpperCase()}
+              </Link>
+            </div>
+
+            <MotionLink
+              href="/cart"
+              className="relative flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-base"
+              style={{ boxShadow: "0 0 20px -10px var(--accent-glow-soft)" }}
+              aria-label={t("cart")}
+            >
+              <span className="leading-none" aria-hidden>
+                🛒
+              </span>
+              {itemCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.5rem] font-bold text-[var(--bg)]">
+                  {itemCount > 9 ? "9+" : itemCount}
+                </span>
+              ) : null}
+            </MotionLink>
+          </div>
+        </div>
+
+        <div className="hidden h-16 items-center justify-between gap-4 md:flex">
+          <MotionLink
+            href="/"
+            className="group min-w-0 shrink-0 rounded-xl opacity-95 transition hover:opacity-100"
+            onClick={() => setMobileOpen(false)}
+          >
+            <AtlasLogo size={36} />
+          </MotionLink>
+
+          <nav className="nav-dock flex flex-1 items-center justify-center overflow-visible">
+            {desktopLinks.map((l) => (
+              <MotionLink
+                key={l.href}
+                href={l.href}
+                data-active={navActive(l.href) ? "true" : undefined}
+                className="nav-dock-link relative shrink-0 whitespace-nowrap"
+                whileHover={{ y: 0 }}
+                whileTap={{ scale: 0.96 }}
+              >
+                {l.label}
+              </MotionLink>
+            ))}
+          </nav>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="nav-util-pill">
+              <motion.button
+                type="button"
+                className="nav-icon-toggle"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                whileTap={{ scale: 0.9 }}
+                aria-label={
+                  theme === "dark" ? tTheme("light") : tTheme("dark")
+                }
+                title={
+                  theme === "dark" ? tTheme("light") : tTheme("dark")
+                }
+              >
+                {theme === "dark" ? <IconSun /> : <IconMoon />}
+              </motion.button>
+              <div className="nav-util-divider" aria-hidden />
+              <Link
+                href={pathname}
+                locale={otherLocale}
+                className="nav-util-locale hover:text-[var(--accent)]"
+                title={localeTitle}
+                aria-label={localeTitle}
+              >
+                {otherLocale.toUpperCase()}
+              </Link>
+            </div>
+
+            <MotionLink
+              href="/cart"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-sm transition hover:border-[var(--accent)]/35 hover:text-[var(--accent)]"
+              style={{ boxShadow: "0 0 20px -10px var(--accent-glow-soft)" }}
+              aria-label={t("cart")}
+            >
+              <span className="leading-none" aria-hidden>
+                🛒
+              </span>
+              {itemCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.5rem] font-bold text-[var(--bg)]">
+                  {itemCount > 9 ? "9+" : itemCount}
+                </span>
+              ) : null}
+            </MotionLink>
+          </div>
         </div>
       </div>
 
@@ -270,7 +323,7 @@ export function Navbar() {
                 exit={{ y: 24, opacity: 0 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               >
-                {links.map((l) => (
+                {mobileLinks.map((l) => (
                   <li key={l.href}>
                     <MotionLink
                       href={l.href}
