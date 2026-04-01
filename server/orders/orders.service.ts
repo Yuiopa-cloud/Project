@@ -273,6 +273,11 @@ export class OrdersService {
       return created;
     });
 
+    console.log(
+      '[orders.checkout] Order persisted successfully; will trigger emails',
+      { orderId: order.id, orderNumber: order.orderNumber },
+    );
+
     const paymentLabel =
       dto.paymentMethod === PaymentMethod.STRIPE
         ? 'Carte bancaire (Stripe)'
@@ -285,6 +290,10 @@ export class OrdersService {
       lineTotal: l.unit.mul(l.qty).toFixed(2),
     }));
 
+    console.log(
+      '[orders.checkout] Calling sendOrderConfirmationEmail (customer)',
+      { orderNumber: order.orderNumber, hasGuestEmail: Boolean(dto.guestEmail?.trim()) },
+    );
     const customerEmailSent = await this.notify.sendOrderConfirmationEmail({
       to: dto.guestEmail,
       orderNumber: order.orderNumber,
@@ -308,7 +317,15 @@ export class OrdersService {
       },
       shippingPhone: guestPhone,
     });
+    console.log('[orders.checkout] sendOrderConfirmationEmail result', {
+      orderNumber: order.orderNumber,
+      sent: customerEmailSent,
+    });
 
+    console.log(
+      '[orders.checkout] Calling sendMerchantNewOrderEmail (merchant copy)',
+      { orderNumber: order.orderNumber },
+    );
     const merchantEmailSent = await this.notify.sendMerchantNewOrderEmail({
       orderNumber: order.orderNumber,
       totalMad: total.toFixed(2),
@@ -331,6 +348,10 @@ export class OrdersService {
       },
       lines: linesForEmail,
       couponCode: dto.couponCode?.trim() || null,
+    });
+    console.log('[orders.checkout] sendMerchantNewOrderEmail result', {
+      orderNumber: order.orderNumber,
+      sent: merchantEmailSent,
     });
     await this.notify.sendWhatsAppTemplate({
       toE164: guestPhone.replace('+', ''),

@@ -79,8 +79,17 @@ export class NotificationsService {
   }): Promise<boolean> {
     const smtp = this.resolveSmtp();
     if (!smtp) {
+      console.log('Attempting to send email...', {
+        to: opts.to,
+        subject: opts.subject,
+        skipped: 'SMTP not configured (set SMTP_USER + SMTP_PASS or EMAIL_USER + EMAIL_PASS)',
+      });
       return false;
     }
+    console.log('Attempting to send email...', {
+      to: opts.to,
+      subject: opts.subject,
+    });
     try {
       const nodemailer = await import('nodemailer');
       const transporter = nodemailer.createTransport({
@@ -100,11 +109,11 @@ export class NotificationsService {
       this.log.log(
         `Email sent: messageId=${info.messageId} → ${opts.to} subject="${opts.subject}"`,
       );
-      console.log('Email sent:', info.messageId, opts.to);
+      console.log('Email sent successfully:', info);
       return true;
     } catch (error) {
       this.log.error(`Email error → ${opts.to}:`, error as Error);
-      console.error('Email error:', error);
+      console.error('Email sending failed:', error);
       return false;
     }
   }
@@ -131,6 +140,11 @@ export class NotificationsService {
     locale?: string;
   }): Promise<boolean> {
     if (!payload.to?.trim()) {
+      console.log('Attempting to send email...', {
+        kind: 'customer_order_confirmation',
+        orderNumber: payload.orderNumber,
+        skipped: 'no guest email',
+      });
       this.log.warn(
         `Customer confirmation email skipped (no guestEmail): order ${payload.orderNumber}`,
       );
