@@ -79,6 +79,7 @@ export default async function ProductPage({
         demoMode={demoMode}
         labels={{
           addToCart: t("addToCart"),
+          buyNow: t("buyNow"),
           reviews: t("reviews"),
           upsell: t("upsell"),
           related: t("related"),
@@ -87,6 +88,9 @@ export default async function ProductPage({
             count: Number(product.purchaseCount ?? 0),
           }),
           shippingFreeHint: t("shippingFreeHint"),
+          trustCod: t("trustCod"),
+          trustDelivery: t("trustDelivery"),
+          trustClients: t("trustClients"),
         }}
       />
     </div>

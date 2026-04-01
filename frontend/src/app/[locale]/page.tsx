@@ -110,6 +110,9 @@ export default async function HomePage({
       <p className="mt-6 rounded-2xl border border-[var(--accent)]/25 bg-[var(--accent-dim)] px-4 py-3 text-center text-sm text-[var(--fg)]">
         {t("promoStrip")}
       </p>
+      <p className="mt-3 text-center text-xs text-[var(--muted)] sm:text-sm">
+        {t("trustSocial")}
+      </p>
 
       <section className="mt-16 md:mt-20">
         <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { AtlasLogo } from "@/components/atlas-logo";
 import { clientApiRoot, logApiFailure } from "@/lib/api-config";
+import { Link } from "@/i18n/navigation";
 
 const TOKEN_KEY = "atlas-admin-jwt";
 const ORDER_STATUSES = [
@@ -597,6 +598,12 @@ export function AdminDashboard() {
                               </option>
                             ))}
                           </select>
+                          <Link
+                            href={`/admin/orders/${o.id}`}
+                            className="rounded-md border border-[var(--border)] bg-white/5 px-2 py-1 text-xs font-medium text-[var(--fg)] transition hover:bg-white/10"
+                          >
+                            View details
+                          </Link>
                         </div>
                       </td>
                     </tr>

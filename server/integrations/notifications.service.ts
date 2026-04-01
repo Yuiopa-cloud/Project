@@ -13,6 +13,14 @@ function moneyRow(label: string, value: string): string {
   return `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;color:#444;">${label}</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;font-weight:600;color:#111;">${escapeHtml(value)}</td></tr>`;
 }
 
+type SmtpResolved = {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  from: string;
+};
+
 @Injectable()
 export class NotificationsService {
   private readonly log = new Logger(NotificationsService.name);
@@ -23,8 +31,44 @@ export class NotificationsService {
     return (
       this.config.get<string>('ORDER_NOTIFICATION_EMAIL')?.trim() ||
       this.config.get<string>('SMTP_USER')?.trim() ||
+      this.config.get<string>('EMAIL_USER')?.trim() ||
       'youssefstat20@gmail.com'
     );
+  }
+
+  /**
+   * Supports SMTP_* (preferred) or EMAIL_USER / EMAIL_PASS / EMAIL_API_KEY (Gmail app password).
+   * Default host smtp.gmail.com when credentials are present but host omitted.
+   */
+  private resolveSmtp(): SmtpResolved | null {
+    const user =
+      this.config.get<string>('SMTP_USER')?.trim() ||
+      this.config.get<string>('EMAIL_USER')?.trim() ||
+      undefined;
+    const pass =
+      this.config.get<string>('SMTP_PASS')?.trim() ||
+      this.config.get<string>('EMAIL_PASS')?.trim() ||
+      this.config.get<string>('EMAIL_API_KEY')?.trim() ||
+      undefined;
+    if (!user || !pass) {
+      this.log.warn(
+        'Email disabled: set SMTP_USER + SMTP_PASS (or EMAIL_USER + EMAIL_PASS / EMAIL_API_KEY) on Railway',
+      );
+      return null;
+    }
+    const rawHost =
+      this.config.get<string>('SMTP_HOST')?.trim() ||
+      this.config.get<string>('EMAIL_SMTP_HOST')?.trim();
+    const host = rawHost || 'smtp.gmail.com';
+    const port = Number(this.config.get('SMTP_PORT') ?? 587);
+    const fromRaw =
+      this.config.get<string>('SMTP_FROM')?.trim() ||
+      this.config.get<string>('EMAIL_FROM')?.trim();
+    const from =
+      fromRaw && fromRaw.includes('@')
+        ? fromRaw
+        : `Atlas Auto Morocco <${user}>`;
+    return { host, port, user, pass, from };
   }
 
   private async sendMail(opts: {
@@ -32,35 +76,36 @@ export class NotificationsService {
     subject: string;
     text: string;
     html: string;
-  }) {
-    const smtpHost = this.config.get<string>('SMTP_HOST');
-    if (!smtpHost) {
-      this.log.debug('SMTP_HOST not set — email skipped');
-      return;
-    }
-    const user = this.config.get<string>('SMTP_USER');
-    const pass = this.config.get<string>('SMTP_PASS');
-    if (!user || !pass) {
-      this.log.debug('SMTP_USER/SMTP_PASS missing — email skipped');
-      return;
+  }): Promise<boolean> {
+    const smtp = this.resolveSmtp();
+    if (!smtp) {
+      return false;
     }
     try {
       const nodemailer = await import('nodemailer');
       const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: Number(this.config.get('SMTP_PORT', 587)),
-        secure: false,
-        auth: { user, pass },
+        host: smtp.host,
+        port: smtp.port,
+        secure: smtp.port === 465,
+        auth: { user: smtp.user, pass: smtp.pass },
+        requireTLS: smtp.port === 587,
       });
-      await transporter.sendMail({
-        from: this.config.get<string>('SMTP_FROM'),
+      const info = await transporter.sendMail({
+        from: smtp.from,
         to: opts.to,
         subject: opts.subject,
         text: opts.text,
         html: opts.html,
       });
-    } catch (e) {
-      this.log.warn(`sendMail failed to ${opts.to}: ${e}`);
+      this.log.log(
+        `Email sent: messageId=${info.messageId} → ${opts.to} subject="${opts.subject}"`,
+      );
+      console.log('Email sent:', info.messageId, opts.to);
+      return true;
+    } catch (error) {
+      this.log.error(`Email error → ${opts.to}:`, error as Error);
+      console.error('Email error:', error);
+      return false;
     }
   }
 
@@ -81,13 +126,15 @@ export class NotificationsService {
       cityName: string;
       postal?: string | null;
     };
+    /** Livraison — shown in email */
+    shippingPhone?: string;
     locale?: string;
-  }) {
+  }): Promise<boolean> {
     if (!payload.to?.trim()) {
-      this.log.debug(
-        `Customer email skip (no address): order ${payload.orderNumber}`,
+      this.log.warn(
+        `Customer confirmation email skipped (no guestEmail): order ${payload.orderNumber}`,
       );
-      return;
+      return false;
     }
     const to = payload.to.trim();
     const linesRows = payload.lines
@@ -117,12 +164,13 @@ ${moneyRow('Livraison', `${payload.shippingMad} MAD`)}
 <tr><td style="padding:16px 28px 28px;">
 <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Livraison</p>
 <p style="margin:0;font-size:14px;color:#0f172a;">${escapeHtml(payload.address.line1)}, ${escapeHtml(payload.address.quarter)} — ${escapeHtml(payload.address.cityName)} (${escapeHtml(payload.address.cityCode)})</p>
+${payload.shippingPhone ? `<p style="margin:8px 0 0;font-size:14px;color:#0f172a;">Tél. livraison : <strong>${escapeHtml(payload.shippingPhone)}</strong></p>` : ''}
 <p style="margin:12px 0 0;font-size:13px;color:#64748b;">Paiement : ${escapeHtml(payload.paymentLabel)}</p>
 </td></tr>
 </table>
 </body></html>`;
     const text = `Commande ${payload.orderNumber}\nTotal: ${payload.totalMad} MAD\nMerci pour votre achat, ${payload.customerName}.`;
-    await this.sendMail({
+    return this.sendMail({
       to,
       subject:
         payload.locale === 'ar'
@@ -160,7 +208,7 @@ ${moneyRow('Livraison', `${payload.shippingMad} MAD`)}
       lineTotal: string;
     }[];
     couponCode?: string | null;
-  }) {
+  }): Promise<boolean> {
     const to = this.merchantInbox();
     const lineRows = payload.lines
       .map(
@@ -234,7 +282,7 @@ ${payload.couponCode ? `<br/>Coupon : <strong>${escapeHtml(payload.couponCode)}<
       .filter(Boolean)
       .join('\n');
 
-    await this.sendMail({
+    return this.sendMail({
       to,
       subject: `🛒 Nouvelle commande ${payload.orderNumber} — ${payload.totalMad} MAD`,
       text,

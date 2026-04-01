@@ -13,11 +13,14 @@ export function CheckoutCelebration({
   totalMad,
   firstName,
   whatsappUrl,
+  emailNotice,
 }: {
   orderNumber: string;
   totalMad?: string;
   firstName?: string;
   whatsappUrl?: string;
+  /** Shown when SMTP failed or guest skipped email */
+  emailNotice?: string | null;
 }) {
   const t = useTranslations("checkout");
   const locale = useLocale();
@@ -136,6 +139,14 @@ export function CheckoutCelebration({
             ) : null}
             <p className="mt-4 text-sm leading-relaxed text-[var(--muted)]">{t("successCod")}</p>
             <p className="mt-2 text-sm text-[var(--accent)]/90">{t("successEmailHint")}</p>
+            {emailNotice ? (
+              <p
+                role="status"
+                className="mt-3 rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-100"
+              >
+                {emailNotice}
+              </p>
+            ) : null}
           </motion.div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">

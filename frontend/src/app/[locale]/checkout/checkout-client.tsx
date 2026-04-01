@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations, useLocale } from "next-intl";
 import { useCart } from "@/contexts/cart-context";
 import { logApiFailure } from "@/lib/api-config";
 import { parseNestErrorMessage } from "@/lib/parse-nest-error";
+import { clearBuyNow, getBuyNow, type BuyNowPayload } from "@/lib/buy-now";
+import type { CartLine } from "@/contexts/cart-context";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { MotionLink } from "@/components/motion-link";
 import { CheckoutCelebration } from "./checkout-celebration";
@@ -62,7 +64,16 @@ export function CheckoutClient() {
     whatsapp?: string;
     totalMad?: string;
     firstName?: string;
+    emailNotice?: string | null;
   } | null>(null);
+
+  const [buyNowPayload, setBuyNowPayload] = useState<BuyNowPayload | null>(
+    null,
+  );
+
+  useEffect(() => {
+    setBuyNowPayload(getBuyNow());
+  }, []);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -93,11 +104,25 @@ export function CheckoutClient() {
   }, [apiRoot]);
 
   const items = cart?.items ?? [];
-  const shippableItems = items.filter(
-    (l) => !isOfflineProductId(l.product.id),
-  );
+
+  const shippableItems = useMemo((): CartLine[] => {
+    if (buyNowPayload) {
+      if (isOfflineProductId(buyNowPayload.snapshot.id)) return [];
+      return [
+        {
+          id: "buy-now-line",
+          quantity: buyNowPayload.quantity,
+          product: buyNowPayload.snapshot,
+        },
+      ];
+    }
+    return items.filter((l) => !isOfflineProductId(l.product.id));
+  }, [buyNowPayload, items]);
+
   const hasOnlyOfflineItems =
-    items.length > 0 && shippableItems.length === 0;
+    (buyNowPayload
+      ? isOfflineProductId(buyNowPayload.snapshot.id)
+      : items.length > 0 && shippableItems.length === 0);
 
   const canSubmit =
     shippableItems.length > 0 &&
@@ -157,11 +182,28 @@ export function CheckoutClient() {
         throw new Error(parsed || res.statusText);
       }
       const data = await res.json();
+      clearBuyNow();
+      setBuyNowPayload(null);
+      let emailNotice: string | null = null;
+      const hadEmail = guestEmail.trim().length > 0;
+      if (
+        hadEmail &&
+        data.emailStatus &&
+        data.emailStatus.customerConfirmationSent === false
+      ) {
+        emailNotice = t("emailNotSent");
+      } else if (
+        !hadEmail &&
+        data.emailStatus?.customerSkippedNoEmail
+      ) {
+        emailNotice = t("emailSkippedHint");
+      }
       setDone({
         orderNumber: data.order?.orderNumber ?? "—",
         whatsapp: data.whatsappConfirmUrl,
         totalMad: formatOrderTotal(data.order?.totalMad),
         firstName: firstName.trim() || undefined,
+        emailNotice,
       });
       await refresh();
     } catch (e: unknown) {
@@ -200,7 +242,7 @@ export function CheckoutClient() {
     }
   }
 
-  if (items.length === 0 && !done) {
+  if (shippableItems.length === 0 && !done && !buyNowPayload) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <motion.div
@@ -259,7 +301,42 @@ export function CheckoutClient() {
         <p className="mt-2 text-xs text-[var(--muted)] md:text-sm">
           {t("phoneNote")}
         </p>
+        <nav
+          className="mt-6 flex items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--press-bg)]/80 px-3 py-3 text-[11px] font-medium text-[var(--muted)] sm:text-xs"
+          aria-label={t("progressAria")}
+        >
+          <span className="flex flex-1 items-center gap-1.5 text-[var(--accent)]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-dim)] text-[var(--fg)]">
+              1
+            </span>
+            {t("progressRecap")}
+          </span>
+          <span className="text-[var(--border)]">→</span>
+          <span className="flex flex-1 justify-center gap-1.5">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--press-bg)]">
+              2
+            </span>
+            {t("progressYou")}
+          </span>
+          <span className="text-[var(--border)]">→</span>
+          <span className="flex flex-1 justify-end gap-1.5">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--press-bg)]">
+              3
+            </span>
+            {t("progressPay")}
+          </span>
+        </nav>
       </motion.header>
+
+      {buyNowPayload && shippableItems.length > 0 && !done ? (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative mb-6 rounded-2xl border border-[var(--accent)]/35 bg-[var(--accent-dim)] px-4 py-3 text-sm text-[var(--fg)]"
+        >
+          {t("buyNowBanner")}
+        </motion.div>
+      ) : null}
 
       {hasOnlyOfflineItems && !done ? (
         <motion.div
@@ -296,6 +373,7 @@ export function CheckoutClient() {
               totalMad={done.totalMad}
               firstName={done.firstName}
               whatsappUrl={done.whatsapp}
+              emailNotice={done.emailNotice}
             />
           </motion.div>
         ) : (

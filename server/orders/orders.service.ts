@@ -285,7 +285,7 @@ export class OrdersService {
       lineTotal: l.unit.mul(l.qty).toFixed(2),
     }));
 
-    await this.notify.sendOrderConfirmationEmail({
+    const customerEmailSent = await this.notify.sendOrderConfirmationEmail({
       to: dto.guestEmail,
       orderNumber: order.orderNumber,
       totalMad: total.toFixed(2),
@@ -306,9 +306,10 @@ export class OrdersService {
         cityName: zone.cityNameFr,
         postal: dto.shipping.postalCode,
       },
+      shippingPhone: guestPhone,
     });
 
-    await this.notify.sendMerchantNewOrderEmail({
+    const merchantEmailSent = await this.notify.sendMerchantNewOrderEmail({
       orderNumber: order.orderNumber,
       totalMad: total.toFixed(2),
       subtotalMad: subtotal.toFixed(2),
@@ -347,6 +348,11 @@ export class OrdersService {
       fraud: fraudResult,
       stripeClientSecret,
       whatsappConfirmUrl: whatsappAdminLink,
+      emailStatus: {
+        customerConfirmationSent: customerEmailSent,
+        merchantNotificationSent: merchantEmailSent,
+        customerSkippedNoEmail: !dto.guestEmail?.trim(),
+      },
     };
   }
 

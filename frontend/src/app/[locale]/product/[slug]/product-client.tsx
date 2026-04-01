@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MotionLink } from "@/components/motion-link";
+import { useRouter } from "@/i18n/navigation";
 import { ProductImage } from "@/components/product-image";
 import { useCart, type CartLineProduct } from "@/contexts/cart-context";
+import { setBuyNow } from "@/lib/buy-now";
 
 type Product = {
   id: string;
@@ -53,6 +55,7 @@ export function ProductClient({
   labels: Record<string, string>;
   demoMode: boolean;
 }) {
+  const router = useRouter();
   const [img, setImg] = useState(0);
   const [zoom, setZoom] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -87,6 +90,17 @@ export function ProductClient({
     }
   }
 
+  function handleBuyNow() {
+    setErr(null);
+    if (product.stock < 1) return;
+    setBuyNow({
+      productId: product.id,
+      quantity: 1,
+      snapshot: lineSnapshot(),
+    });
+    router.push("/checkout");
+  }
+
   return (
     <>
       {demoMode ? (
@@ -108,7 +122,7 @@ export function ProductClient({
             onClick={() => setZoom(true)}
             whileHover={{ scale: 1.01 }}
             transition={{ type: "spring", stiffness: 300, damping: 24 }}
-            className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-zinc-900 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.65)]"
+            className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-zinc-900 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.75)] sm:aspect-square sm:rounded-3xl sm:shadow-[0_32px_100px_-28px_rgba(0,0,0,0.8)]"
           >
             <ProductImage
               src={main}
@@ -148,6 +162,17 @@ export function ProductClient({
             <p className="mt-2 text-sm text-rose-400">{labels.lowStock}</p>
           ) : null}
           <p className="mt-2 text-xs text-[var(--muted)]">{labels.boughtBy}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full border border-[var(--accent)]/35 bg-[var(--accent-dim)] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--accent)]">
+              {labels.trustCod ?? "COD"}
+            </span>
+            <span className="rounded-full border border-[var(--border)] bg-[var(--press-bg)] px-3 py-1 text-[11px] font-medium text-[var(--muted)]">
+              {labels.trustDelivery ?? ""}
+            </span>
+            <span className="rounded-full border border-[var(--border)] bg-[var(--press-bg)] px-3 py-1 text-[11px] font-medium text-[var(--muted)]">
+              {labels.trustClients ?? ""}
+            </span>
+          </div>
           <p className="mt-6 whitespace-pre-line text-sm leading-relaxed text-[var(--muted)]">
             {description}
           </p>
@@ -158,35 +183,47 @@ export function ProductClient({
           ) : null}
           <motion.div
             layout
-            className="mt-8 flex flex-wrap items-center gap-3 border-t border-[var(--border)] bg-[var(--bg)]/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-md fixed inset-x-0 bottom-0 z-40 md:static md:border-0 md:bg-transparent md:p-0 md:pb-0 md:backdrop-blur-0"
+            className="mt-8 flex flex-col gap-3 border-t border-[var(--border)] bg-[var(--bg)]/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl fixed inset-x-0 bottom-0 z-40 md:static md:border-0 md:bg-transparent md:p-0 md:pb-0 md:backdrop-blur-0"
           >
-            <motion.button
-              type="button"
-              onClick={() => void handleAdd()}
-              disabled={adding || product.stock < 1}
-              animate={
-                addedPulse
-                  ? {
-                      scale: [1, 1.04, 1],
-                      boxShadow: [
-                        "0 0 0 0 rgba(45,212,191,0.35)",
-                        "0 0 0 14px rgba(45,212,191,0)",
-                        "0 0 0 0 rgba(45,212,191,0)",
-                      ],
-                    }
-                  : {}
-              }
-              transition={{ duration: 0.5 }}
-              whileHover={{
-                scale: adding || product.stock < 1 ? 1 : 1.02,
-                y: adding || product.stock < 1 ? 0 : -1,
-              }}
-              whileTap={{ scale: 0.97 }}
-              className="btn-primary-motion flex-1 rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-6 py-3 text-sm font-semibold text-slate-900 disabled:opacity-40 md:flex-none"
-            >
-              {adding ? "…" : labels.addToCart}
-            </motion.button>
-            <span className="hidden text-xs text-[var(--muted)] md:inline">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-stretch">
+              <motion.button
+                type="button"
+                onClick={() => void handleAdd()}
+                disabled={adding || product.stock < 1}
+                animate={
+                  addedPulse
+                    ? {
+                        scale: [1, 1.04, 1],
+                        boxShadow: [
+                          "0 0 0 0 rgba(45,212,191,0.35)",
+                          "0 0 0 14px rgba(45,212,191,0)",
+                          "0 0 0 0 rgba(45,212,191,0)",
+                        ],
+                      }
+                    : {}
+                }
+                transition={{ duration: 0.5 }}
+                whileHover={{
+                  scale: adding || product.stock < 1 ? 1 : 1.02,
+                  y: adding || product.stock < 1 ? 0 : -1,
+                }}
+                whileTap={{ scale: 0.97 }}
+                className="btn-primary-motion min-h-[48px] flex-1 rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-6 py-3.5 text-sm font-semibold text-slate-900 disabled:opacity-40"
+              >
+                {adding ? "…" : labels.addToCart}
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={product.stock < 1}
+                whileHover={{ scale: product.stock < 1 ? 1 : 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className="min-h-[48px] flex-1 rounded-full border-2 border-[var(--accent)] bg-transparent px-6 py-3.5 text-sm font-semibold text-[var(--accent)] shadow-[0_0_24px_-8px_var(--accent-glow)] disabled:opacity-40"
+              >
+                {labels.buyNow ?? "Buy now"}
+              </motion.button>
+            </div>
+            <span className="text-center text-xs text-[var(--muted)] md:text-start">
               {labels.shippingFreeHint}
             </span>
           </motion.div>

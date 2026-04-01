@@ -93,6 +93,7 @@ export function Navbar() {
   const { itemCount } = useCart();
   const otherLocale = locale === "fr" ? "ar" : "fr";
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const links = [
     { href: "/", label: t("home") },
@@ -113,6 +114,13 @@ export function Navbar() {
   useEffect(() => {
     queueMicrotask(() => setMobileOpen(false));
   }, [pathname]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -137,7 +145,7 @@ export function Navbar() {
       initial={{ y: -12, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="nav-futuristic sticky top-0 z-50 pt-[env(safe-area-inset-top)]"
+      className={`nav-futuristic sticky top-0 z-50 pt-[env(safe-area-inset-top)] transition-[box-shadow] duration-300 ${scrolled ? "nav-scrolled" : ""}`}
     >
       <div className="relative z-10 mx-auto flex max-w-6xl min-h-[52px] items-center justify-between gap-1.5 px-2 py-1.5 min-[400px]:px-3 min-[400px]:gap-2 md:min-h-0 md:gap-3 md:px-4 md:py-2">
         <MotionLink

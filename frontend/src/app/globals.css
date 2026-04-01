@@ -116,6 +116,19 @@ html[data-theme="light"] .skeleton {
   );
 }
 
+.premium-product-card {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease;
+}
+
+.premium-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 24px 48px -20px rgba(0, 0, 0, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
 .card-chrome {
   background: var(--chrome);
   border: 1px solid var(--border);
@@ -157,6 +170,18 @@ html[data-theme="light"] .nav-glass {
   background: color-mix(in srgb, #ffffff 94%, transparent);
   border-bottom-color: rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(12px) saturate(120%);
+}
+
+.nav-futuristic.nav-scrolled {
+  box-shadow:
+    0 16px 48px -16px rgba(0, 0, 0, 0.55),
+    0 -1px 0 color-mix(in srgb, var(--accent) 12%, transparent) inset;
+}
+
+html[data-theme="light"] .nav-futuristic.nav-scrolled {
+  box-shadow:
+    0 12px 36px -14px rgba(15, 23, 42, 0.14),
+    0 -1px 0 color-mix(in srgb, var(--accent) 10%, transparent) inset;
 }
 
 /* Futuristic top bar: HUD glass + accent edge */

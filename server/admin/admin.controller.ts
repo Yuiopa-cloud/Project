@@ -46,6 +46,11 @@ export class AdminController {
     });
   }
 
+  @Get('orders/:id')
+  orderById(@Param('id') id: string) {
+    return this.admin.orderById(id);
+  }
+
   @Patch('orders/:id/status')
   orderStatus(
     @Param('id') id: string,
