@@ -16,9 +16,9 @@ function moneyRow(label: string, value: string): string {
 type SmtpResolved = {
   host: string;
   port: number;
+  secure: boolean;
   user: string;
   pass: string;
-  from: string;
 };
 
 @Injectable()
@@ -27,48 +27,46 @@ export class NotificationsService {
 
   constructor(private readonly config: ConfigService) {}
 
-  private merchantInbox(): string {
-    return (
-      this.config.get<string>('ORDER_NOTIFICATION_EMAIL')?.trim() ||
-      this.config.get<string>('SMTP_USER')?.trim() ||
-      this.config.get<string>('EMAIL_USER')?.trim() ||
-      'youssefstat20@gmail.com'
-    );
+  /**
+   * Merchant notification recipient — env only (no hardcoded inbox).
+   * Prefer ORDER_NOTIFICATION_EMAIL; else same mailbox as SMTP_USER.
+   */
+  private merchantInbox(): string | null {
+    const orderNotif = this.config.get<string>('ORDER_NOTIFICATION_EMAIL')?.trim();
+    if (orderNotif) return orderNotif;
+    const smtpUser = this.config.get<string>('SMTP_USER')?.trim();
+    if (smtpUser) return smtpUser;
+    return null;
   }
 
   /**
-   * Supports SMTP_* (preferred) or EMAIL_USER / EMAIL_PASS / EMAIL_API_KEY (Gmail app password).
-   * Default host smtp.gmail.com when credentials are present but host omitted.
+   * SMTP from env: SMTP_HOST, SMTP_PORT (default 587), SMTP_USER, SMTP_PASS.
+   * Aliases: EMAIL_USER / EMAIL_PASS / EMAIL_API_KEY for auth when SMTP_* unset.
+   * From header: `"Auto Store" <SMTP_USER>` (auth user must match envelope from for many providers).
    */
   private resolveSmtp(): SmtpResolved | null {
+    const host =
+      this.config.get<string>('SMTP_HOST')?.trim() ||
+      this.config.get<string>('EMAIL_SMTP_HOST')?.trim() ||
+      '';
     const user =
       this.config.get<string>('SMTP_USER')?.trim() ||
       this.config.get<string>('EMAIL_USER')?.trim() ||
-      undefined;
+      '';
     const pass =
       this.config.get<string>('SMTP_PASS')?.trim() ||
       this.config.get<string>('EMAIL_PASS')?.trim() ||
       this.config.get<string>('EMAIL_API_KEY')?.trim() ||
-      undefined;
-    if (!user || !pass) {
+      '';
+    if (!host || !user || !pass) {
       this.log.warn(
-        'Email disabled: set SMTP_USER + SMTP_PASS (or EMAIL_USER + EMAIL_PASS / EMAIL_API_KEY) on Railway',
+        'Email disabled: set SMTP_HOST, SMTP_USER, SMTP_PASS (or EMAIL_* aliases) in environment',
       );
       return null;
     }
-    const rawHost =
-      this.config.get<string>('SMTP_HOST')?.trim() ||
-      this.config.get<string>('EMAIL_SMTP_HOST')?.trim();
-    const host = rawHost || 'smtp.gmail.com';
-    const port = Number(this.config.get('SMTP_PORT') ?? 587);
-    const fromRaw =
-      this.config.get<string>('SMTP_FROM')?.trim() ||
-      this.config.get<string>('EMAIL_FROM')?.trim();
-    const from =
-      fromRaw && fromRaw.includes('@')
-        ? fromRaw
-        : `Atlas Auto Morocco <${user}>`;
-    return { host, port, user, pass, from };
+    const port = Number(this.config.get<string>('SMTP_PORT') ?? process.env.SMTP_PORT ?? '587');
+    const secure = port === 465;
+    return { host, port, secure, user, pass };
   }
 
   private async sendMail(opts: {
@@ -79,28 +77,39 @@ export class NotificationsService {
   }): Promise<boolean> {
     const smtp = this.resolveSmtp();
     if (!smtp) {
+      console.log('SMTP config:', process.env.SMTP_HOST, process.env.SMTP_USER);
       console.log('Attempting to send email...', {
         to: opts.to,
         subject: opts.subject,
-        skipped: 'SMTP not configured (set SMTP_USER + SMTP_PASS or EMAIL_USER + EMAIL_PASS)',
+        skipped: 'SMTP not fully configured (need SMTP_HOST, SMTP_USER, SMTP_PASS)',
       });
       return false;
     }
+    console.log('SMTP config:', process.env.SMTP_HOST, process.env.SMTP_USER);
+    const host = process.env.SMTP_HOST?.trim() || smtp.host;
+    const authUser = process.env.SMTP_USER?.trim() || smtp.user;
+    const authPass = process.env.SMTP_PASS?.trim() || smtp.pass;
+    const fromHeader = `"Auto Store" <${authUser}>`;
+
     console.log('Attempting to send email...', {
       to: opts.to,
       subject: opts.subject,
+      from: fromHeader,
+      host,
+      port: smtp.port,
+      secure: smtp.secure,
     });
     try {
       const nodemailer = await import('nodemailer');
       const transporter = nodemailer.createTransport({
-        host: smtp.host,
+        host,
         port: smtp.port,
-        secure: smtp.port === 465,
-        auth: { user: smtp.user, pass: smtp.pass },
-        requireTLS: smtp.port === 587,
+        secure: smtp.secure,
+        auth: { user: authUser, pass: authPass },
+        ...(smtp.port === 587 ? { requireTLS: true } : {}),
       });
       const info = await transporter.sendMail({
-        from: smtp.from,
+        from: fromHeader,
         to: opts.to,
         subject: opts.subject,
         text: opts.text,
@@ -112,8 +121,18 @@ export class NotificationsService {
       console.log('Email sent successfully:', info);
       return true;
     } catch (error) {
-      this.log.error(`Email error → ${opts.to}:`, error as Error);
+      const err = error as Error & { response?: string; responseCode?: number };
+      this.log.error(
+        `Email sending failed → ${opts.to}: ${err?.message}`,
+        err?.stack,
+      );
       console.error('Email sending failed:', error);
+      if (err?.response !== undefined) {
+        console.error('SMTP response:', err.response);
+      }
+      if (err?.responseCode !== undefined) {
+        console.error('SMTP responseCode:', err.responseCode);
+      }
       return false;
     }
   }
@@ -224,6 +243,17 @@ ${payload.shippingPhone ? `<p style="margin:8px 0 0;font-size:14px;color:#0f172a
     couponCode?: string | null;
   }): Promise<boolean> {
     const to = this.merchantInbox();
+    if (!to) {
+      this.log.warn(
+        `Merchant new-order email skipped (set ORDER_NOTIFICATION_EMAIL or SMTP_USER): order ${payload.orderNumber}`,
+      );
+      console.log('Attempting to send email...', {
+        kind: 'merchant_new_order',
+        orderNumber: payload.orderNumber,
+        skipped: 'no ORDER_NOTIFICATION_EMAIL and no SMTP_USER',
+      });
+      return false;
+    }
     const lineRows = payload.lines
       .map(
         (l) =>
