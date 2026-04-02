@@ -86,7 +86,6 @@ export function CheckoutClient() {
   const [cityCode, setCityCode] = useState("CASA");
   const [postalCode, setPostalCode] = useState("");
   const [phoneConfirmed, setPhoneConfirmed] = useState(true);
-  const [couponCode, setCouponCode] = useState("");
   const [payment, setPayment] = useState<"CASH_ON_DELIVERY" | "STRIPE">(
     "CASH_ON_DELIVERY",
   );
@@ -156,7 +155,6 @@ export function CheckoutClient() {
         lastName: lastName.trim(),
         guestEmail: guestEmail.trim() || undefined,
         phoneConfirmed,
-        couponCode: couponCode.trim() || undefined,
         shipping: {
           line1: line1.trim(),
           quarter: quarter.trim(),
@@ -240,11 +238,6 @@ export function CheckoutClient() {
         lower.includes("stock insuffisant")
       ) {
         friendly = t("errStock");
-      } else if (
-        lower.includes("invalid coupon") ||
-        (lower.includes("coupon") && lower.includes("invalide"))
-      ) {
-        friendly = t("errCoupon");
       } else if (raw && raw.length < 400) {
         friendly = raw;
       }
@@ -447,17 +440,6 @@ export function CheckoutClient() {
                   </span>
                   {t("stepContact")}
                 </p>
-                <label className="mb-3 block text-xs text-[var(--muted)]">
-                  {t("coupon")}
-                  <motion.input
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
-                    placeholder="WELCOME10"
-                    whileFocus={{ scale: 1.005 }}
-                    transition={{ duration: 0.2 }}
-                  />
-                </label>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="block text-xs text-[var(--muted)]">
                     {t("firstName")}

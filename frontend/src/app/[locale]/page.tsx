@@ -107,7 +107,6 @@ export default async function HomePage({
         ))}
       </div>
 
-      {/* Promo strip (WELCOME10 etc.): hidden until promotions go live — reuse t("promoStrip") */}
       <p className="mt-3 text-center text-xs text-[var(--muted)] sm:text-sm">
         {t("trustSocial")}
       </p>
