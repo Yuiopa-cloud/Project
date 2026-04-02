@@ -1,17 +1,11 @@
 "use client";
 
-import { useId } from "react";
 import { motion } from "framer-motion";
 
-function svgIds(hookId: string) {
-  const safe = hookId.replace(/[^a-zA-Z0-9_-]/g, "") || "x";
-  return {
-    metal: `atlas-metal-${safe}`,
-    deep: `atlas-deep-${safe}`,
-    clip: `atlas-clip-${safe}`,
-  };
-}
-
+/**
+ * Portable Blender / Atlas mark — no SVG fragments (url(#id)), gradients, or clipPath.
+ * Those break in some production builds / browsers and leave only the two “grill” strokes visible.
+ */
 export function AtlasLogo({
   className = "",
   size = 40,
@@ -21,14 +15,13 @@ export function AtlasLogo({
   size?: number;
   withWordmark?: boolean;
 }) {
-  const { metal, deep, clip } = svgIds(useId());
   const h = size;
   const w = size * 1.05;
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <motion.div
-        className="relative isolate shrink-0 [&_svg]:block"
+        className="relative shrink-0 [&_svg]:block"
         style={{ width: w, height: h }}
         whileHover={{ scale: 1.04 }}
         transition={{ type: "spring" as const, stiffness: 400, damping: 22 }}
@@ -39,63 +32,38 @@ export function AtlasLogo({
           viewBox="0 0 48 48"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="overflow-visible drop-shadow-[0_2px_12px_rgba(45,212,191,0.22)]"
+          className="overflow-visible"
           aria-hidden
         >
-          <defs>
-            <linearGradient id={metal} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f0fdfa" />
-              <stop offset="28%" stopColor="#5eead4" />
-              <stop offset="52%" stopColor="#c4b5fd" />
-              <stop offset="78%" stopColor="#2dd4bf" />
-              <stop offset="100%" stopColor="#64748b" />
-            </linearGradient>
-            <linearGradient id={deep} x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#0f1115" />
-              <stop offset="100%" stopColor="#1e293b" />
-            </linearGradient>
-            <clipPath id={clip}>
-              <path d="M8 38 L24 8 L40 38 Z" />
-            </clipPath>
-          </defs>
           <circle
             cx="24"
             cy="24"
-            r="22"
-            stroke={`url(#${metal})`}
-            strokeWidth="1.25"
-            fill={`url(#${deep})`}
-            opacity={1}
+            r="21"
+            fill="#0f172a"
+            stroke="#2dd4bf"
+            strokeWidth="1.5"
           />
           <path
             d="M8 38 L24 8 L40 38 Z"
-            fill={`url(#${metal})`}
-            stroke={`url(#${deep})`}
-            strokeWidth="0.5"
+            fill="#0d9488"
+            stroke="#0f172a"
+            strokeWidth="0.6"
             strokeLinejoin="round"
-            opacity={1}
           />
           <path
             d="M11 32 L37 32"
-            stroke={`url(#${deep})`}
+            stroke="#0f172a"
             strokeWidth="2"
             strokeLinecap="round"
-            opacity={0.92}
+            opacity={0.95}
           />
           <path
             d="M14 29 L22 29 M26 29 L34 29"
-            stroke="rgba(45,212,191,0.55)"
+            stroke="#99f6e4"
             strokeWidth="1"
             strokeLinecap="round"
+            opacity={0.9}
           />
-          {/* Static sheen inside triangle (no blend-mode sweep — avoids navbar / duplicate-id glitches) */}
-          <g clipPath={`url(#${clip})`} opacity={0.35}>
-            <path
-              d="M-8 40 L24 -4 L56 40 Z"
-              fill="white"
-              style={{ mixBlendMode: "soft-light" }}
-            />
-          </g>
         </svg>
       </motion.div>
       {withWordmark ? (
