@@ -1,81 +1,57 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 
+const LOGO_SRC = "/brand/good-deals-logo.png";
+
 /**
- * Portable Blender / Atlas mark — no SVG fragments (url(#id)), gradients, or clipPath.
- * Those break in some production builds / browsers and leave only the two “grill” strokes visible.
+ * Good Deals brand mark (raster). Interactive shine + hover motion.
+ * `withWordmark` kept for API compatibility — artwork already includes “Good Deals” text.
  */
 export function AtlasLogo({
   className = "",
   size = 40,
-  withWordmark = true,
+  withWordmark: _withWordmark = true,
 }: {
   className?: string;
   size?: number;
   withWordmark?: boolean;
 }) {
-  const h = size;
-  const w = size * 1.05;
+  const dim = Math.max(40, Math.round(size * 1.75));
 
   return (
-    <div className={`flex items-center gap-2.5 ${className}`}>
-      <motion.div
-        className="relative shrink-0 [&_svg]:block"
-        style={{ width: w, height: h }}
-        whileHover={{ scale: 1.04 }}
-        transition={{ type: "spring" as const, stiffness: 400, damping: 22 }}
+    <motion.div
+      className={`good-deals-logo-root group relative inline-flex shrink-0 ${className}`}
+      style={{ width: dim, height: dim }}
+      initial={false}
+      whileHover={{
+        scale: 1.06,
+        rotate: [0, -1.5, 1.5, 0],
+        transition: {
+          rotate: { duration: 0.5 },
+          scale: { type: "spring", stiffness: 380, damping: 18 },
+        },
+      }}
+      whileTap={{ scale: 0.94 }}
+    >
+      <span className="good-deals-logo-glow pointer-events-none absolute inset-[-8px] rounded-2xl" aria-hidden />
+      <span className="good-deals-logo-ring pointer-events-none absolute inset-0 rounded-2xl" aria-hidden />
+      <div
+        className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl"
+        aria-hidden
       >
-        <svg
-          width={w}
-          height={h}
-          viewBox="0 0 48 48"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="overflow-visible"
-          aria-hidden
-        >
-          <circle
-            cx="24"
-            cy="24"
-            r="21"
-            fill="#0f172a"
-            stroke="#2dd4bf"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M8 38 L24 8 L40 38 Z"
-            fill="#0d9488"
-            stroke="#0f172a"
-            strokeWidth="0.6"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M11 32 L37 32"
-            stroke="#0f172a"
-            strokeWidth="2"
-            strokeLinecap="round"
-            opacity={0.95}
-          />
-          <path
-            d="M14 29 L22 29 M26 29 L34 29"
-            stroke="#99f6e4"
-            strokeWidth="1"
-            strokeLinecap="round"
-            opacity={0.9}
-          />
-        </svg>
-      </motion.div>
-      {withWordmark ? (
-        <div className="flex flex-col leading-none">
-          <span className="font-semibold tracking-[0.14em] uppercase text-[0.62rem] text-[var(--accent)] min-[400px]:text-[0.68rem]">
-            Atlas
-          </span>
-          <span className="text-sm font-bold tracking-tight text-[var(--fg)] min-[400px]:text-base md:text-lg">
-            Auto
-          </span>
-        </div>
-      ) : null}
-    </div>
+        <div className="good-deals-logo-shimmer-bar absolute inset-y-[-20%] left-0 w-[45%] bg-gradient-to-r from-transparent via-white/45 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+      </div>
+      <Image
+        src={LOGO_SRC}
+        alt="Good Deals"
+        width={512}
+        height={512}
+        className="relative z-[1] h-full w-full select-none rounded-2xl object-contain drop-shadow-[0_4px_20px_rgba(45,212,191,0.35)]"
+        priority
+        sizes={`${dim}px`}
+      />
+    </motion.div>
   );
 }

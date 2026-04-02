@@ -116,6 +116,66 @@ html[data-theme="light"] .skeleton {
   );
 }
 
+/* Good Deals logo: ambient glow + hover sweep (see atlas-logo.tsx) */
+.good-deals-logo-glow {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--accent) 55%, transparent) 0%,
+    transparent 68%
+  );
+  filter: blur(12px);
+  animation: good-deals-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes good-deals-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.88);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.06);
+  }
+}
+
+.good-deals-logo-ring {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent),
+    0 0 28px -6px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 0 48px -12px color-mix(in srgb, var(--accent-hot) 25%, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.good-deals-logo-root:hover .good-deals-logo-ring {
+  opacity: 1;
+}
+
+.good-deals-logo-root:hover .good-deals-logo-shimmer-bar {
+  animation: good-deals-sweep 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes good-deals-sweep {
+  from {
+    transform: translateX(-130%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .good-deals-logo-glow {
+    animation: none;
+    opacity: 0.55;
+  }
+  .good-deals-logo-root:hover .good-deals-logo-shimmer-bar {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 .premium-product-card {
   transition:
     transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
