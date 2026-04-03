@@ -867,17 +867,26 @@ html[data-theme="light"] .btn-primary {
 
 .checkout-input {
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.15s ease;
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
 
-.checkout-input:focus {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+.checkout-input:focus,
+.checkout-input:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
   box-shadow:
     0 0 0 3px var(--accent-dim),
-    0 6px 22px -10px var(--accent-glow-soft);
+    0 8px 28px -12px var(--accent-glow-soft),
+    0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent) inset;
   outline: none;
+  background-color: color-mix(in srgb, var(--accent) 6%, rgba(0, 0, 0, 0.2));
+}
+
+html[data-theme="light"] .checkout-input:focus,
+html[data-theme="light"] .checkout-input:focus-visible {
+  background-color: color-mix(in srgb, var(--accent) 8%, #fff);
 }
 
 .checkout-glow {

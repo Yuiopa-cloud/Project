@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations, useLocale } from "next-intl";
 import { useCart } from "@/contexts/cart-context";
@@ -89,6 +89,30 @@ export function CheckoutClient() {
   const [payment, setPayment] = useState<"CASH_ON_DELIVERY" | "STRIPE">(
     "CASH_ON_DELIVERY",
   );
+
+  const formRef = useRef<HTMLFormElement>(null);
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const lastNameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const cityRef = useRef<HTMLSelectElement>(null);
+  const line1Ref = useRef<HTMLInputElement>(null);
+  const quarterRef = useRef<HTMLInputElement>(null);
+  const postalRef = useRef<HTMLInputElement>(null);
+
+  const focusNextOnEnter =
+    (next: React.RefObject<HTMLElement | null>) =>
+    (e: React.KeyboardEvent<HTMLElement>) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      next.current?.focus();
+    };
+
+  const submitFormOnEnter = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    formRef.current?.requestSubmit();
+  };
 
   useEffect(() => {
     const url = `${apiRoot}/delivery-zones`;
@@ -384,6 +408,7 @@ export function CheckoutClient() {
         ) : (
           <motion.form
             key="form"
+            ref={formRef}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -12 }}
@@ -444,9 +469,14 @@ export function CheckoutClient() {
                   <label className="block text-xs text-[var(--muted)]">
                     {t("firstName")}
                     <motion.input
+                      ref={firstNameRef}
                       required
+                      name="firstName"
+                      enterKeyHint="next"
+                      autoComplete="given-name"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
+                      onKeyDown={focusNextOnEnter(lastNameRef)}
                       className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
                       whileFocus={{ scale: 1.005 }}
                       transition={{ duration: 0.2 }}
@@ -455,9 +485,14 @@ export function CheckoutClient() {
                   <label className="block text-xs text-[var(--muted)]">
                     {t("lastName")}
                     <motion.input
+                      ref={lastNameRef}
                       required
+                      name="lastName"
+                      enterKeyHint="next"
+                      autoComplete="family-name"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
+                      onKeyDown={focusNextOnEnter(emailRef)}
                       className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
                       whileFocus={{ scale: 1.005 }}
                       transition={{ duration: 0.2 }}
@@ -467,9 +502,15 @@ export function CheckoutClient() {
                 <label className="mt-3 block text-xs text-[var(--muted)]">
                   {t("email")}
                   <motion.input
+                    ref={emailRef}
                     type="email"
+                    name="email"
+                    enterKeyHint="next"
+                    inputMode="email"
+                    autoComplete="email"
                     value={guestEmail}
                     onChange={(e) => setGuestEmail(e.target.value)}
+                    onKeyDown={focusNextOnEnter(phoneRef)}
                     className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
                     whileFocus={{ scale: 1.005 }}
                     transition={{ duration: 0.2 }}
@@ -478,9 +519,16 @@ export function CheckoutClient() {
                 <label className="mt-3 block text-xs text-[var(--muted)]">
                   {t("phone")}
                   <motion.input
+                    ref={phoneRef}
+                    type="tel"
+                    name="phone"
                     required
+                    enterKeyHint="next"
+                    inputMode="tel"
+                    autoComplete="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                    onKeyDown={focusNextOnEnter(cityRef)}
                     placeholder="0612345678"
                     className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
                     whileFocus={{ scale: 1.005 }}
@@ -500,32 +548,14 @@ export function CheckoutClient() {
                   {t("stepAddress")}
                 </p>
                 <label className="block text-xs text-[var(--muted)]">
-                  {t("address.line1")}
-                  <motion.input
-                    required
-                    value={line1}
-                    onChange={(e) => setLine1(e.target.value)}
-                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
-                    whileFocus={{ scale: 1.005 }}
-                    transition={{ duration: 0.2 }}
-                  />
-                </label>
-                <label className="mt-3 block text-xs text-[var(--muted)]">
-                  {t("address.quarter")}
-                  <motion.input
-                    required
-                    value={quarter}
-                    onChange={(e) => setQuarter(e.target.value)}
-                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
-                    whileFocus={{ scale: 1.005 }}
-                    transition={{ duration: 0.2 }}
-                  />
-                </label>
-                <label className="mt-3 block text-xs text-[var(--muted)]">
                   {t("address.city")}
                   <motion.select
+                    ref={cityRef}
+                    name="cityCode"
+                    enterKeyHint="next"
                     value={cityCode}
                     onChange={(e) => setCityCode(e.target.value)}
+                    onKeyDown={focusNextOnEnter(line1Ref)}
                     className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
                   >
                     {zones.length === 0 ? (
@@ -542,10 +572,48 @@ export function CheckoutClient() {
                   </motion.select>
                 </label>
                 <label className="mt-3 block text-xs text-[var(--muted)]">
+                  {t("address.line1")}
+                  <motion.input
+                    ref={line1Ref}
+                    name="addressLine1"
+                    required
+                    enterKeyHint="next"
+                    autoComplete="street-address"
+                    value={line1}
+                    onChange={(e) => setLine1(e.target.value)}
+                    onKeyDown={focusNextOnEnter(quarterRef)}
+                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
+                    whileFocus={{ scale: 1.005 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                </label>
+                <label className="mt-3 block text-xs text-[var(--muted)]">
+                  {t("address.quarter")}
+                  <motion.input
+                    ref={quarterRef}
+                    name="quarter"
+                    required
+                    enterKeyHint="next"
+                    autoComplete="address-level2"
+                    value={quarter}
+                    onChange={(e) => setQuarter(e.target.value)}
+                    onKeyDown={focusNextOnEnter(postalRef)}
+                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
+                    whileFocus={{ scale: 1.005 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                </label>
+                <label className="mt-3 block text-xs text-[var(--muted)]">
                   {t("address.postal")}
                   <motion.input
+                    ref={postalRef}
+                    name="postalCode"
+                    enterKeyHint="done"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
+                    onKeyDown={submitFormOnEnter}
                     className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
                     whileFocus={{ scale: 1.005 }}
                     transition={{ duration: 0.2 }}
