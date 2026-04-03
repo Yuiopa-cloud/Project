@@ -1,9 +1,9 @@
 /**
  * Shared API base helpers — safe to import from Client Components (no `next/headers`).
  *
- * - Browser code should use {@link clientApiRoot} (`/api-proxy`) so requests stay same-origin;
- *   `next.config` rewrites `/api-proxy/*` → Railway (via `NEXT_PUBLIC_API_URL` or `BACKEND_PROXY_URL`).
- * - Server Components use `./get-server-api-root.ts` (direct API URL when env is set, else request host).
+ * - Browser: {@link clientApiRoot} uses `NEXT_PUBLIC_API_URL` when set (direct `…/api` base, CORS on API);
+ *   otherwise same-origin `/api-proxy` (rewritten by `next.config`).
+ * - Server Components use `./get-server-api-root.ts` (env first, then proxy host, then dev fallback).
  */
 
 /** Dev-only fallback when no env and no request host (e.g. local `next dev`). */
@@ -29,10 +29,12 @@ export function apiBaseFromBackendProxy(): string | null {
 export const normalizeEnvBase = normalizeApiBaseFromEnv;
 
 /**
- * Client Components: always same-origin `/api-proxy` (dev + prod). Avoids CORS and mixed-content
- * issues. Requires `NEXT_PUBLIC_API_URL` or `BACKEND_PROXY_URL` on Vercel so rewrites target Railway.
+ * Client Components: if `NEXT_PUBLIC_API_URL` is set, returns that API root (…/api) for direct fetches.
+ * Otherwise same-origin `/api-proxy` (production / default dev rewrite to backend).
  */
 export function clientApiRoot(): string {
+  const fromEnv = normalizeApiBaseFromEnv();
+  if (fromEnv) return fromEnv;
   return "/api-proxy";
 }
 
