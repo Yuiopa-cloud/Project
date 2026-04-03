@@ -176,6 +176,60 @@ html[data-theme="light"] .skeleton {
   }
 }
 
+/* Top shipping promo — infinite marquee (see top-announcement-marquee.tsx) */
+@keyframes top-announcement-marquee-ltr {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.top-announcement-marquee-track {
+  animation: top-announcement-marquee-ltr 38s linear infinite;
+}
+
+html[dir="rtl"] .top-announcement-marquee-track {
+  animation-direction: reverse;
+}
+
+.top-announcement-marquee-mask {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 5%,
+    #000 95%,
+    transparent
+  );
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top-announcement-marquee-track {
+    animation: none;
+    transform: none;
+    justify-content: center;
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  .top-announcement-marquee-mask {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .top-announcement-marquee-track span:last-child {
+    display: none;
+  }
+
+  .top-announcement-marquee-track span:first-child {
+    padding-inline: 1rem;
+    text-align: center;
+    white-space: normal;
+  }
+}
+
 .premium-product-card {
   transition:
     transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),

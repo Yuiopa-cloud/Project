@@ -4,6 +4,7 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Navbar } from "@/components/navbar";
+import { TopAnnouncementMarquee } from "@/components/top-announcement-marquee";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleHtmlAttributes } from "@/components/locale-html";
 import { CartProvider } from "@/contexts/cart-context";
@@ -51,6 +52,7 @@ export default async function LocaleLayout({
       <ThemeProvider>
         <CartProvider>
           <div className="flex min-h-dvh min-h-full flex-col">
+            <TopAnnouncementMarquee />
             <Navbar />
             <main className="min-w-0 flex-1 pb-[max(0px,env(safe-area-inset-bottom))]">
               {children}

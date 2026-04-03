@@ -3,6 +3,10 @@
   "footer": {
     "trustBadgesAlt": "Engagements : qualité premium, garantie satisfait ou remboursé, paiement à la livraison, livraison gratuite."
   },
+  "announcement": {
+    "shipping": "30DH — FREE SHIPPING ALL OVER MOROCCO",
+    "shippingLong": "30 DH : livraison gratuite partout au Maroc."
+  },
   "nav": {
     "home": "Accueil",
     "shop": "Boutique",

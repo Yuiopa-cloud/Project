@@ -148,7 +148,7 @@ export function Navbar() {
       initial={{ y: -12, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className={`nav-futuristic sticky top-0 z-50 pt-[env(safe-area-inset-top)] transition-[box-shadow] duration-300 ${scrolled ? "nav-scrolled" : ""}`}
+      className={`nav-futuristic sticky top-[calc(env(safe-area-inset-top)+2.5rem)] z-50 sm:top-[calc(env(safe-area-inset-top)+2.75rem)] transition-[box-shadow] duration-300 ${scrolled ? "nav-scrolled" : ""}`}
     >
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-2">
         <div className="flex h-14 items-center justify-between md:hidden">
