@@ -8,6 +8,9 @@ const FALLBACK = [
   "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?w=600&q=80",
   "https://images.unsplash.com/photo-1486754735734-325b5831c3ad?w=600&q=80",
   "https://images.unsplash.com/photo-1619405399517-d7fce0f13302?w=600&q=80",
+  "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=600&q=80",
+  "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&q=80",
+  "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=600&q=80",
 ];
 
 function FloatInner({
@@ -42,12 +45,12 @@ function FloatInner({
 
 export function LandingHeroShowcase({ imageUrls }: { imageUrls: string[] }) {
   const urls =
-    imageUrls.length > 0 ? imageUrls.slice(0, 5) : FALLBACK.slice(0, 3);
+    imageUrls.length > 0 ? imageUrls.slice(0, 12) : FALLBACK;
 
-  const slots = [0, 1, 2, 3, 4].map((i) => urls[i % urls.length]);
+  const slots = [0, 1, 2, 3, 4, 5].map((i) => urls[i % urls.length]);
 
   return (
-    <div className="relative mx-auto aspect-[4/3] max-h-[min(420px,56svh)] w-full max-w-lg lg:max-w-none lg:translate-x-4">
+    <div className="relative mx-auto aspect-[4/3] max-h-[min(480px,58svh)] w-full max-w-lg lg:max-w-none lg:translate-x-4">
       <motion.div
         className="absolute left-[6%] top-[8%] z-30 h-[44%] w-[52%] overflow-hidden rounded-2xl border border-[var(--border)] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.55)]"
         initial={{ opacity: 0, y: 24, rotate: -2 }}
@@ -93,6 +96,30 @@ export function LandingHeroShowcase({ imageUrls }: { imageUrls: string[] }) {
         <div className="relative h-full w-full bg-zinc-900">
           <FloatInner delay={0.75} amplitude={4}>
             <ProductImage src={slots[3]} alt="" fill />
+          </FloatInner>
+        </div>
+      </motion.div>
+      <motion.div
+        className="absolute right-[2%] top-[4%] z-[28] h-[22%] w-[30%] overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--accent)_25%,var(--border))] shadow-[0_12px_32px_-14px_rgba(0,0,0,0.45)]"
+        initial={{ opacity: 0, scale: 0.85, rotate: 4 }}
+        animate={{ opacity: 1, scale: 1, rotate: 4 }}
+        transition={{ type: "spring" as const, stiffness: 300, damping: 26, delay: 0.32 }}
+      >
+        <div className="relative h-full w-full bg-zinc-900">
+          <FloatInner delay={0.5} amplitude={5}>
+            <ProductImage src={slots[4]} alt="" fill className="scale-110" />
+          </FloatInner>
+        </div>
+      </motion.div>
+      <motion.div
+        className="absolute left-[2%] top-[38%] z-[15] h-[20%] w-[26%] overflow-hidden rounded-lg border border-[var(--border)] opacity-85 shadow-md"
+        initial={{ opacity: 0, x: -12 }}
+        animate={{ opacity: 0.88, x: 0 }}
+        transition={{ delay: 0.36, duration: 0.48 }}
+      >
+        <div className="relative h-full w-full bg-zinc-900">
+          <FloatInner delay={0.9} amplitude={3}>
+            <ProductImage src={slots[5]} alt="" fill />
           </FloatInner>
         </div>
       </motion.div>

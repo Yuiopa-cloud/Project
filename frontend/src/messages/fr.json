@@ -23,8 +23,8 @@
   },
   "home": {
     "heroKicker": "Good Deals · Maroc",
-    "heroTitle": "L’excellence auto, en toute simplicité.",
-    "heroSub": "Pièces choisies, livraison nationale.",
+    "heroTitle": "Quand votre voiture mérite le meilleur.",
+    "heroSub": "Des milliers d’accessoires sélectionnés — qualité premium, prix justes, livraison partout au Maroc et paiement à la réception.",
     "ctaOrder": "Commander maintenant",
     "ctaWhatsApp": "WhatsApp",
     "offerToday": "Offre spéciale aujourd’hui",
@@ -70,7 +70,14 @@
     "testimonial1": "« Livraison rapide à Casa, tapis impeccables sur mon SUV. »",
     "testimonial1Author": "Mehdi R. — Casablanca",
     "testimonial2": "« Équipe réactive, colis ultra bien protégé. »",
-    "testimonial2Author": "Salma K. — Rabat"
+    "testimonial2Author": "Salma K. — Rabat",
+    "galleryTitle": "Une vitrine qui ne s’arrête jamais",
+    "gallerySub": "Parcourez des rangées de produits choisis pour le style, le confort et la longévité — autant de raisons de personnaliser votre véhicule.",
+    "wowEyebrow": "L’expérience Good Deals",
+    "wowTitle": "Conçu pour surprendre, pensé pour durer.",
+    "wowBody": "Chaque détail compte : finitions soignées, emballage protecteur, et une équipe à l’écoute sur WhatsApp. Ce n’est pas qu’un achat — c’est le plaisir d’ouvrir un colis qui en vaut la peine.",
+    "wowCta": "Explorer la boutique",
+    "catalogPreviewNote": "Aperçu catalogue — connectez-vous à la boutique pour la sélection complète."
   },
   "shop": {
     "title": "Boutique",
@@ -171,8 +178,7 @@
     "title": "Console Atlas",
     "revenue": "Chiffre d’affaires approx.",
     "fraud": "Dossiers fraude",
-    "loginSubtitle": "Interface contrôle Atlas Auto — accès sécurisé.",
-    "loginHint": "Mot de passe = variable Railway ADMIN_PANEL_PASSWORD (sans variable, défaut 16061606). Ce n’est pas le mot de passe du compte seed (Admin123!). Si erreur « aucun ADMIN », lancez sur Railway : npx prisma db seed",
+    "loginSubtitle": "Accès réservé à l’équipe — connexion sécurisée.",
     "loginPlaceholder": "Mot de passe panneau admin",
     "loginCta": "Connexion",
     "loginLoading": "…"

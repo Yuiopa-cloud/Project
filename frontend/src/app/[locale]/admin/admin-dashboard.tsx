@@ -331,10 +331,7 @@ export function AdminDashboard() {
           <p className="relative mt-2 text-center text-sm text-[var(--muted)]">
             {tAdmin("loginSubtitle")}
           </p>
-          <p className="relative mt-3 text-center text-xs leading-relaxed text-[var(--muted)]">
-            {tAdmin("loginHint")}
-          </p>
-          <form onSubmit={login} className="relative mt-6 space-y-3">
+          <form onSubmit={login} className="relative mt-8 space-y-3">
             <input
               type="password"
               value={password}

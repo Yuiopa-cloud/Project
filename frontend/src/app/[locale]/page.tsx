@@ -11,6 +11,8 @@ import { HomeSocialProof } from "@/components/home-social-proof";
 import { LandingHeroShowcase } from "@/components/landing-hero-showcase";
 import { MobileStickyCta } from "@/components/mobile-sticky-cta";
 import { ScrollReveal } from "@/components/scroll-reveal";
+import { HomeInspirationBand } from "@/components/home-inspiration-band";
+import { HomeProductGallery } from "@/components/home-product-gallery";
 import { WHATSAPP_CHAT_URL } from "@/lib/site-contact";
 
 /** Avoid caching an empty "Tendances" block from build-time when the API was off. */
@@ -21,17 +23,17 @@ async function getTrending(): Promise<{
   isFallback: boolean;
 }> {
   const r = await serverFetchApiJson<ProductList>(
-    "/products?sort=popular&take=8",
+    "/products?sort=popular&take=24",
   );
   if (!r.ok) {
     console.error("[home] trending fetch failed", r.url, r.status, r.cause);
-    return { items: TRENDING_FALLBACK.slice(0, 4), isFallback: true };
+    return { items: TRENDING_FALLBACK.slice(0, 8), isFallback: true };
   }
   const data = r.data;
   if (!data.items?.length) {
-    return { items: TRENDING_FALLBACK.slice(0, 4), isFallback: true };
+    return { items: TRENDING_FALLBACK.slice(0, 8), isFallback: true };
   }
-  return { items: data.items.slice(0, 8), isFallback: false };
+  return { items: data.items.slice(0, 24), isFallback: false };
 }
 
 export default async function HomePage({
@@ -45,7 +47,8 @@ export default async function HomePage({
 
   const heroShots = items
     .map((p) => p.images?.[0])
-    .filter((x): x is string => Boolean(x));
+    .filter((x): x is string => Boolean(x))
+    .slice(0, 14);
 
   const categories = [
     { slug: "interieur", label: t("catInterior") },
@@ -61,7 +64,13 @@ export default async function HomePage({
   ];
 
   const featuredProduct = items[0];
-  const railItems = items.length > 1 ? items.slice(1) : [];
+  const railItems = items.length > 1 ? items.slice(1, 8) : [];
+  const galleryProducts =
+    items.length > 10
+      ? items.slice(8, 24)
+      : items.length > 5
+        ? items.slice(5)
+        : items;
 
   const reviews = [t("socialReview1"), t("socialReview2"), t("socialReview3")] as [
     string,
@@ -70,7 +79,7 @@ export default async function HomePage({
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-32 pt-8 sm:px-6 md:px-8 md:pb-28 md:pt-12 lg:px-10">
+    <div className="mx-auto max-w-7xl px-4 pb-32 pt-8 sm:px-6 md:px-8 md:pb-28 md:pt-12 lg:px-10">
       <section className="premium-hero-shell relative px-5 py-12 sm:px-8 sm:py-14 md:px-12 md:py-20">
         <div className="premium-hero-aurora" aria-hidden />
 
@@ -122,6 +131,8 @@ export default async function HomePage({
           ))}
         </div>
       </ScrollReveal>
+
+      <HomeInspirationBand />
 
       <section className="mt-20 md:mt-24">
         <ScrollReveal className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -187,13 +198,13 @@ export default async function HomePage({
           />
         ) : null}
         {isFallback ? (
-          <p className="mt-4 text-center text-xs text-[var(--accent)]/85">
-            {locale === "ar"
-              ? "معاينة ثابتة — لتفعيل البيانات الحية شغّل الـ API ثم npm run db:seed في backend."
-              : "Aperçu catalogue (API indisponible) — démarrez le backend puis `npm run db:seed` pour prix & stocks réels."}
+          <p className="mt-6 text-center text-sm text-[var(--muted)]">
+            {t("catalogPreviewNote")}
           </p>
         ) : null}
       </section>
+
+      <HomeProductGallery products={galleryProducts} locale={locale} />
 
       <MobileStickyCta label={t("ctaOrder")} href="/shop" />
     </div>
