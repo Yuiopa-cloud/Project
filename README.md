@@ -6,14 +6,14 @@ Plateforme e-commerce **production-oriented** pour accessoires automobile au Mar
 
 - **Frontend** : Next.js 16 (App Router), Tailwind CSS 4, Framer Motion, `next-intl` (FR + AR + RTL), PWA manifest.
 - **Backend** : NestJS 11, Prisma 6, PostgreSQL, JWT + refresh, rôles `CUSTOMER` / `ADMIN`.
-- **Données** : schéma complet dans `backend/prisma/schema.prisma` (indexes inclus).
+- **Données** : schéma complet dans `prisma/schema.prisma` (indexes inclus).
 - **Déploiement cible** : Vercel (web) · Railway / Render (API) · Neon / Supabase (Postgres).
 
 Documentation détaillée : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Déploiement Vercel (frontend)
 
-Dans le projet Vercel, définir **Root Directory** sur `frontend` (Settings → General → Root Directory). Le dépôt contient aussi l’API Nest à la racine (`server/`, `package.json`) : sans ce réglage, Vercel tente une détection « serveur Node » sur la racine et échoue avec *No entrypoint found*. L’API se déploie séparément (ex. Railway).
+Dans le projet Vercel, définir **Root Directory** sur `frontend` (Settings → General → Root Directory). Le dépôt contient aussi l’API Nest à la racine (`server/`, `prisma/`, `package.json`) : sans ce réglage, Vercel tente une détection « serveur Node » sur la racine et échoue avec *No entrypoint found*. L’API se déploie séparément (ex. Railway). **Production** (ex. `dabashop.store`) : ne merger sur `main` qu’après validation locale ou sur **preview** ; variables d’environnement Production sur Vercel pointent vers l’API Railway, jamais vers `localhost`.
 
 ## Prérequis
 
@@ -28,56 +28,73 @@ Dans le projet Vercel, définir **Root Directory** sur `frontend` (Settings → 
 docker compose up -d postgres
 ```
 
-Copiez `backend/.env.example` vers `backend/.env` et ajustez `DATABASE_URL`, par exemple :
+Copiez `.env.example` vers `.env` à la **racine du dépôt** et ajustez `DATABASE_URL`, par exemple :
 
 ```env
 DATABASE_URL="postgresql://postgres:1606@localhost:5432/WEBWEB?schema=public"
 JWT_SECRET="change-me-to-a-long-random-string"
 JWT_EXPIRES_SEC=900
-JWT_REFRESH_EXPIRES_DAYS=7
-FRONTEND_URL=http://localhost:3000
+JWT_REFRESH_EXPIRES_IN="7d"
+FRONTEND_URL="http://localhost:3000,http://127.0.0.1:3000"
+PORT=4000
 ```
 
-### 2. API (NestJS)
+### 2. API (NestJS) — racine du dépôt
 
 ```bash
-cd backend
 npm install
 ```
 
 Créez les **tables** dans votre base (obligatoire sur une base vide ou erreur *Internal server error* / Prisma `P2021`) :
 
 ```bash
-# À la racine du dépôt (recommandé) :
 npm run db:push
-npm run db:seed
-
-# ou depuis backend/ :
-npx prisma db push
 npm run db:seed
 ```
 
-Puis pour lancer l’API seule : `npm run start:dev` dans `backend/`.
-
-- Swagger : http://localhost:4000/api/docs  
-- Health : http://localhost:4000/api/health  
-
-### 3. Site + API (une commande)
-
-À la **racine du dépôt** (pas dans `frontend/` seul) :
+Puis lancer l’API en mode développement :
 
 ```bash
+npm run start:dev
+```
+
+- API : **http://localhost:4000** (défaut ; surcharger avec `PORT=3001` si besoin)  
+- Swagger : http://localhost:4000/api/docs  
+- Préfixe global : `/api/…`
+
+### 3. Frontend (Next.js)
+
+```bash
+cd frontend
 npm install
-cd backend && npm install && cd ..
-cd frontend && npm install && cd ..
 npm run dev
 ```
 
-Cela lance **Nest sur le port 4000** et **Next sur le 3000** en même temps. L’URL : http://localhost:3000 (redirige vers `/fr`).
+- App : **http://localhost:3000** (locale par défaut : `/fr`)
 
-Pour **seulement** le site (sans API / sans admin) : `npm run dev:frontend`.
+Depuis la **racine**, raccourcis :
 
-Pour **seulement** l’API : `npm run dev:backend`.
+```bash
+npm run dev:backend    # Nest --watch (port 4000 par défaut)
+npm run dev:frontend   # Next dev sur le port 3000
+```
+
+Utilisez **deux terminaux** : backend d’abord (ou en parallèle), puis frontend. Sans API locale, Next affichera des erreurs de proxy vers `127.0.0.1:4000`.
+
+**Connexion front → API locale** : le navigateur appelle `/api-proxy/…`. Sans variable, Next réécrit vers `http://127.0.0.1:4000/api/…`. Si l’API tourne sur un autre port, créez `frontend/.env.local` :
+
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:3001
+```
+
+Puis redémarrez `npm run dev` dans `frontend/`. Voir `frontend/.env.example`.
+
+## Workflow Git & environnements (ne pas casser la prod)
+
+1. Créer une branche : `git checkout -b dev` (ou `feature/…`).
+2. Développer et tester **localement** (API + Next).
+3. Pousser la branche → **Vercel** génère une **Preview** (URL dédiée) : vérifier l’UI sans impacter le domaine production.
+4. Merger vers `main` uniquement quand c’est validé ; Vercel déploie alors la **Production** (ex. `dabashop.store`).
 
 ### Comptes seed
 
@@ -90,7 +107,7 @@ Pour **seulement** l’API : `npm run dev:backend`.
 
 **Backend** : `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_SEC`, `JWT_REFRESH_EXPIRES_DAYS`, `FRONTEND_URL`, `SMTP_*`, `WHATSAPP_*`, `STRIPE_SECRET_KEY`, `LOYALTY_POINTS_PER_10_MAD`.
 
-**Frontend** : `NEXT_PUBLIC_API_URL`.
+**Frontend** : `NEXT_PUBLIC_API_URL` / `BACKEND_PROXY_URL` (rewrites `/api-proxy` vers l’API). En local, optionnel si l’API est sur `127.0.0.1:4000`.
 
 ## API — exemples (`curl`)
 
@@ -137,15 +154,17 @@ curl -s http://localhost:4000/api/admin/dashboard \
 
 ## Tests & qualité
 
-- Backend : `cd backend && npm test` (ex. `fraud.service.spec.ts`).
+- Backend : `npm test` à la racine (ex. `fraud.service.spec.ts`).
 - Optimisation : activer cache Redis (à ajouter), CDN images, monitoring Sentry — décrits dans `docs/ARCHITECTURE.md`.
 
 ## Structure du dépôt
 
 ```text
-backend/        # NestJS + Prisma
-frontend/       # Next.js
+server/         # Code source NestJS (bootstrap: server/main.ts)
+prisma/         # Schéma Prisma, seed, scripts
+frontend/       # Next.js (App Router, next-intl)
 docs/           # Architecture
+package.json    # Scripts API (racine)
 docker-compose.yml
 .github/workflows/ci.yml
 ```

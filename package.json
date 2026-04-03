@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "dev:backend": "nest start --watch",
+    "dev:frontend": "npm run dev --prefix frontend",
     "build": "nest build",
     "prestart": "node -e \"if(!process.env.DATABASE_URL){console.error('Missing DATABASE_URL in environment. Add it in Railway Variables.');process.exit(1)}\"",
     "start": "npm run start:railway",
