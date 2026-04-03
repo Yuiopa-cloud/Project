@@ -1,5 +1,8 @@
 {
   "brand": "Good Deals",
+  "footer": {
+    "trustBadgesAlt": "Engagements : qualité premium, garantie satisfait ou remboursé, paiement à la livraison, livraison gratuite."
+  },
   "nav": {
     "home": "Accueil",
     "shop": "Boutique",

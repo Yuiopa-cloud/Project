@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { AtlasLogo } from "./atlas-logo";
 import { MotionLink } from "@/components/motion-link";
 import { IconInstagram } from "@/components/icon-instagram";
@@ -11,6 +13,9 @@ import {
 } from "@/lib/site-contact";
 
 export function SiteFooter() {
+  const t = useTranslations();
+  const tFooter = useTranslations("footer");
+
   return (
     <motion.footer
       initial={{ opacity: 0 }}
@@ -66,8 +71,20 @@ export function SiteFooter() {
           </div>
         </div>
       </div>
+      <div className="relative mx-auto mt-10 w-full max-w-3xl px-2">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)]/40 px-4 py-5 shadow-inner backdrop-blur-sm dark:bg-black/20">
+          <Image
+            src="/brand/trust-badges.png"
+            alt={tFooter("trustBadgesAlt")}
+            width={790}
+            height={241}
+            className="mx-auto h-auto w-full max-h-20 object-contain opacity-95 sm:max-h-24 md:max-h-[5.5rem] dark:brightness-[1.08] dark:contrast-[1.02]"
+            sizes="(max-width: 768px) 100vw, 672px"
+          />
+        </div>
+      </div>
       <p className="relative mt-8 text-center text-[0.65rem] text-[var(--muted)]">
-        © {new Date().getFullYear()} Atlas Auto · Maroc
+        © {new Date().getFullYear()} {t("brand")} · Maroc
       </p>
     </motion.footer>
   );
