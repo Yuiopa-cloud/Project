@@ -1,6 +1,7 @@
 {
   "brand": "Good Deals",
   "footer": {
+    "tagline": "Accessoires premium · Maroc · Livraison & paiement sécurisés.",
     "trustBadgesAlt": "Engagements : qualité premium, garantie satisfait ou remboursé, paiement à la livraison, livraison gratuite."
   },
   "announcement": {
@@ -21,14 +22,14 @@
     "drawerTitle": "Navigation"
   },
   "home": {
-    "heroKicker": "Accessoires auto premium au Maroc",
-    "heroTitle": "Performance. Style. Protection.",
-    "heroSub": "Pièces soignées, livraison par ville, paiement à la livraison disponible.",
-    "heroHighlight": "Livraison nationale · COD · Conseil WhatsApp",
+    "heroKicker": "Good Deals · Maroc",
+    "heroTitle": "L’excellence auto, en toute simplicité.",
+    "heroSub": "Pièces choisies, livraison au Maroc. Payez à votre rythme.",
+    "heroHighlight": "Livraison nationale · Paiement à la livraison",
     "ctaShop": "Découvrir la boutique",
-    "ctaWhatsApp": "Parler sur WhatsApp",
-    "trending": "Tendances",
-    "trendingSub": "Le meilleur du catalogue en ce moment — passez la souris sur le bandeau pour ralentir.",
+    "ctaWhatsApp": "WhatsApp",
+    "trending": "Sélection",
+    "trendingSub": "Les références du moment.",
     "categories": "Catégories",
     "categoryExplore": "Explorer",
     "catInterior": "Intérieur & confort",

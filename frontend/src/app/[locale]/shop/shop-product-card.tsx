@@ -86,7 +86,7 @@ export function ShopProductCard({
             disabled={product.stock < 1 || adding}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="absolute bottom-3 end-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hot)] text-lg font-bold text-slate-900 shadow-[0_8px_28px_-6px_var(--accent-glow)] disabled:opacity-40"
+            className="absolute bottom-3 end-3 z-10 flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--primary-from)] to-[var(--primary-to)] text-lg font-bold leading-none text-[#f8fafc] shadow-[0_10px_32px_-8px_color-mix(in_srgb,var(--primary-mid)_40%,transparent)] disabled:opacity-40"
             aria-label={t("quickAddAria")}
           >
             {adding ? <MiniSpinner className="h-4 w-4 border-2" /> : "+"}

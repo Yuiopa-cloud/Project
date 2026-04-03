@@ -11,7 +11,7 @@ export default function LocaleTemplate({ children }: { children: ReactNode }) {
   return (
     <motion.div
       key={pathname}
-      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 14 }}
       animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
       transition={{
         duration: reduce ? 0.2 : 0.32,

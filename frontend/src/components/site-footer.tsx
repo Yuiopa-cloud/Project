@@ -22,16 +22,15 @@ export function SiteFooter() {
       whileInView={{ opacity: 1 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6 }}
-      className="relative mt-20 overflow-hidden border-t border-[var(--border)] bg-[var(--footer-bg)] px-3 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-12 md:px-4"
+      className="relative mt-24 overflow-hidden border-t border-[var(--glass-border)] bg-[var(--footer-bg)] px-4 py-12 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-14 md:px-6"
     >
       <div className="footer-aurora pointer-events-none absolute inset-0" />
       <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-6 text-center md:flex-row md:justify-between md:text-start">
         <MotionLink href="/" className="flex items-center gap-3 rounded-xl">
           <AtlasLogo size={48} />
         </MotionLink>
-        <p className="max-w-sm text-xs leading-relaxed text-[var(--muted)]">
-          Accessoires automobile premium — livraison au Maroc, paiement à la
-          livraison, service client WhatsApp.
+        <p className="max-w-sm text-sm leading-relaxed text-[var(--muted)]">
+          {tFooter("tagline")}
         </p>
         <div className="flex flex-col items-center gap-5 md:items-end">
           <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-[var(--muted)] md:justify-end">
@@ -53,7 +52,7 @@ export function SiteFooter() {
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noreferrer"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] text-[var(--muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)] hover:shadow-[0_0_20px_-8px_var(--accent-glow)]"
+              className="flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--muted)] backdrop-blur-md transition hover:border-[var(--accent)]/35 hover:text-[var(--accent)] hover:shadow-[0_0_24px_-8px_var(--accent-glow)]"
               aria-label="Instagram @ysf._.xfk"
               title="Instagram @ysf._.xfk"
             >
@@ -63,7 +62,7 @@ export function SiteFooter() {
               href={WHATSAPP_CHAT_URL}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full border border-[var(--border)] px-3 py-1.5 text-[0.65rem] font-semibold text-[var(--muted)] transition hover:border-[#25D366]/50 hover:text-[#25D366]"
+              className="min-h-[44px] rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-sm font-semibold text-[var(--muted)] backdrop-blur-md transition hover:border-[#25D366]/50 hover:text-[#25D366]"
             >
               WhatsApp
             </a>
@@ -72,7 +71,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="relative mx-auto mt-10 w-full max-w-3xl px-2">
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)]/40 px-4 py-5 shadow-inner backdrop-blur-sm dark:bg-black/20">
+        <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-5 shadow-inner backdrop-blur-xl">
           <Image
             src="/brand/trust-badges.png"
             alt={tFooter("trustBadgesAlt")}

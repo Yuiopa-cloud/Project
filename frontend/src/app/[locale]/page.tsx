@@ -45,10 +45,10 @@ export default async function HomePage({
     .filter((x): x is string => Boolean(x));
 
   const categories = [
-    { slug: "interieur", label: t("catInterior"), emoji: "🛋️" },
-    { slug: "exterieur", label: t("catExterior"), emoji: "✨" },
-    { slug: "performance", label: t("catPerformance"), emoji: "⚡" },
-    { slug: "entretien", label: t("catCare"), emoji: "🧽" },
+    { slug: "interieur", label: t("catInterior") },
+    { slug: "exterieur", label: t("catExterior") },
+    { slug: "performance", label: t("catPerformance") },
+    { slug: "entretien", label: t("catCare") },
   ];
 
   const stats = [
@@ -57,26 +57,18 @@ export default async function HomePage({
     { label: t("statRating"), value: t("statRatingVal") },
   ];
 
-  const benefits = [
-    { title: t("why1Title"), body: t("why1Body") },
-    { title: t("why2Title"), body: t("why2Body") },
-    { title: t("why3Title"), body: t("why3Body") },
-  ];
-
   return (
-    <div className="mx-auto max-w-6xl px-3 pb-24 pt-6 sm:px-4 md:pt-10">
-      <section className="card-chrome relative overflow-hidden rounded-2xl px-4 py-10 sm:rounded-3xl sm:px-6 sm:py-12 md:px-10 md:py-16">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--accent)]/18 via-transparent to-[var(--accent-hot)]/14" />
-        <div className="pointer-events-none absolute -right-32 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-[var(--accent-hot)]/10 blur-3xl" />
+    <div className="mx-auto max-w-6xl px-4 pb-28 pt-8 sm:px-6 md:px-8 md:pt-12 lg:px-10">
+      <section className="premium-hero-shell relative px-5 py-12 sm:px-8 sm:py-14 md:px-12 md:py-20">
+        <div className="premium-hero-aurora" aria-hidden />
 
-        <div className="relative grid items-center gap-12 lg:grid-cols-2 lg:gap-8">
+        <div className="relative grid items-center gap-14 lg:grid-cols-2 lg:gap-12 xl:gap-16">
           <HomeHeroMotion
             heroKicker={t("heroKicker")}
             heroTitle={t("heroTitle")}
             heroSub={t("heroSub")}
             heroHighlight={t("heroHighlight")}
             trustCod={t("trustCod")}
-            trustShip={t("trustShip")}
             trustWarranty={t("trustWarranty")}
           >
             <HomeHeroCtas
@@ -89,55 +81,51 @@ export default async function HomePage({
         </div>
       </section>
 
-      <ScrollReveal className="mt-10">
-        <div className="grid gap-4 rounded-2xl border border-[var(--border)] bg-[var(--press-bg)]/50 p-5 sm:grid-cols-3 sm:p-6">
+      <ScrollReveal className="mt-12 md:mt-16">
+        <div className="card-chrome grid gap-8 rounded-2xl p-8 sm:grid-cols-3 sm:p-10">
           {stats.map((s) => (
             <div key={s.label} className="text-center sm:text-start">
-              <p className="text-2xl font-bold tracking-tight text-[var(--accent)] md:text-3xl">
+              <p className="font-display text-2xl font-semibold tracking-tight text-[color-mix(in_srgb,var(--accent)_90%,var(--primary-mid))] md:text-3xl">
                 {s.value}
               </p>
-              <p className="mt-1 text-sm text-[var(--muted)]">{s.label}</p>
+              <p className="mt-2 text-sm text-[var(--muted)]">{s.label}</p>
             </div>
           ))}
         </div>
       </ScrollReveal>
 
-      <ScrollReveal className="mt-3" y={12}>
-        <p className="text-center text-xs text-[var(--muted)] sm:text-sm">
-          {t("trustSocial")}
-        </p>
-      </ScrollReveal>
-
-      <section className="mt-16 md:mt-20">
-        <ScrollReveal className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-[var(--fg)] md:text-2xl">
+      <section className="mt-20 md:mt-24">
+        <ScrollReveal className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-2">
+            <h2 className="font-display text-2xl font-semibold text-[var(--fg)] md:text-3xl">
               {t("categories")}
             </h2>
-            <p className="mt-1 text-sm text-[var(--muted)]">
+            <p className="max-w-md text-sm text-[var(--muted)]">
               {t("categoryExplore")}
             </p>
           </div>
           <Link
             href="/shop"
-            className="btn-secondary inline-flex w-fit text-sm md:self-end"
+            className="btn-secondary inline-flex w-full min-h-[3.25rem] sm:w-fit md:self-end"
           >
             {t("shopAll")}
           </Link>
         </ScrollReveal>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {categories.map((c, i) => (
             <ScrollReveal key={c.slug} delay={i * 0.06} y={18}>
               <Link
                 href={`/shop?category=${c.slug}`}
-                className="card-chrome group relative block overflow-hidden rounded-2xl p-5 transition"
+                className="card-chrome group relative block overflow-hidden rounded-2xl p-6 transition md:p-8"
               >
-                <span className="text-3xl">{c.emoji}</span>
-                <p className="mt-3 font-semibold text-[var(--fg)] group-hover:text-[var(--accent)]">
+                <p className="font-display text-lg font-semibold tracking-tight text-[var(--fg)] transition group-hover:text-[var(--accent)] md:text-xl">
                   {c.label}
                 </p>
-                <span className="mt-2 inline-flex text-xs font-medium text-[var(--accent)] opacity-80 group-hover:opacity-100">
-                  {t("categoryExplore")} →
+                <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-[var(--muted)] transition group-hover:text-[var(--accent)]">
+                  {t("categoryExplore")}
+                  <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
+                    →
+                  </span>
                 </span>
               </Link>
             </ScrollReveal>
@@ -145,32 +133,12 @@ export default async function HomePage({
         </div>
       </section>
 
-      <section className="mt-16 md:mt-20">
-        <ScrollReveal>
-          <h2 className="text-xl font-semibold text-[var(--fg)] md:text-2xl">
-            {t("whyTitle")}
-          </h2>
-        </ScrollReveal>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {benefits.map((b, i) => (
-            <ScrollReveal key={b.title} delay={i * 0.08} y={22}>
-              <div className="card-chrome rounded-2xl p-5 transition hover:border-[var(--accent)]/30">
-                <p className="font-semibold text-[var(--fg)]">{b.title}</p>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-                  {b.body}
-                </p>
-              </div>
-            </ScrollReveal>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-16 md:mt-20">
-        <ScrollReveal className="mb-4 md:mb-6">
-          <h2 className="text-xl font-semibold text-[var(--fg)] md:text-2xl">
+      <section className="mt-20 md:mt-28">
+        <ScrollReveal className="mb-6 md:mb-8">
+          <h2 className="font-display text-2xl font-semibold text-[var(--fg)] md:text-3xl">
             {t("trending")}
           </h2>
-          <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)] md:text-base">
             {t("trendingSub")}
           </p>
         </ScrollReveal>
@@ -188,29 +156,29 @@ export default async function HomePage({
         ) : null}
       </section>
 
-      <section className="mt-16 md:mt-20">
+      <section className="mt-20 md:mt-28">
         <ScrollReveal>
-          <h2 className="mb-6 text-xl font-semibold text-[var(--fg)] md:text-2xl">
+          <h2 className="mb-8 font-display text-2xl font-semibold text-[var(--fg)] md:text-3xl">
             {t("testimonials")}
           </h2>
         </ScrollReveal>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <ScrollReveal delay={0.05} y={20}>
-            <figure className="card-chrome rounded-2xl p-6">
-              <blockquote className="text-sm leading-relaxed text-[var(--fg)]">
+            <figure className="card-chrome rounded-2xl p-8 md:p-10">
+              <blockquote className="text-base font-normal leading-relaxed text-[var(--fg)]">
                 {t("testimonial1")}
               </blockquote>
-              <figcaption className="mt-4 text-xs font-medium text-[var(--accent)]">
+              <figcaption className="mt-6 text-xs font-medium uppercase tracking-wider text-[var(--accent)]">
                 {t("testimonial1Author")}
               </figcaption>
             </figure>
           </ScrollReveal>
           <ScrollReveal delay={0.12} y={20}>
-            <figure className="card-chrome rounded-2xl p-6">
-              <blockquote className="text-sm leading-relaxed text-[var(--fg)]">
+            <figure className="card-chrome rounded-2xl p-8 md:p-10">
+              <blockquote className="text-base font-normal leading-relaxed text-[var(--fg)]">
                 {t("testimonial2")}
               </blockquote>
-              <figcaption className="mt-4 text-xs font-medium text-[var(--accent)]">
+              <figcaption className="mt-6 text-xs font-medium uppercase tracking-wider text-[var(--accent)]">
                 {t("testimonial2Author")}
               </figcaption>
             </figure>

@@ -8,10 +8,10 @@ const MotionI18nLink = motion.create(Link);
 
 const tap = { scale: 0.95 };
 const hover = {
-  scale: 1.05,
+  scale: 1.04,
   y: -2,
   boxShadow:
-    "0 14px 40px -14px var(--accent-glow), 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent)",
+    "0 16px 44px -14px color-mix(in srgb, var(--primary-mid) 35%, transparent), 0 0 36px -16px var(--accent-glow), 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent)",
 };
 const transition = { type: "spring" as const, stiffness: 380, damping: 26 };
 

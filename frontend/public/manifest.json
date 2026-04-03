@@ -4,8 +4,8 @@
   "description": "Accessoires automobile premium au Maroc",
   "start_url": "/fr",
   "display": "standalone",
-  "background_color": "#0a1628",
-  "theme_color": "#5eead4",
+  "background_color": "#050508",
+  "theme_color": "#6366f1",
   "lang": "fr",
   "icons": [
     {

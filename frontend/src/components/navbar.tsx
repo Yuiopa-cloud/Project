@@ -100,7 +100,6 @@ export function Navbar() {
   const desktopLinks = [
     { href: "/", label: t("home") },
     { href: "/shop", label: t("shop") },
-    { href: "/faq", label: locale === "fr" ? "A propos" : "من نحن" },
     { href: "/contact", label: t("contact") },
   ];
   const mobileLinks = [

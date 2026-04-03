@@ -209,11 +209,11 @@ export function ProductClient({
                   y: adding || product.stock < 1 ? 0 : -1,
                 }}
                 whileTap={{ scale: 0.97 }}
-                className="btn-primary-motion min-h-[48px] flex-1 rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-6 py-3.5 text-sm font-semibold text-slate-900 disabled:opacity-40"
+                className="btn-primary-motion min-h-[52px] flex-1 rounded-2xl bg-gradient-to-r from-[var(--primary-from)] via-[var(--primary-mid)] to-[var(--primary-to)] px-6 py-3.5 text-sm font-semibold text-[#f8fafc] disabled:opacity-40"
               >
                 {adding ? (
                   <MiniSpinner
-                    className="h-5 w-5 border-2 border-slate-900/85 border-t-transparent"
+                    className="h-5 w-5 border-2 border-[#f8fafc]/85 border-t-transparent"
                     label={String(labels.addToCart)}
                   />
                 ) : (
@@ -226,7 +226,7 @@ export function ProductClient({
                 disabled={product.stock < 1}
                 whileHover={{ scale: product.stock < 1 ? 1 : 1.02 }}
                 whileTap={{ scale: 0.97 }}
-                className="min-h-[48px] flex-1 rounded-full border-2 border-[var(--accent)] bg-transparent px-6 py-3.5 text-sm font-semibold text-[var(--accent)] shadow-[0_0_24px_-8px_var(--accent-glow)] disabled:opacity-40"
+                className="min-h-[52px] flex-1 rounded-2xl border-2 border-[color-mix(in_srgb,var(--primary-mid)_55%,var(--glass-border))] bg-[var(--glass-bg)] px-6 py-3.5 text-sm font-semibold text-[var(--fg)] shadow-[0_0_24px_-10px_color-mix(in_srgb,var(--primary-mid)_25%,transparent)] backdrop-blur-md disabled:opacity-40"
               >
                 {labels.buyNow ?? "Buy now"}
               </motion.button>
