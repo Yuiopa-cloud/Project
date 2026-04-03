@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTranslations, useLocale } from "next-intl";
 import { useCart } from "@/contexts/cart-context";
 import { logApiFailure } from "@/lib/api-config";
@@ -11,8 +11,6 @@ import type { CartLine } from "@/contexts/cart-context";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { MotionLink } from "@/components/motion-link";
 import { useRouter } from "@/i18n/navigation";
-import { CheckoutCelebration } from "./checkout-celebration";
-
 type Zone = {
   cityCode: string;
   cityNameFr: string;
@@ -61,14 +59,6 @@ export function CheckoutClient() {
   const [zones, setZones] = useState<Zone[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [done, setDone] = useState<{
-    orderNumber: string;
-    whatsapp?: string;
-    totalMad?: string;
-    firstName?: string;
-    emailNotice?: string | null;
-  } | null>(null);
-
   const [buyNowPayload, setBuyNowPayload] = useState<BuyNowPayload | null>(
     null,
   );
@@ -208,8 +198,6 @@ export function CheckoutClient() {
       if (!data?.success) {
         throw new Error("Order failed");
       }
-      clearBuyNow();
-      setBuyNowPayload(null);
       let emailNotice: string | null = null;
       const hadEmail = guestEmail.trim().length > 0;
       if (
@@ -226,19 +214,26 @@ export function CheckoutClient() {
       }
       const orderNumber = data.order?.orderNumber ?? "—";
       const totalMad = formatOrderTotal(data.order?.totalMad);
-      setDone({
-        orderNumber,
-        whatsapp: data.whatsappConfirmUrl,
-        totalMad,
-        firstName: firstName.trim() || undefined,
-        emailNotice,
-      });
-      await refresh();
-      router.push(
-        `/thank-you?orderNumber=${encodeURIComponent(orderNumber)}${
-          totalMad ? `&totalMad=${encodeURIComponent(totalMad)}` : ""
-        }`,
-      );
+      try {
+        sessionStorage.setItem(
+          "thankYouMeta",
+          JSON.stringify({
+            whatsappUrl: data.whatsappConfirmUrl ?? null,
+            emailNotice,
+            firstName: firstName.trim() || undefined,
+          }),
+        );
+      } catch {
+        /* private mode or quota */
+      }
+      const qs = new URLSearchParams();
+      qs.set("orderNumber", orderNumber);
+      if (totalMad) qs.set("totalMad", totalMad);
+      qs.set("payment", payment);
+      router.push(`/thank-you?${qs.toString()}`);
+      clearBuyNow();
+      setBuyNowPayload(null);
+      void refresh();
     } catch (e: unknown) {
       logApiFailure("checkout submit", e);
       console.error("[checkout] submit error", e);
@@ -271,7 +266,7 @@ export function CheckoutClient() {
     }
   }
 
-  if (shippableItems.length === 0 && !done && !buyNowPayload) {
+  if (shippableItems.length === 0 && !buyNowPayload) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <motion.div
@@ -357,7 +352,7 @@ export function CheckoutClient() {
         </nav>
       </motion.header>
 
-      {buyNowPayload && shippableItems.length > 0 && !done ? (
+      {buyNowPayload && shippableItems.length > 0 ? (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -367,7 +362,7 @@ export function CheckoutClient() {
         </motion.div>
       ) : null}
 
-      {hasOnlyOfflineItems && !done ? (
+      {hasOnlyOfflineItems ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -387,34 +382,13 @@ export function CheckoutClient() {
         </motion.div>
       ) : null}
 
-      <AnimatePresence mode="wait">
-        {done ? (
-          <motion.div
-            key="ok"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
-            className="relative"
-          >
-            <CheckoutCelebration
-              orderNumber={done.orderNumber}
-              totalMad={done.totalMad}
-              firstName={done.firstName}
-              whatsappUrl={done.whatsapp}
-              emailNotice={done.emailNotice}
-            />
-          </motion.div>
-        ) : (
-          <motion.form
-            key="form"
-            ref={formRef}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -12 }}
-            onSubmit={submit}
-            className="relative space-y-6"
-          >
+      <motion.form
+        ref={formRef}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        onSubmit={submit}
+        className="relative space-y-6"
+      >
             <motion.div
               variants={stagger}
               initial="hidden"
@@ -739,9 +713,7 @@ export function CheckoutClient() {
                 </span>
               </motion.button>
             </motion.div>
-          </motion.form>
-        )}
-      </AnimatePresence>
+      </motion.form>
     </div>
   );
 }
