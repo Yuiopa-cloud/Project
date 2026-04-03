@@ -10,6 +10,7 @@ import { clearBuyNow, getBuyNow, type BuyNowPayload } from "@/lib/buy-now";
 import type { CartLine } from "@/contexts/cart-context";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { MotionLink } from "@/components/motion-link";
+import { trackEvent } from "@/lib/analytics";
 import { useRouter } from "@/i18n/navigation";
 type Zone = {
   cityCode: string;
@@ -65,6 +66,10 @@ export function CheckoutClient() {
 
   useEffect(() => {
     setBuyNowPayload(getBuyNow());
+  }, []);
+
+  useEffect(() => {
+    trackEvent("begin_checkout", {});
   }, []);
 
   const [firstName, setFirstName] = useState("");
@@ -214,6 +219,14 @@ export function CheckoutClient() {
       }
       const orderNumber = data.order?.orderNumber ?? "—";
       const totalMad = formatOrderTotal(data.order?.totalMad);
+      const totalAmount = totalMad
+        ? Number.parseFloat(String(totalMad).replace(",", "."))
+        : NaN;
+      trackEvent("purchase", {
+        value: Number.isFinite(totalAmount) ? totalAmount : 0,
+        currency: "MAD",
+        transaction_id: orderNumber,
+      });
       try {
         sessionStorage.setItem(
           "thankYouMeta",

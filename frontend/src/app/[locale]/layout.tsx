@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleHtmlAttributes } from "@/components/locale-html";
 import { CartProvider } from "@/contexts/cart-context";
 import { SiteFooter } from "@/components/site-footer";
+import { GoogleAnalytics } from "@/components/google-analytics";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://atlas-auto.ma"),
@@ -51,6 +52,7 @@ export default async function LocaleLayout({
       <LocaleHtmlAttributes locale={locale} dir={dir} />
       <ThemeProvider>
         <CartProvider>
+          <GoogleAnalytics />
           <div className="flex min-h-dvh min-h-full flex-col">
             <TopAnnouncementMarquee />
             <Navbar />
