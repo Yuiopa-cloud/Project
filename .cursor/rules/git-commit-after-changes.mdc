@@ -1,5 +1,5 @@
 ---
-description: After making code changes, stage, commit, and push to origin
+description: After making code changes, stage and commit locally; never push unless the user asks
 alwaysApply: true
 ---
 
@@ -10,8 +10,9 @@ When you **finish** a user request that involved editing project files:
 1. Run `git status` to see what changed.
 2. If there are changes: `git add` the relevant files (or `git add .` when the whole change set should ship).
 3. `git commit -m "<concise message>"` — one commit per completed request, or separate commits only when the user asked for logically distinct deliverables.
-4. `git push` to the current branch’s `origin` remote (typically `main`), unless the user asked not to push or push fails (then explain and stop).
+
+**Push:** Do **not** run `git push` unless the user **explicitly** asks you to push (e.g. “push”, “push to origin”). If they only asked for code changes, stop after commit and summarize what’s committed locally.
 
 Do **not** create empty commits unless the user explicitly asks. If there is nothing to commit, say so.
 
-Skip push only when the user forbids it or when there is no remote / no network.
+If the user asks not to commit, skip `git add` / `git commit` as well. If there is no remote or push fails after they asked to push, explain and stop.
