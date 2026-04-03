@@ -15,7 +15,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaymentMethod } from '@prisma/client';
 
-class CheckoutLineDto {
+export class CheckoutLineDto {
   @ApiProperty()
   @IsString()
   productId!: string;

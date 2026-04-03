@@ -12,7 +12,7 @@ import {
 } from '@prisma/client';
 import { nanoid } from 'nanoid';
 import { PrismaService } from '../prisma/prisma.service';
-import { CheckoutDto } from './dto/checkout.dto';
+import { CheckoutDto, CheckoutLineDto } from './dto/checkout.dto';
 import { FraudService } from './fraud.service';
 import { NotificationsService } from '../integrations/notifications.service';
 import { StripeService } from '../integrations/stripe.service';
@@ -45,7 +45,7 @@ export class OrdersService {
     if (!zone)
       throw new BadRequestException('Unknown or inactive delivery zone');
 
-    const productIds = dto.items.map((i) => i.productId);
+    const productIds = dto.items.map((i: CheckoutLineDto) => i.productId);
     const products = await this.prisma.product.findMany({
       where: { id: { in: productIds }, isActive: true },
     });
