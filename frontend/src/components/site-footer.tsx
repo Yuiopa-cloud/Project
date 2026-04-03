@@ -71,7 +71,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="relative mx-auto mt-10 w-full max-w-3xl px-2">
-        <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-5 shadow-inner backdrop-blur-xl">
+        <div className="rounded-2xl border border-[color-mix(in_srgb,var(--accent)_14%,var(--glass-border))] bg-[var(--glass-bg)] px-4 py-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_16px_40px_-28px_rgba(0,0,0,0.25)] backdrop-blur-xl">
           <Image
             src="/brand/trust-badges.png"
             alt={tFooter("trustBadgesAlt")}

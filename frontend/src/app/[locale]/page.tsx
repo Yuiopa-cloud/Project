@@ -105,14 +105,19 @@ export default async function HomePage({
         />
       </div>
 
-      <ScrollReveal className="mt-10 md:mt-12">
-        <div className="card-chrome grid gap-8 rounded-2xl p-8 sm:grid-cols-3 sm:p-10">
+        <ScrollReveal className="mt-10 md:mt-12">
+        <div className="card-chrome grid gap-8 rounded-2xl p-8 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-[var(--border)]/70 sm:p-10">
           {stats.map((s) => (
-            <div key={s.label} className="text-center sm:text-start">
+            <div
+              key={s.label}
+              className="text-center sm:px-6 sm:text-start md:px-8"
+            >
               <p className="font-display text-2xl font-semibold tracking-tight text-[color-mix(in_srgb,var(--accent)_90%,var(--primary-mid))] md:text-3xl">
                 {s.value}
               </p>
-              <p className="mt-2 text-sm text-[var(--muted)]">{s.label}</p>
+              <p className="mt-2 text-sm leading-snug text-[var(--muted)]">
+                {s.label}
+              </p>
             </div>
           ))}
         </div>
@@ -121,7 +126,7 @@ export default async function HomePage({
       <section className="mt-20 md:mt-24">
         <ScrollReveal className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2">
-            <h2 className="font-display text-2xl font-semibold text-[var(--fg)] md:text-3xl">
+            <h2 className="section-headline text-2xl text-[var(--fg)] md:text-3xl">
               {t("categories")}
             </h2>
             <p className="max-w-md text-sm text-[var(--muted)]">
@@ -140,7 +145,7 @@ export default async function HomePage({
             <ScrollReveal key={c.slug} delay={i * 0.06} y={18}>
               <Link
                 href={`/shop?category=${c.slug}`}
-                className="card-chrome group relative block overflow-hidden rounded-2xl p-6 transition md:p-8"
+                className="card-chrome premium-category-tile group relative block overflow-hidden rounded-2xl p-6 md:p-8"
               >
                 <p className="font-display text-lg font-semibold tracking-tight text-[var(--fg)] transition group-hover:text-[var(--accent)] md:text-xl">
                   {c.label}
@@ -159,7 +164,7 @@ export default async function HomePage({
 
       <section className="mt-20 md:mt-28">
         <ScrollReveal className="mb-6 md:mb-8">
-          <h2 className="font-display text-2xl font-semibold text-[var(--fg)] md:text-3xl">
+          <h2 className="section-headline text-2xl text-[var(--fg)] md:text-3xl">
             {t("trending")}
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)] md:text-base">

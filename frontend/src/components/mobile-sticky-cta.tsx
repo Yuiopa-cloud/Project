@@ -11,7 +11,7 @@ export function MobileStickyCta({
 }) {
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-[44] border-t border-[var(--glass-border)] bg-[color-mix(in_srgb,var(--bg)_82%,transparent)] px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
+      className="mobile-cta-dock fixed inset-x-0 bottom-0 z-[44] border-t border-[var(--glass-border)] bg-[color-mix(in_srgb,var(--bg)_86%,transparent)] px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
       role="region"
       aria-label={label}
     >

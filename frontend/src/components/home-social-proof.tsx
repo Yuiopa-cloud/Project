@@ -23,10 +23,13 @@ export function HomeSocialProof({
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div>
-          <p className="text-lg tracking-tight text-amber-400" aria-label={starsLabel}>
+          <p
+            className="stars-premium font-medium"
+            aria-label={starsLabel}
+          >
             ★★★★★
           </p>
-          <p className="font-display mt-2 text-lg font-semibold text-[var(--fg)] md:text-xl">
+          <p className="font-display mt-2 text-lg font-semibold tracking-tight text-[var(--fg)] md:text-xl">
             {headline}
           </p>
         </div>
@@ -34,7 +37,7 @@ export function HomeSocialProof({
           {reviews.map((text, i) => (
             <motion.li
               key={i}
-              className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-3 text-sm leading-snug text-[var(--muted)] backdrop-blur-md md:px-3.5 md:py-3.5"
+              className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-3 text-sm leading-snug text-[var(--muted)] shadow-[0_8px_28px_-18px_rgba(0,0,0,0.35)] backdrop-blur-md transition-shadow duration-300 hover:border-[color-mix(in_srgb,var(--accent)_25%,var(--glass-border))] hover:shadow-[0_12px_36px_-16px_color-mix(in_srgb,var(--primary-mid)_22%,transparent)] md:px-3.5 md:py-3.5"
               whileHover={{ y: -3, transition: { duration: 0.22 } }}
             >
               “{text}”

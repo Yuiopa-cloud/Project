@@ -355,6 +355,99 @@ html[data-theme="light"] .card-chrome:hover {
     0 12px 32px -14px color-mix(in srgb, var(--primary-mid) 12%, rgba(0, 0, 0, 0.08));
 }
 
+/* Social proof / rating stars — premium gradient (no emoji font dependency) */
+.stars-premium {
+  font-size: 1.125rem;
+  letter-spacing: 0.06em;
+  background: linear-gradient(
+    105deg,
+    #fcd34d 0%,
+    #fbbf24 35%,
+    #fde68a 55%,
+    #f59e0b 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, #fbbf24 35%, transparent));
+}
+
+html[data-theme="light"] .stars-premium {
+  filter: drop-shadow(0 1px 2px rgba(245, 158, 11, 0.25));
+}
+
+/* Home category tiles — soft lift + accent sweep on hover */
+.premium-category-tile {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease;
+}
+
+.premium-category-tile::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 70%, transparent),
+    color-mix(in srgb, var(--primary-mid) 60%, transparent),
+    transparent
+  );
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: scaleX(0.6);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .premium-category-tile:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+      0 22px 48px -22px rgba(0, 0, 0, 0.55),
+      0 0 56px -24px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
+  .premium-category-tile:hover::after {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+html[data-theme="light"] .premium-category-tile:hover {
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.95) inset,
+    0 16px 40px -18px color-mix(in srgb, var(--primary-mid) 14%, rgba(0, 0, 0, 0.06));
+}
+
+/* Mobile sticky CTA — subtle top highlight + depth */
+.mobile-cta-dock {
+  box-shadow:
+    0 -1px 0 0 color-mix(in srgb, var(--accent) 12%, var(--glass-border)),
+    0 -20px 48px -24px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="light"] .mobile-cta-dock {
+  box-shadow:
+    0 -1px 0 0 rgba(15, 23, 42, 0.06),
+    0 -12px 36px -18px rgba(15, 23, 42, 0.08);
+}
+
+/* Shop & long-form pages — section headline rhythm */
+.section-headline {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
 .nav-glass {
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   border-bottom: 1px solid var(--border);

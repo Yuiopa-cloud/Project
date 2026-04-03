@@ -59,7 +59,7 @@ export default async function ShopPage({
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-12">
       {apiFailed ? (
         <div
           role="alert"
@@ -81,15 +81,17 @@ export default async function ShopPage({
           {t("catalogEmpty")}
         </div>
       ) : null}
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--fg)]">{t("title")}</h1>
+      <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-1">
+          <h1 className="section-headline text-3xl text-[var(--fg)] sm:text-4xl">
+            {t("title")}
+          </h1>
           <p className="text-sm text-[var(--muted)]">
             {total} {usingFallback ? t("previewCount") : "SKU"}
           </p>
         </div>
         <form
-          className="flex w-full flex-col gap-2 sm:max-w-none sm:flex-row sm:flex-wrap"
+          className="card-chrome flex w-full max-w-2xl flex-col gap-3 rounded-2xl p-4 sm:max-w-none sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center md:max-w-none md:justify-end md:p-5"
           action={locale ? `/${locale}/shop` : "/fr/shop"}
           method="get"
         >
@@ -97,12 +99,12 @@ export default async function ShopPage({
             name="q"
             placeholder={t("search")}
             defaultValue={sp.q}
-            className="min-h-11 w-full min-w-0 rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-base text-[var(--fg)] placeholder:text-[var(--muted)] sm:min-w-[200px] sm:flex-1 sm:text-sm"
+            className="checkout-input min-h-11 w-full min-w-0 rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-base text-[var(--fg)] placeholder:text-[var(--muted)] sm:min-w-[180px] sm:flex-1 sm:text-sm"
           />
           <select
             name="sort"
             defaultValue={sp.sort ?? "popular"}
-            className="min-h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-base text-[var(--fg)] sm:w-auto sm:min-w-[9.5rem] sm:text-sm"
+            className="checkout-input min-h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-base text-[var(--fg)] sm:w-auto sm:min-w-[9.5rem] sm:text-sm"
           >
             <option value="new">New</option>
             <option value="popular">Popular</option>
@@ -111,14 +113,14 @@ export default async function ShopPage({
           </select>
           <button
             type="submit"
-            className="btn-primary-motion min-h-11 w-full rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-4 py-2.5 text-sm font-semibold text-slate-900 sm:w-auto"
+            className="btn-primary-motion min-h-11 w-full rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_8px_28px_-12px_var(--accent-glow)] sm:w-auto"
           >
             {t("filters")}
           </button>
         </form>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
         {items.map((p, i) => (
           <ShopProductCard key={p.id} product={p} locale={locale} index={i} />
         ))}
