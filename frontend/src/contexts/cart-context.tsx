@@ -43,6 +43,8 @@ type CartContextValue = {
   cart: CartModel | null;
   loading: boolean;
   itemCount: number;
+  /** Increments after each successful add — drive cart icon micro-animation. */
+  addBumpSeq: number;
   refresh: () => Promise<void>;
   addItem: (
     productId: string,
@@ -83,6 +85,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [serverCart, setServerCart] = useState<CartModel | null>(null);
   const [localLines, setLocalLines] = useState<CartLine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addBumpSeq, setAddBumpSeq] = useState(0);
+
+  const bumpCart = useCallback(() => {
+    setAddBumpSeq((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     setLocalLines(readLocalLines());
@@ -163,6 +170,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           persistLocalLines(next);
           return next;
         });
+        bumpCart();
         return;
       }
 
@@ -191,8 +199,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(STORAGE_KEY, next.guestToken);
       }
       setServerCart(next);
+      bumpCart();
     },
-    [apiRoot],
+    [apiRoot, bumpCart],
   );
 
   const setQty = useCallback(
@@ -241,6 +250,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     cart,
     loading,
     itemCount,
+    addBumpSeq,
     refresh,
     addItem,
     setQty,

@@ -59,12 +59,6 @@ html {
   }
 }
 
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
 @keyframes chip-pulse {
   0%,
   100% {
@@ -94,25 +88,34 @@ html[data-theme="light"] body {
   background-attachment: scroll;
 }
 
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .skeleton {
   position: relative;
   overflow: hidden;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    rgba(255, 255, 255, 0.08) 45%,
-    rgba(255, 255, 255, 0.03) 100%
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.12) 42%,
+    rgba(255, 255, 255, 0.04) 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.4s ease infinite;
+  animation: skeleton-shimmer 1.35s ease-in-out infinite;
 }
 
 html[data-theme="light"] .skeleton {
   background: linear-gradient(
     90deg,
-    rgba(0, 0, 0, 0.04) 0%,
-    rgba(0, 0, 0, 0.07) 45%,
-    rgba(0, 0, 0, 0.04) 100%
+    rgba(0, 0, 0, 0.05) 0%,
+    rgba(0, 0, 0, 0.09) 42%,
+    rgba(0, 0, 0, 0.05) 100%
   );
 }
 
@@ -236,11 +239,13 @@ html[dir="rtl"] .top-announcement-marquee-track {
     box-shadow 0.35s ease;
 }
 
-.premium-product-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 24px 48px -20px rgba(0, 0, 0, 0.45),
-    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+@media (hover: hover) {
+  .premium-product-card:hover {
+    box-shadow:
+      0 28px 56px -22px rgba(0, 0, 0, 0.52),
+      0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent),
+      0 0 52px -18px var(--accent-glow-soft);
+  }
 }
 
 .card-chrome {
@@ -290,12 +295,14 @@ html[data-theme="light"] .nav-glass {
   box-shadow:
     0 16px 48px -16px rgba(0, 0, 0, 0.55),
     0 -1px 0 color-mix(in srgb, var(--accent) 12%, transparent) inset;
+  backdrop-filter: blur(28px) saturate(180%);
 }
 
 html[data-theme="light"] .nav-futuristic.nav-scrolled {
   box-shadow:
     0 12px 36px -14px rgba(15, 23, 42, 0.14),
     0 -1px 0 color-mix(in srgb, var(--accent) 10%, transparent) inset;
+  backdrop-filter: blur(20px) saturate(150%);
 }
 
 /* Futuristic top bar: HUD glass + accent edge */

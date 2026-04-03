@@ -8,6 +8,7 @@ import type { ProductList } from "@/lib/api";
 import { useCart, type CartLineProduct } from "@/contexts/cart-context";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { useTranslations } from "next-intl";
+import { MiniSpinner } from "@/components/mini-spinner";
 
 export function ShopProductCard({
   product,
@@ -60,6 +61,7 @@ export function ShopProductCard({
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.45, delay: Math.min(index * 0.04, 0.4) }}
       className="group/card relative"
+      whileHover={{ y: -5, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } }}
     >
       <MotionLink
         href={`/product/${product.slug}`}
@@ -70,7 +72,7 @@ export function ShopProductCard({
             src={product.images?.[0]}
             alt={title}
             fill
-            className="transition duration-700 group-hover/card:scale-110"
+            className="transition duration-700 ease-out group-hover/card:scale-[1.08]"
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--bg)]/70 via-transparent to-transparent opacity-60 transition group-hover/card:opacity-90" />
           {product.lowStock ? (
@@ -87,7 +89,7 @@ export function ShopProductCard({
             className="absolute bottom-3 end-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hot)] text-lg font-bold text-slate-900 shadow-[0_8px_28px_-6px_var(--accent-glow)] disabled:opacity-40"
             aria-label={t("quickAddAria")}
           >
-            {adding ? "…" : "+"}
+            {adding ? <MiniSpinner className="h-4 w-4 border-2" /> : "+"}
           </motion.button>
         </div>
         <div className="p-4">

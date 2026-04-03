@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useTheme } from "./theme-provider";
 import { AtlasLogo } from "./atlas-logo";
@@ -90,10 +90,12 @@ export function Navbar() {
   const locale = useLocale();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
-  const { itemCount } = useCart();
+  const { itemCount, addBumpSeq } = useCart();
   const otherLocale = locale === "fr" ? "ar" : "fr";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [navHidden, setNavHidden] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   const desktopLinks = [
     { href: "/", label: t("home") },
@@ -119,7 +121,23 @@ export function Navbar() {
   }, [pathname]);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 12);
+      const desktop = window.matchMedia("(min-width: 768px)").matches;
+      const dy = y - lastY;
+      if (!desktop) {
+        setNavHidden(false);
+      } else if (y < 72) {
+        setNavHidden(false);
+      } else if (dy > 10) {
+        setNavHidden(true);
+      } else if (dy < -10) {
+        setNavHidden(false);
+      }
+      lastY = y;
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -145,10 +163,23 @@ export function Navbar() {
 
   return (
     <motion.header
-      initial={{ y: -12, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ y: -14, opacity: 0 }}
+      animate={
+        reduceMotion
+          ? { y: 0, opacity: 1 }
+          : {
+              y: navHidden ? "-118%" : 0,
+              opacity: navHidden ? 0.94 : 1,
+            }
+      }
+      transition={{
+        duration: 0.42,
+        ease: [0.22, 1, 0.36, 1],
+      }}
       className={`nav-futuristic sticky top-[calc(env(safe-area-inset-top)+2.5rem)] z-50 sm:top-[calc(env(safe-area-inset-top)+2.75rem)] transition-[box-shadow] duration-300 ${scrolled ? "nav-scrolled" : ""}`}
+      style={{
+        pointerEvents: navHidden && !mobileOpen ? ("none" as const) : "auto",
+      }}
     >
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-2">
         <div className="flex h-14 items-center justify-between md:hidden">
@@ -159,6 +190,7 @@ export function Navbar() {
             aria-controls="mobile-nav-drawer"
             aria-label={mobileOpen ? t("closeMenu") : t("openMenu")}
             onClick={() => setMobileOpen((o) => !o)}
+            whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.92 }}
           >
             {mobileOpen ? <IconClose className="h-5 w-5" /> : <IconMenuLines className="h-5 w-5" />}
@@ -178,6 +210,7 @@ export function Navbar() {
                 type="button"
                 className="nav-icon-toggle h-11 w-11"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.9 }}
                 aria-label={
                   theme === "dark" ? tTheme("light") : tTheme("dark")
@@ -205,10 +238,24 @@ export function Navbar() {
               className="relative flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-base"
               style={{ boxShadow: "0 0 20px -10px var(--accent-glow-soft)" }}
               aria-label={t("cart")}
+              whileHover={{
+                scale: 1.06,
+                boxShadow: "0 0 28px -8px var(--accent-glow)",
+              }}
             >
-              <span className="leading-none" aria-hidden>
+              <motion.span
+                key={addBumpSeq}
+                className="leading-none inline-block"
+                aria-hidden
+                animate={
+                  reduceMotion || addBumpSeq === 0
+                    ? {}
+                    : { scale: [1, 1.22, 1], rotate: [0, -14, 10, 0] }
+                }
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              >
                 🛒
-              </span>
+              </motion.span>
               {itemCount > 0 ? (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.5rem] font-bold text-[var(--bg)]">
                   {itemCount > 9 ? "9+" : itemCount}
@@ -234,8 +281,8 @@ export function Navbar() {
                 href={l.href}
                 data-active={navActive(l.href) ? "true" : undefined}
                 className="nav-dock-link relative shrink-0 whitespace-nowrap"
-                whileHover={{ y: 0 }}
-                whileTap={{ scale: 0.96 }}
+                whileHover={{ scale: 1.04, y: -1 }}
+                whileTap={{ scale: 0.95 }}
               >
                 {l.label}
               </MotionLink>
@@ -248,6 +295,7 @@ export function Navbar() {
                 type="button"
                 className="nav-icon-toggle"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.9 }}
                 aria-label={
                   theme === "dark" ? tTheme("light") : tTheme("dark")
@@ -275,10 +323,24 @@ export function Navbar() {
               className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-sm transition hover:border-[var(--accent)]/35 hover:text-[var(--accent)]"
               style={{ boxShadow: "0 0 20px -10px var(--accent-glow-soft)" }}
               aria-label={t("cart")}
+              whileHover={{
+                scale: 1.06,
+                boxShadow: "0 0 26px -8px var(--accent-glow)",
+              }}
             >
-              <span className="leading-none" aria-hidden>
+              <motion.span
+                key={addBumpSeq}
+                className="leading-none inline-block"
+                aria-hidden
+                animate={
+                  reduceMotion || addBumpSeq === 0
+                    ? {}
+                    : { scale: [1, 1.2, 1], rotate: [0, -12, 8, 0] }
+                }
+                transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
+              >
                 🛒
-              </span>
+              </motion.span>
               {itemCount > 0 ? (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.5rem] font-bold text-[var(--bg)]">
                   {itemCount > 9 ? "9+" : itemCount}

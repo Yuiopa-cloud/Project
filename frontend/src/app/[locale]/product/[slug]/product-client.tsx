@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MotionLink } from "@/components/motion-link";
 import { useRouter } from "@/i18n/navigation";
 import { ProductImage } from "@/components/product-image";
+import { MiniSpinner } from "@/components/mini-spinner";
 import { useCart, type CartLineProduct } from "@/contexts/cart-context";
 import { setBuyNow } from "@/lib/buy-now";
 
@@ -210,7 +211,14 @@ export function ProductClient({
                 whileTap={{ scale: 0.97 }}
                 className="btn-primary-motion min-h-[48px] flex-1 rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-6 py-3.5 text-sm font-semibold text-slate-900 disabled:opacity-40"
               >
-                {adding ? "…" : labels.addToCart}
+                {adding ? (
+                  <MiniSpinner
+                    className="h-5 w-5 border-2 border-slate-900/85 border-t-transparent"
+                    label={String(labels.addToCart)}
+                  />
+                ) : (
+                  labels.addToCart
+                )}
               </motion.button>
               <motion.button
                 type="button"

@@ -22,17 +22,21 @@ export function TrendingCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ delay: (index % 8) * 0.04, duration: 0.45 }}
+      whileHover={{
+        y: -5,
+        transition: { duration: 0.26, ease: [0.22, 1, 0.36, 1] },
+      }}
     >
       <MotionLink
         href={`/product/${product.slug}`}
-        className="card-chrome group flex h-full flex-col overflow-hidden rounded-2xl"
+        className="card-chrome premium-product-card group flex h-full flex-col overflow-hidden rounded-2xl"
       >
         <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-zinc-900">
           <ProductImage
             src={product.images?.[0]}
             alt={title}
             fill
-            className="transition duration-700 group-hover:scale-[1.06]"
+            className="transition duration-700 ease-out group-hover:scale-[1.08]"
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--bg)]/50 to-transparent opacity-0 transition group-hover:opacity-100" />
         </div>

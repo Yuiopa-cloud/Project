@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import type { ReactNode } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { ProductImage } from "@/components/product-image";
 
 const FALLBACK = [
@@ -8,6 +9,36 @@ const FALLBACK = [
   "https://images.unsplash.com/photo-1486754735734-325b5831c3ad?w=600&q=80",
   "https://images.unsplash.com/photo-1619405399517-d7fce0f13302?w=600&q=80",
 ];
+
+function FloatInner({
+  children,
+  delay = 0,
+  amplitude = 5,
+}: {
+  children: ReactNode;
+  delay?: number;
+  amplitude?: number;
+}) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      className="relative h-full w-full"
+      animate={reduce ? undefined : { y: [0, -amplitude, 0] }}
+      transition={
+        reduce
+          ? undefined
+          : {
+              duration: 3.6,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay,
+            }
+      }
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export function LandingHeroShowcase({ imageUrls }: { imageUrls: string[] }) {
   const urls =
@@ -24,7 +55,9 @@ export function LandingHeroShowcase({ imageUrls }: { imageUrls: string[] }) {
         transition={{ type: "spring" as const, stiffness: 280, damping: 28, delay: 0.05 }}
       >
         <div className="relative h-full w-full bg-zinc-900">
-          <ProductImage src={slots[0]} alt="" fill className="scale-105" priority />
+          <FloatInner delay={0.35} amplitude={6}>
+            <ProductImage src={slots[0]} alt="" fill className="scale-105" priority />
+          </FloatInner>
         </div>
       </motion.div>
       <motion.div
@@ -34,7 +67,9 @@ export function LandingHeroShowcase({ imageUrls }: { imageUrls: string[] }) {
         transition={{ type: "spring" as const, stiffness: 280, damping: 28, delay: 0.12 }}
       >
         <div className="relative h-full w-full bg-zinc-900">
-          <ProductImage src={slots[1]} alt="" fill />
+          <FloatInner delay={0.55} amplitude={5}>
+            <ProductImage src={slots[1]} alt="" fill />
+          </FloatInner>
         </div>
       </motion.div>
       <motion.div
@@ -44,7 +79,9 @@ export function LandingHeroShowcase({ imageUrls }: { imageUrls: string[] }) {
         transition={{ type: "spring" as const, stiffness: 260, damping: 24, delay: 0.2 }}
       >
         <div className="relative h-full w-full bg-zinc-900">
-          <ProductImage src={slots[2]} alt="" fill />
+          <FloatInner delay={0.2} amplitude={7}>
+            <ProductImage src={slots[2]} alt="" fill />
+          </FloatInner>
         </div>
       </motion.div>
       <motion.div
@@ -54,7 +91,9 @@ export function LandingHeroShowcase({ imageUrls }: { imageUrls: string[] }) {
         transition={{ delay: 0.28, duration: 0.5 }}
       >
         <div className="relative h-full w-full bg-zinc-900">
-          <ProductImage src={slots[3]} alt="" fill />
+          <FloatInner delay={0.75} amplitude={4}>
+            <ProductImage src={slots[3]} alt="" fill />
+          </FloatInner>
         </div>
       </motion.div>
       <div className="pointer-events-none absolute -right-6 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-[var(--accent)]/20 blur-3xl" />
