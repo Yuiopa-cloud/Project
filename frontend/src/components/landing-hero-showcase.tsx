@@ -28,7 +28,7 @@ function FloatInner({
         reduce
           ? undefined
           : {
-              duration: 3.6,
+              duration: 5.8,
               repeat: Infinity,
               ease: "easeInOut",
               delay,

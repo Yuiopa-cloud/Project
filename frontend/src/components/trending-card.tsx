@@ -23,8 +23,8 @@ export function TrendingCard({
       viewport={{ once: true, margin: "-60px" }}
       transition={{ delay: (index % 8) * 0.04, duration: 0.45 }}
       whileHover={{
-        y: -5,
-        transition: { duration: 0.26, ease: [0.22, 1, 0.36, 1] },
+        y: -6,
+        transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
       }}
     >
       <MotionLink

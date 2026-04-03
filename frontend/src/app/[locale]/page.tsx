@@ -6,7 +6,10 @@ import { TRENDING_FALLBACK } from "@/lib/trending-fallback";
 import { serverFetchApiJson } from "@/lib/server-fetch-api";
 import { HomeHeroCtas } from "@/components/home-hero-ctas";
 import { HomeHeroMotion } from "@/components/home-hero-motion";
+import { HomeFeaturedProduct } from "@/components/home-featured-product";
+import { HomeSocialProof } from "@/components/home-social-proof";
 import { LandingHeroShowcase } from "@/components/landing-hero-showcase";
+import { MobileStickyCta } from "@/components/mobile-sticky-cta";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { WHATSAPP_CHAT_URL } from "@/lib/site-contact";
 
@@ -57,8 +60,17 @@ export default async function HomePage({
     { label: t("statRating"), value: t("statRatingVal") },
   ];
 
+  const featuredProduct = items[0];
+  const railItems = items.length > 1 ? items.slice(1) : [];
+
+  const reviews = [t("socialReview1"), t("socialReview2"), t("socialReview3")] as [
+    string,
+    string,
+    string,
+  ];
+
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-28 pt-8 sm:px-6 md:px-8 md:pt-12 lg:px-10">
+    <div className="mx-auto max-w-6xl px-4 pb-32 pt-8 sm:px-6 md:px-8 md:pb-28 md:pt-12 lg:px-10">
       <section className="premium-hero-shell relative px-5 py-12 sm:px-8 sm:py-14 md:px-12 md:py-20">
         <div className="premium-hero-aurora" aria-hidden />
 
@@ -67,21 +79,33 @@ export default async function HomePage({
             heroKicker={t("heroKicker")}
             heroTitle={t("heroTitle")}
             heroSub={t("heroSub")}
-            heroHighlight={t("heroHighlight")}
-            trustCod={t("trustCod")}
-            trustWarranty={t("trustWarranty")}
           >
             <HomeHeroCtas
-              ctaShop={t("ctaShop")}
+              ctaOrder={t("ctaOrder")}
               ctaWhatsApp={t("ctaWhatsApp")}
               waHref={WHATSAPP_CHAT_URL}
+              offerToday={t("offerToday")}
+              offerShipping={t("offerShipping")}
+              urgency={t("heroUrgency")}
+              trustCod={t("trustCodShort")}
+              trustFast={t("trustFast")}
+              trustWhatsapp={t("trustWhatsappService")}
+              codReassurance={t("heroCodBelow")}
             />
           </HomeHeroMotion>
           <LandingHeroShowcase imageUrls={heroShots} />
         </div>
       </section>
 
-      <ScrollReveal className="mt-12 md:mt-16">
+      <div className="mt-10 md:mt-12">
+        <HomeSocialProof
+          starsLabel={t("socialProofStarsAria")}
+          headline={t("socialProofHeadline")}
+          reviews={reviews}
+        />
+      </div>
+
+      <ScrollReveal className="mt-10 md:mt-12">
         <div className="card-chrome grid gap-8 rounded-2xl p-8 sm:grid-cols-3 sm:p-10">
           {stats.map((s) => (
             <div key={s.label} className="text-center sm:text-start">
@@ -142,11 +166,21 @@ export default async function HomePage({
             {t("trendingSub")}
           </p>
         </ScrollReveal>
-        <TrendingRail
-          items={items}
-          locale={locale}
-          durationSec={Math.max(36, items.length * 7)}
-        />
+        {featuredProduct ? (
+          <HomeFeaturedProduct
+            product={featuredProduct}
+            locale={locale}
+            popularBadge={t("popularBadge")}
+            ctaLabel={t("featuredCta")}
+          />
+        ) : null}
+        {railItems.length > 0 ? (
+          <TrendingRail
+            items={railItems}
+            locale={locale}
+            durationSec={Math.max(36, railItems.length * 7)}
+          />
+        ) : null}
         {isFallback ? (
           <p className="mt-4 text-center text-xs text-[var(--accent)]/85">
             {locale === "ar"
@@ -156,35 +190,7 @@ export default async function HomePage({
         ) : null}
       </section>
 
-      <section className="mt-20 md:mt-28">
-        <ScrollReveal>
-          <h2 className="mb-8 font-display text-2xl font-semibold text-[var(--fg)] md:text-3xl">
-            {t("testimonials")}
-          </h2>
-        </ScrollReveal>
-        <div className="grid gap-6 md:grid-cols-2">
-          <ScrollReveal delay={0.05} y={20}>
-            <figure className="card-chrome rounded-2xl p-8 md:p-10">
-              <blockquote className="text-base font-normal leading-relaxed text-[var(--fg)]">
-                {t("testimonial1")}
-              </blockquote>
-              <figcaption className="mt-6 text-xs font-medium uppercase tracking-wider text-[var(--accent)]">
-                {t("testimonial1Author")}
-              </figcaption>
-            </figure>
-          </ScrollReveal>
-          <ScrollReveal delay={0.12} y={20}>
-            <figure className="card-chrome rounded-2xl p-8 md:p-10">
-              <blockquote className="text-base font-normal leading-relaxed text-[var(--fg)]">
-                {t("testimonial2")}
-              </blockquote>
-              <figcaption className="mt-6 text-xs font-medium uppercase tracking-wider text-[var(--accent)]">
-                {t("testimonial2Author")}
-              </figcaption>
-            </figure>
-          </ScrollReveal>
-        </div>
-      </section>
+      <MobileStickyCta label={t("ctaOrder")} href="/shop" />
     </div>
   );
 }
