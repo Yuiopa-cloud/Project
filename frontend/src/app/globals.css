@@ -900,3 +900,69 @@ html[data-theme="light"] .checkout-input:focus-visible {
   );
   opacity: 0.6;
 }
+
+/* Thank you page — subtle ambient & order highlight (respects reduced motion) */
+@keyframes thank-you-drift-soft {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.22;
+  }
+  50% {
+    transform: translate(10px, -14px) scale(1.06);
+    opacity: 0.32;
+  }
+}
+
+@keyframes thank-you-drift-soft-alt {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.18;
+  }
+  50% {
+    transform: translate(-12px, 10px) scale(1.04);
+    opacity: 0.28;
+  }
+}
+
+@keyframes thank-you-order-glow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 16px color-mix(in srgb, var(--accent) 32%, transparent),
+      0 0 40px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  50% {
+    text-shadow:
+      0 0 26px color-mix(in srgb, var(--accent) 48%, transparent),
+      0 0 52px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+}
+
+.thank-you-ambient-blob {
+  animation: thank-you-drift-soft 16s ease-in-out infinite;
+}
+
+.thank-you-ambient-blob--alt {
+  animation: thank-you-drift-soft-alt 18s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+.thank-you-order-glow {
+  animation: thank-you-order-glow 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thank-you-ambient-blob,
+  .thank-you-ambient-blob--alt {
+    animation: none;
+    transform: none;
+    opacity: 0.24;
+  }
+
+  .thank-you-order-glow {
+    animation: none;
+    text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+}
