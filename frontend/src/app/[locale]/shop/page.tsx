@@ -63,10 +63,10 @@ export default async function ShopPage({
       {apiFailed ? (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
+          className="mb-6 rounded-xl border border-amber-600/40 bg-amber-500/[0.12] px-4 py-3 text-sm text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
         >
           <p className="font-medium">{t("apiUnreachable")}</p>
-          <p className="mt-1 text-xs text-amber-200/90">
+          <p className="mt-1 text-xs text-amber-900/85 dark:text-amber-200/90">
             {apiStatus != null
               ? t("apiErrorStatus", { status: String(apiStatus) })
               : t("apiErrorGeneric")}

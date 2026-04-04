@@ -96,6 +96,8 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
   const reduceMotion = useReducedMotion();
+  const isHome = pathname === "/";
+  const editorialTransparent = isHome && !scrolled;
 
   const desktopLinks = [
     { href: "/", label: t("home") },
@@ -130,6 +132,8 @@ export function Navbar() {
         setNavHidden(false);
       } else if (y < 72) {
         setNavHidden(false);
+      } else if (pathname === "/") {
+        setNavHidden(false);
       } else if (dy > 10) {
         setNavHidden(true);
       } else if (dy < -10) {
@@ -140,7 +144,7 @@ export function Navbar() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -175,7 +179,7 @@ export function Navbar() {
         duration: 0.42,
         ease: [0.22, 1, 0.36, 1],
       }}
-      className={`nav-futuristic sticky top-[calc(env(safe-area-inset-top)+2.5rem)] z-50 sm:top-[calc(env(safe-area-inset-top)+2.75rem)] transition-[box-shadow] duration-300 ${scrolled ? "nav-scrolled" : ""}`}
+      className={`nav-futuristic sticky top-[calc(env(safe-area-inset-top)+2.5rem)] z-50 sm:top-[calc(env(safe-area-inset-top)+2.75rem)] transition-[background,backdrop-filter,border-color,box-shadow] duration-300 ${scrolled ? "nav-scrolled" : ""} ${editorialTransparent ? "nav-editorial-home" : "nav-editorial-solid"}`}
       style={{
         pointerEvents: navHidden && !mobileOpen ? ("none" as const) : "auto",
       }}
@@ -234,7 +238,7 @@ export function Navbar() {
 
             <MotionLink
               href="/cart"
-              className="relative flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-base"
+              className="nav-header-cart relative flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-base"
               style={{ boxShadow: "0 0 20px -10px var(--accent-glow-soft)" }}
               aria-label={t("cart")}
               whileHover={{
@@ -319,7 +323,7 @@ export function Navbar() {
 
             <MotionLink
               href="/cart"
-              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-sm transition hover:border-[var(--accent)]/35 hover:text-[var(--accent)]"
+              className="nav-header-cart relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-sm transition hover:border-[var(--accent)]/35 hover:text-[var(--accent)]"
               style={{ boxShadow: "0 0 20px -10px var(--accent-glow-soft)" }}
               aria-label={t("cart")}
               whileHover={{

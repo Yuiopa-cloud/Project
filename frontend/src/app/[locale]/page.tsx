@@ -4,11 +4,9 @@ import type { ProductList } from "@/lib/api";
 import { TrendingRail } from "@/components/trending-rail";
 import { TRENDING_FALLBACK } from "@/lib/trending-fallback";
 import { serverFetchApiJson } from "@/lib/server-fetch-api";
-import { HomeHeroCtas } from "@/components/home-hero-ctas";
-import { HomeHeroMotion } from "@/components/home-hero-motion";
+import { HomeEditorialHero } from "@/components/home-editorial-hero";
 import { HomeFeaturedProduct } from "@/components/home-featured-product";
 import { HomeSocialProof } from "@/components/home-social-proof";
-import { LandingHeroShowcase } from "@/components/landing-hero-showcase";
 import { MobileStickyCta } from "@/components/mobile-sticky-cta";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { HomeInspirationBand } from "@/components/home-inspiration-band";
@@ -45,11 +43,6 @@ export default async function HomePage({
   const t = await getTranslations("home");
   const { items, isFallback } = await getTrending();
 
-  const heroShots = items
-    .map((p) => p.images?.[0])
-    .filter((x): x is string => Boolean(x))
-    .slice(0, 14);
-
   const categories = [
     { slug: "interieur", label: t("catInterior") },
     { slug: "exterieur", label: t("catExterior") },
@@ -79,43 +72,26 @@ export default async function HomePage({
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-32 pt-8 sm:px-6 md:px-8 md:pb-28 md:pt-12 lg:px-10">
-      <section className="premium-hero-shell relative px-5 py-12 sm:px-8 sm:py-14 md:px-12 md:py-20">
-        <div className="premium-hero-aurora" aria-hidden />
-
-        <div className="relative grid items-center gap-14 lg:grid-cols-2 lg:gap-12 xl:gap-16">
-          <HomeHeroMotion
-            heroKicker={t("heroKicker")}
-            heroTitle={t("heroTitle")}
-            heroSub={t("heroSub")}
-          >
-            <HomeHeroCtas
-              ctaOrder={t("ctaOrder")}
-              ctaWhatsApp={t("ctaWhatsApp")}
-              waHref={WHATSAPP_CHAT_URL}
-              offerToday={t("offerToday")}
-              offerShipping={t("offerShipping")}
-              urgency={t("heroUrgency")}
-              trustCod={t("trustCodShort")}
-              trustFast={t("trustFast")}
-              trustWhatsapp={t("trustWhatsappService")}
-              codReassurance={t("heroCodBelow")}
-            />
-          </HomeHeroMotion>
-          <LandingHeroShowcase imageUrls={heroShots} />
+    <>
+      <HomeEditorialHero
+        kicker={t("heroEditorialKicker")}
+        title={t("heroEditorialTitle")}
+        tagline={t("heroEditorialSub")}
+        ctaShop={t("heroEditorialCtaShop")}
+        ctaWhatsApp={t("ctaWhatsApp")}
+        waHref={WHATSAPP_CHAT_URL}
+      />
+      <div className="mx-auto max-w-7xl px-4 pb-32 pt-10 sm:px-6 md:px-8 md:pb-28 md:pt-14 lg:px-10">
+        <div className="mt-2 md:mt-4">
+          <HomeSocialProof
+            starsLabel={t("socialProofStarsAria")}
+            headline={t("socialProofHeadline")}
+            reviews={reviews}
+          />
         </div>
-      </section>
-
-      <div className="mt-10 md:mt-12">
-        <HomeSocialProof
-          starsLabel={t("socialProofStarsAria")}
-          headline={t("socialProofHeadline")}
-          reviews={reviews}
-        />
-      </div>
 
         <ScrollReveal className="mt-10 md:mt-12">
-        <div className="card-chrome grid gap-8 rounded-2xl p-8 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-[var(--border)]/70 sm:p-10">
+          <div className="card-chrome grid gap-8 rounded-2xl p-8 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-[var(--border)]/70 sm:p-10">
           {stats.map((s) => (
             <div
               key={s.label}
@@ -129,84 +105,85 @@ export default async function HomePage({
               </p>
             </div>
           ))}
-        </div>
-      </ScrollReveal>
-
-      <HomeInspirationBand />
-
-      <section className="mt-20 md:mt-24">
-        <ScrollReveal className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-2">
-            <h2 className="section-headline text-2xl text-[var(--fg)] md:text-3xl">
-              {t("categories")}
-            </h2>
-            <p className="max-w-md text-sm text-[var(--muted)]">
-              {t("categoryExplore")}
-            </p>
           </div>
-          <Link
-            href="/shop"
-            className="btn-secondary inline-flex w-full min-h-[3.25rem] sm:w-fit md:self-end"
-          >
-            {t("shopAll")}
-          </Link>
         </ScrollReveal>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((c, i) => (
-            <ScrollReveal key={c.slug} delay={i * 0.06} y={18}>
-              <Link
-                href={`/shop?category=${c.slug}`}
-                className="card-chrome premium-category-tile group relative block overflow-hidden rounded-2xl p-6 md:p-8"
-              >
-                <p className="font-display text-lg font-semibold tracking-tight text-[var(--fg)] transition group-hover:text-[var(--accent)] md:text-xl">
-                  {c.label}
-                </p>
-                <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-[var(--muted)] transition group-hover:text-[var(--accent)]">
-                  {t("categoryExplore")}
-                  <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
-                    →
+
+        <HomeInspirationBand />
+
+        <section className="mt-20 md:mt-24">
+          <ScrollReveal className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-2">
+              <h2 className="section-headline text-2xl text-[var(--fg)] md:text-3xl">
+                {t("categories")}
+              </h2>
+              <p className="max-w-md text-sm text-[var(--muted)]">
+                {t("categoryExplore")}
+              </p>
+            </div>
+            <Link
+              href="/shop"
+              className="btn-secondary inline-flex w-full min-h-[3.25rem] sm:w-fit md:self-end"
+            >
+              {t("shopAll")}
+            </Link>
+          </ScrollReveal>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {categories.map((c, i) => (
+              <ScrollReveal key={c.slug} delay={i * 0.06} y={18}>
+                <Link
+                  href={`/shop?category=${c.slug}`}
+                  className="card-chrome premium-category-tile group relative block overflow-hidden rounded-2xl p-6 md:p-8"
+                >
+                  <p className="font-display text-lg font-semibold tracking-tight text-[var(--fg)] transition group-hover:text-[var(--accent)] md:text-xl">
+                    {c.label}
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-[var(--muted)] transition group-hover:text-[var(--accent)]">
+                    {t("categoryExplore")}
+                    <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
+                      →
+                    </span>
                   </span>
-                </span>
-              </Link>
-            </ScrollReveal>
-          ))}
-        </div>
-      </section>
+                </Link>
+              </ScrollReveal>
+            ))}
+          </div>
+        </section>
 
-      <section className="mt-20 md:mt-28">
-        <ScrollReveal className="mb-6 md:mb-8">
-          <h2 className="section-headline text-2xl text-[var(--fg)] md:text-3xl">
-            {t("trending")}
-          </h2>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)] md:text-base">
-            {t("trendingSub")}
-          </p>
-        </ScrollReveal>
-        {featuredProduct ? (
-          <HomeFeaturedProduct
-            product={featuredProduct}
-            locale={locale}
-            popularBadge={t("popularBadge")}
-            ctaLabel={t("featuredCta")}
-          />
-        ) : null}
-        {railItems.length > 0 ? (
-          <TrendingRail
-            items={railItems}
-            locale={locale}
-            durationSec={Math.max(36, railItems.length * 7)}
-          />
-        ) : null}
-        {isFallback ? (
-          <p className="mt-6 text-center text-sm text-[var(--muted)]">
-            {t("catalogPreviewNote")}
-          </p>
-        ) : null}
-      </section>
+        <section className="mt-20 md:mt-28">
+          <ScrollReveal className="mb-6 md:mb-8">
+            <h2 className="section-headline text-2xl text-[var(--fg)] md:text-3xl">
+              {t("trending")}
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)] md:text-base">
+              {t("trendingSub")}
+            </p>
+          </ScrollReveal>
+          {featuredProduct ? (
+            <HomeFeaturedProduct
+              product={featuredProduct}
+              locale={locale}
+              popularBadge={t("popularBadge")}
+              ctaLabel={t("featuredCta")}
+            />
+          ) : null}
+          {railItems.length > 0 ? (
+            <TrendingRail
+              items={railItems}
+              locale={locale}
+              durationSec={Math.max(36, railItems.length * 7)}
+            />
+          ) : null}
+          {isFallback ? (
+            <p className="mt-6 text-center text-sm text-[var(--muted)]">
+              {t("catalogPreviewNote")}
+            </p>
+          ) : null}
+        </section>
 
-      <HomeProductGallery products={galleryProducts} locale={locale} />
+        <HomeProductGallery products={galleryProducts} locale={locale} />
 
-      <MobileStickyCta label={t("ctaOrder")} href="/shop" />
+        <MobileStickyCta label={t("ctaOrder")} href="/shop" />
     </div>
+    </>
   );
 }

@@ -28,6 +28,36 @@
   --font-display: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
 }
 
+/* Editorial store (AURA-inspired): warm sand + coral bar — toggled via data-store="editorial" */
+html[data-store="editorial"][data-theme="light"] {
+  --bg: #f2efe9;
+  --fg: #141414;
+  --muted: #5a5856;
+  --card: rgba(255, 255, 255, 0.92);
+  --primary-from: #c2410c;
+  --primary-mid: #ea580c;
+  --primary-to: #dc2626;
+  --accent: #c2410c;
+  --accent-hot: #ea580c;
+  --accent-dim: rgba(234, 88, 12, 0.12);
+  --accent-glow: rgba(234, 88, 12, 0.25);
+  --accent-glow-soft: rgba(194, 65, 12, 0.18);
+  --border: rgba(20, 20, 20, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(20, 20, 20, 0.07);
+  --chrome: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.92) 100%);
+  --footer-bg: #e8e4dd;
+  --press-bg: rgba(20, 20, 20, 0.04);
+  --announcement-coral: #e85d4c;
+  --announcement-coral-hover: #d64b3d;
+}
+
+html[data-store="editorial"][data-theme="light"] body {
+  background-color: var(--bg);
+  background-image: none;
+  animation: none;
+}
+
 html[data-theme="light"] {
   --bg: #f8fafc;
   --fg: #0f172a;
@@ -112,6 +142,126 @@ html[data-theme="light"] body {
   body {
     animation: none;
   }
+}
+
+/* —— Editorial nav: transparent over hero (home) —— */
+.nav-editorial-home {
+  background: transparent !important;
+  border-bottom-color: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.nav-editorial-home::before,
+.nav-editorial-home::after {
+  opacity: 0 !important;
+}
+
+html[data-store="editorial"] .nav-editorial-home .nav-dock {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+html[data-store="editorial"] .nav-editorial-home .nav-dock-link {
+  color: rgba(255, 255, 255, 0.88) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.62rem;
+}
+
+@media (min-width: 768px) {
+  html[data-store="editorial"] .nav-editorial-home .nav-dock-link {
+    font-size: 0.65rem;
+  }
+}
+
+html[data-store="editorial"] .nav-editorial-home .nav-dock-link:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+html[data-store="editorial"] .nav-editorial-home .nav-dock-link[data-active="true"] {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+
+html[data-store="editorial"] .nav-editorial-home .nav-util-pill {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html[data-store="editorial"] .nav-editorial-home .nav-icon-toggle,
+html[data-store="editorial"] .nav-editorial-home .nav-util-locale {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html[data-store="editorial"] .nav-editorial-home .nav-util-divider {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Solid bar after scroll or inner pages */
+.nav-editorial-solid {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom: 1px solid rgba(20, 20, 20, 0.08) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  box-shadow: 0 4px 24px -12px rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-store="editorial"] .nav-editorial-solid .nav-dock-link {
+  color: var(--muted) !important;
+}
+
+html[data-store="editorial"] .nav-editorial-solid .nav-dock-link[data-active="true"] {
+  color: var(--fg) !important;
+  background: color-mix(in srgb, var(--accent) 16%, transparent) !important;
+  box-shadow: none !important;
+}
+
+html[data-store="editorial"] .nav-editorial-solid::before,
+html[data-store="editorial"] .nav-editorial-solid::after {
+  opacity: 0 !important;
+}
+
+html[data-store="editorial"] .nav-editorial-solid .nav-icon-toggle,
+html[data-store="editorial"] .nav-editorial-solid .nav-util-locale {
+  color: var(--muted) !important;
+}
+
+.editorial-announcement-bar {
+  background: var(--announcement-coral, #e85d4c);
+  border-bottom: none;
+}
+
+.editorial-section-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+html[data-store="editorial"] .section-headline {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+html[data-store="editorial"] .nav-editorial-home .nav-header-cart {
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 24px -14px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-store="editorial"] .nav-editorial-home .good-deals-logo-root img {
+  filter: brightness(0) invert(1) drop-shadow(0 2px 14px rgba(0, 0, 0, 0.35));
+}
+
+html[data-store="editorial"] .nav-editorial-home .good-deals-logo-glow,
+html[data-store="editorial"] .nav-editorial-home .good-deals-logo-ring {
+  opacity: 0.35;
 }
 
 /* Premium hero: glass shell + soft aurora */

@@ -12,7 +12,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: light)", color: "#f2efe9" },
     { media: "(prefers-color-scheme: dark)", color: "#050508" },
   ],
 };
@@ -35,7 +35,13 @@ const geistMono = Geist_Mono({
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr" dir="ltr" suppressHydrationWarning className="h-full">
+    <html
+      lang="fr"
+      dir="ltr"
+      suppressHydrationWarning
+      className="h-full"
+      data-store="editorial"
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} min-h-dvh min-h-full overflow-x-clip bg-[var(--bg)] font-sans text-[var(--fg)] antialiased [font-feature-settings:'cv02','cv03','cv04','cv11']`}
       >

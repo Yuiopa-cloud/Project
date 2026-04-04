@@ -6,7 +6,8 @@
   },
   "announcement": {
     "shipping": "30DH — FREE SHIPPING ALL OVER MOROCCO",
-    "shippingLong": "30 DH : livraison gratuite partout au Maroc."
+    "shippingLong": "30 DH : livraison gratuite partout au Maroc.",
+    "barLine": "LIVRAISON OFFERTE | PARTOUT AU MAROC"
   },
   "nav": {
     "home": "Accueil",
@@ -22,6 +23,10 @@
     "drawerTitle": "Navigation"
   },
   "home": {
+    "heroEditorialKicker": "JUSQU’À -30 % SUR UNE SÉLECTION",
+    "heroEditorialTitle": "GOOD DEALS — ACCESSOIRES AUTO",
+    "heroEditorialSub": "PLUS QU’UNE BOUTIQUE.",
+    "heroEditorialCtaShop": "BOUTIQUE",
     "heroKicker": "Good Deals · Maroc",
     "heroTitle": "Quand votre voiture mérite le meilleur.",
     "heroSub": "Des milliers d’accessoires sélectionnés — qualité premium, prix justes, livraison partout au Maroc et paiement à la réception.",
