@@ -12,8 +12,8 @@ export function TopAnnouncementMarquee() {
       role="region"
       aria-label={t("shippingLong")}
     >
-      <div className="flex h-9 items-center justify-center px-4 sm:h-10">
-        <p className="text-center text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-white sm:text-[0.68rem] sm:tracking-[0.26em]">
+      <div className="flex h-7 items-center justify-center px-3 sm:h-8">
+        <p className="text-center text-[0.55rem] font-semibold uppercase tracking-[0.18em] text-white sm:text-[0.58rem] sm:tracking-[0.2em]">
           {t("barLine")}
         </p>
       </div>

@@ -179,7 +179,7 @@ export function Navbar() {
         duration: 0.42,
         ease: [0.22, 1, 0.36, 1],
       }}
-      className={`nav-futuristic sticky top-[calc(env(safe-area-inset-top)+2.5rem)] z-50 sm:top-[calc(env(safe-area-inset-top)+2.75rem)] transition-[background,backdrop-filter,border-color,box-shadow] duration-300 ${scrolled ? "nav-scrolled" : ""} ${editorialTransparent ? "nav-editorial-home" : "nav-editorial-solid"}`}
+      className={`nav-futuristic sticky top-[calc(env(safe-area-inset-top)+1.75rem)] z-50 sm:top-[calc(env(safe-area-inset-top)+2rem)] transition-[background,backdrop-filter,border-color,box-shadow] duration-300 ${scrolled ? "nav-scrolled" : ""} ${editorialTransparent ? "nav-editorial-home" : "nav-editorial-solid"}`}
       style={{
         pointerEvents: navHidden && !mobileOpen ? ("none" as const) : "auto",
       }}

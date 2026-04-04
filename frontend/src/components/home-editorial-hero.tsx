@@ -28,7 +28,7 @@ export function HomeEditorialHero({
 
   return (
     <section
-      className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen -mt-[calc(env(safe-area-inset-top)+6.75rem)] min-h-[min(100dvh,920px)] overflow-hidden"
+      className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen -mt-[calc(env(safe-area-inset-top)+6.25rem)] min-h-[min(100dvh,920px)] overflow-hidden"
       aria-label={title}
     >
       <div className="absolute inset-0">
