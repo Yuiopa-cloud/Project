@@ -1,10 +1,18 @@
 import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { ShopProductCard } from "./shop-product-card";
 import type { ProductList } from "@/lib/api";
 import { ALL_FALLBACK_PRODUCTS } from "@/lib/catalog-fallback";
 import { serverFetchApiJson } from "@/lib/server-fetch-api";
 
 export const dynamic = "force-dynamic";
+
+const CATEGORY_SLUGS = [
+  "interieur",
+  "exterieur",
+  "performance",
+  "entretien",
+] as const;
 
 export default async function ShopPage({
   searchParams,
@@ -16,6 +24,7 @@ export default async function ShopPage({
   const { locale } = await params;
   const sp = await searchParams;
   const t = await getTranslations("shop");
+  const tHome = await getTranslations("home");
 
   const qs = new URLSearchParams();
   if (sp.q) qs.set("q", sp.q);
@@ -58,15 +67,42 @@ export default async function ShopPage({
     }
   }
 
+  function sortHref(value: string) {
+    const p = new URLSearchParams();
+    if (sp.q) p.set("q", sp.q);
+    if (sp.category) p.set("category", sp.category);
+    p.set("sort", value);
+    return `/shop?${p.toString()}`;
+  }
+
+  function categoryHref(slug: string | null) {
+    const p = new URLSearchParams();
+    if (sp.q) p.set("q", sp.q);
+    if (sp.sort) p.set("sort", sp.sort);
+    if (slug) p.set("category", slug);
+    const q = p.toString();
+    return q ? `/shop?${q}` : "/shop";
+  }
+
+  const catLabel = (slug: string) => {
+    const map: Record<string, string> = {
+      interieur: tHome("catInterior"),
+      exterieur: tHome("catExterior"),
+      performance: tHome("catPerformance"),
+      entretien: tHome("catCare"),
+    };
+    return map[slug] ?? slug;
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-12">
       {apiFailed ? (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-amber-600/40 bg-amber-500/[0.12] px-4 py-3 text-sm text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
+          className="mb-6 rounded-xl border border-amber-600/40 bg-amber-50 px-4 py-3 text-sm text-amber-950"
         >
           <p className="font-medium">{t("apiUnreachable")}</p>
-          <p className="mt-1 text-xs text-amber-900/85 dark:text-amber-200/90">
+          <p className="mt-1 text-xs text-amber-900/90">
             {apiStatus != null
               ? t("apiErrorStatus", { status: String(apiStatus) })
               : t("apiErrorGeneric")}
@@ -76,59 +112,155 @@ export default async function ShopPage({
       {!apiFailed && !usingFallback && total === 0 ? (
         <div
           role="status"
-          className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--card)]/60 px-4 py-3 text-sm text-[var(--muted)]"
+          className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm text-[var(--muted)]"
         >
           {t("catalogEmpty")}
         </div>
       ) : null}
-      <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-1">
+
+      <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
           <h1 className="section-headline text-3xl text-[var(--fg)] sm:text-4xl">
             {t("title")}
           </h1>
-          <p className="text-sm text-[var(--muted)]">
+          <p className="mt-1 text-sm text-[var(--muted)]">
             {total} {usingFallback ? t("previewCount") : "SKU"}
           </p>
         </div>
-        <form
-          className="card-chrome flex w-full max-w-2xl flex-col gap-3 rounded-2xl p-4 sm:max-w-none sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center md:max-w-none md:justify-end md:p-5"
-          action={locale ? `/${locale}/shop` : "/fr/shop"}
-          method="get"
-        >
-          <input
-            name="q"
-            placeholder={t("search")}
-            defaultValue={sp.q}
-            className="checkout-input min-h-11 w-full min-w-0 rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-base text-[var(--fg)] placeholder:text-[var(--muted)] sm:min-w-[180px] sm:flex-1 sm:text-sm"
-          />
-          <select
-            name="sort"
-            defaultValue={sp.sort ?? "popular"}
-            className="checkout-input min-h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-base text-[var(--fg)] sm:w-auto sm:min-w-[9.5rem] sm:text-sm"
-          >
-            <option value="new">New</option>
-            <option value="popular">Popular</option>
-            <option value="price_asc">Price ↑</option>
-            <option value="price_desc">Price ↓</option>
-          </select>
-          <button
-            type="submit"
-            className="btn-primary-motion min-h-11 w-full rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_8px_28px_-12px_var(--accent-glow)] sm:w-auto"
-          >
-            {t("filters")}
-          </button>
-        </form>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-        {items.map((p, i) => (
-          <ShopProductCard key={p.id} product={p} locale={locale} index={i} />
-        ))}
-      </div>
+      <div className="flex flex-col gap-10 lg:flex-row lg:gap-12">
+        <aside className="shrink-0 lg:w-56">
+          <div className="space-y-8 lg:sticky lg:top-28">
+            <form
+              className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm"
+              action={locale ? `/${locale}/shop` : "/fr/shop"}
+              method="get"
+            >
+              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                {t("search")}
+              </label>
+              <input
+                name="q"
+                placeholder={t("search")}
+                defaultValue={sp.q}
+                className="checkout-input mt-2 min-h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)] placeholder:text-[var(--muted)]"
+              />
+              {sp.sort ? (
+                <input type="hidden" name="sort" value={sp.sort} />
+              ) : null}
+              {sp.category ? (
+                <input type="hidden" name="category" value={sp.category} />
+              ) : null}
+              <button
+                type="submit"
+                className="btn-primary mt-3 w-full rounded-xl py-2.5 text-sm font-semibold"
+              >
+                {t("filters")}
+              </button>
+            </form>
 
-      {items.length === 0 ? (
-        <p className="py-20 text-center text-[var(--muted)]">{t("empty")}</p>
-      ) : null}
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                {t("sidebarCategories")}
+              </h2>
+              <ul className="mt-3 space-y-1">
+                <li>
+                  <Link
+                    href="/shop"
+                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                      !sp.category ? "bg-[var(--accent-dim)] text-[var(--accent)]" : "text-[var(--fg)]"
+                    }`}
+                  >
+                    {t("allProducts")}
+                  </Link>
+                </li>
+                {CATEGORY_SLUGS.map((slug) => (
+                  <li key={slug}>
+                    <Link
+                      href={categoryHref(slug)}
+                      className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                        sp.category === slug
+                          ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                          : "text-[var(--fg)]"
+                      }`}
+                    >
+                      {catLabel(slug)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                {t("sidebarSort")}
+              </h2>
+              <ul className="mt-3 space-y-1">
+                <li>
+                  <Link
+                    href={sortHref("popular")}
+                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                      (sp.sort ?? "popular") === "popular"
+                        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                        : "text-[var(--fg)]"
+                    }`}
+                  >
+                    {t("sortPopular")}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={sortHref("new")}
+                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                      sp.sort === "new"
+                        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                        : "text-[var(--fg)]"
+                    }`}
+                  >
+                    {t("sortNew")}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={sortHref("price_asc")}
+                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                      sp.sort === "price_asc"
+                        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                        : "text-[var(--fg)]"
+                    }`}
+                  >
+                    {t("sortPriceAsc")}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={sortHref("price_desc")}
+                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                      sp.sort === "price_desc"
+                        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                        : "text-[var(--fg)]"
+                    }`}
+                  >
+                    {t("sortPriceDesc")}
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </aside>
+
+        <div className="min-w-0 flex-1">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+            {items.map((p, i) => (
+              <ShopProductCard key={p.id} product={p} locale={locale} index={i} />
+            ))}
+          </div>
+          {items.length === 0 ? (
+            <p className="py-20 text-center text-[var(--muted)]">{t("empty")}</p>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,15 @@
   "brand": "Good Deals",
   "footer": {
     "tagline": "إكسسوارات فاخرة · المغرب · توصيل ودفع موثوق.",
-    "trustBadgesAlt": "جودة ممتازة، ضمان استرداد المال، الدفع عند الاستلام، شحن مجاني."
+    "trustBadgesAlt": "جودة ممتازة، ضمان استرداد المال، الدفع عند الاستلام، شحن مجاني.",
+    "newsletterTitle": "النشرة البريدية",
+    "newsletterHint": "عروض وتحديثات — لا أكثر من رسالة أسبوعياً.",
+    "newsletterPlaceholder": "بريدك الإلكتروني",
+    "newsletterCta": "اشترك",
+    "newsletterThanks": "شكراً لتسجيلك.",
+    "colShop": "المتجر",
+    "colCompany": "الشركة",
+    "colCategories": "الفئات"
   },
   "announcement": {
     "shipping": "30 درهم — شحن مجاني في أنحاء المغرب",
@@ -12,6 +20,10 @@
   "nav": {
     "home": "الرئيسية",
     "shop": "المتجر",
+    "blog": "المدونة",
+    "deals": "العروض",
+    "searchAria": "البحث في المتجر",
+    "account": "حسابي",
     "cart": "السلة",
     "checkout": "الدفع",
     "dashboard": "حسابي",
@@ -23,6 +35,31 @@
     "drawerTitle": "القائمة"
   },
   "home": {
+    "storeHeroHeadline": "سيارتك تستحق إكسسوارات تدوم.",
+    "storeHeroSub": "قطع وإكسسوارات مختارة للمغرب — توصيل بسيط، دفع عند الاستلام، دعم سريع.",
+    "storeHeroCta": "تسوق الآن",
+    "storeHeroImageAlt": "إكسسوارات سيارات فاخرة",
+    "categoryShortcutsTitle": "تصفح حسب الفئة",
+    "featuredTitle": "منتجات مميزة",
+    "featuredSub": "الأكثر طلباً من عملائنا.",
+    "whyUsSectionTitle": "لماذا نحن",
+    "whyUsDeliveryTitle": "توصيل في أنحاء المغرب",
+    "whyUsDeliveryBody": "خيارات شحن تناسب مدينتك.",
+    "whyUsReturnsTitle": "إرجاع مبسط",
+    "whyUsReturnsBody": "مشكلة؟ نجد حلاً معك.",
+    "whyUsSupportTitle": "دعم واتساب",
+    "whyUsSupportBody": "استشارة ومتابعة بالعربية أو الفرنسية.",
+    "whyUsTrustTitle": "الدفع عند الاستلام",
+    "whyUsTrustBody": "ادفع عند استلام الطرد حيثما أمكن.",
+    "bestSellersTitle": "الأكثر مبيعاً",
+    "bestSellersSub": "ما يشتريه السائقون الآن.",
+    "brandStripTitle": "يثقون بنا",
+    "brandStripAria": "شركاء وعلامات",
+    "brandStrip1": "Premium Auto",
+    "brandStrip2": "Atlas Parts",
+    "brandStrip3": "RoadReady",
+    "brandStrip4": "CleanDrive",
+    "brandStrip5": "MotorCare",
     "heroEditorialKicker": "حتى خصم 30٪ على مجموعة مختارة",
     "heroEditorialTitle": "جود ديلز — إكسسوارات السيارات",
     "heroEditorialSub": "أكثر من متجر.",
@@ -97,7 +134,17 @@
     "apiErrorGeneric": "خطأ شبكة أو انتهاء وقت. تحقق من إعدادات Vercel وRailway.",
     "catalogEmpty": "الكتالوج فارغ. بعد نشر Railway يُنشأ حد أدنى من المنتجات تلقائياً؛ أو نفّذ: npx prisma db seed",
     "lowStockBadge": "كمية محدودة",
-    "quickAddAria": "أضف للسلة"
+    "quickAddAria": "أضف للسلة",
+    "sidebarCategories": "الفئات",
+    "sidebarSort": "الترتيب",
+    "allProducts": "كل المنتجات",
+    "sortPopular": "الأكثر شعبية",
+    "sortNew": "الأحدث",
+    "sortPriceAsc": "السعر ↑",
+    "sortPriceDesc": "السعر ↓",
+    "inStock": "متوفر",
+    "outOfStock": "نفد",
+    "viewProduct": "عرض"
   },
   "product": {
     "addToCart": "أضف للسلة",
@@ -110,14 +157,25 @@
     "related": "موصى به لك",
     "lowStock": "كمية محدودة",
     "boughtBy": "{count} مشترٍ راضٍ هذا الشهر",
-    "shippingFreeHint": "شحن مجاني حسب المدينة وقيمة الطلب."
+    "shippingFreeHint": "شحن مجاني حسب المدينة وقيمة الطلب.",
+    "benefit1": "جودة مضمونة — تغليف بعناية",
+    "benefit2": "مناسب للاستخدام اليومي في المغرب",
+    "benefit3": "دعم عبر واتساب",
+    "inStock": "متوفر — شحن سريع",
+    "outOfStock": "غير متوفر حالياً",
+    "secureCheckout": "الدفع والتوصيل"
   },
   "cart": {
     "title": "السلة",
     "empty": "سلتك فارغة.",
     "subtotal": "المجموع الجزئي",
     "shippingNote": "يُحسب عند الطلب حسب المنطقة",
-    "checkout": "إتمام الطلب"
+    "checkout": "إتمام الطلب",
+    "continueShopping": "متابعة التسوق",
+    "orderSummary": "الملخص",
+    "estimatedTotal": "الإجمالي التقديري",
+    "itemsCount": "{count, plural, zero {لا منتجات} one {منتج واحد} two {منتجان} few {# منتجات} many {# منتجاً} other {# منتج}}",
+    "refresh": "تحديث"
   },
   "checkout": {
     "title": "الطلب",
@@ -230,6 +288,12 @@
     "instagramDesc": "جديد وصور وإلهام على حسابنا @ysf._.xfk.",
     "instagramCta": "فتح إنستغرام",
     "instagramHandleLabel": "الحساب"
+  },
+  "blog": {
+    "eyebrow": "المدونة",
+    "title": "نصائح وأخبار",
+    "body": "قريباً: أدلة شراء وصيانة وجديد الكتالوج. يمكنك تصفح المتجر الآن.",
+    "ctaShop": "اذهب للمتجر"
   },
   "theme": {
     "light": "فاتح",

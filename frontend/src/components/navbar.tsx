@@ -2,51 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Link, usePathname } from "@/i18n/navigation";
-import { useTheme } from "./theme-provider";
 import { AtlasLogo } from "./atlas-logo";
 import { useCart } from "@/contexts/cart-context";
 import { MotionLink } from "@/components/motion-link";
-
-function IconSun({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width={15}
-      height={15}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-    </svg>
-  );
-}
-
-function IconMoon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width={15}
-      height={15}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
-  );
-}
 
 function IconMenuLines({ className }: { className?: string }) {
   return (
@@ -84,36 +45,90 @@ function IconClose({ className }: { className?: string }) {
   );
 }
 
+function IconSearch({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
+
+function IconUser({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
 export function Navbar() {
   const t = useTranslations("nav");
-  const tTheme = useTranslations("theme");
   const locale = useLocale();
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
+  const searchParams = useSearchParams();
   const { itemCount, addBumpSeq } = useCart();
   const otherLocale = locale === "fr" ? "ar" : "fr";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [navHidden, setNavHidden] = useState(false);
   const reduceMotion = useReducedMotion();
-  const isHome = pathname === "/";
-  const editorialTransparent = isHome && !scrolled;
 
-  const desktopLinks = [
-    { href: "/", label: t("home") },
-    { href: "/shop", label: t("shop") },
-    { href: "/contact", label: t("contact") },
-  ];
+  const dealsActive =
+    pathname.startsWith("/shop") && searchParams.get("sort") === "popular";
+
+  const desktopLinks: { href: string; label: string; active: () => boolean }[] =
+    [
+      { href: "/", label: t("home"), active: () => pathname === "/" },
+      {
+        href: "/shop",
+        label: t("shop"),
+        active: () =>
+          pathname.startsWith("/shop") &&
+          searchParams.get("sort") !== "popular",
+      },
+      {
+        href: "/blog",
+        label: t("blog"),
+        active: () => pathname.startsWith("/blog"),
+      },
+      {
+        href: "/contact",
+        label: t("contact"),
+        active: () => pathname.startsWith("/contact"),
+      },
+      {
+        href: "/shop?sort=popular",
+        label: t("deals"),
+        active: () => dealsActive,
+      },
+    ];
+
   const mobileLinks = [
-    ...desktopLinks,
+    ...desktopLinks.map((l) => ({ href: l.href, label: l.label })),
     { href: "/cart", label: t("cart") },
-    { href: "/admin", label: t("admin") },
+    { href: "/dashboard", label: t("account") },
   ];
-
-  function navActive(href: string) {
-    if (href === "/") return pathname === "/";
-    return pathname === href || pathname.startsWith(`${href}/`);
-  }
 
   const localeTitle = otherLocale === "ar" ? "العربية" : "Français";
 
@@ -122,29 +137,11 @@ export function Navbar() {
   }, [pathname]);
 
   useEffect(() => {
-    let lastY = window.scrollY;
-    const onScroll = () => {
-      const y = window.scrollY;
-      setScrolled(y > 12);
-      const desktop = window.matchMedia("(min-width: 768px)").matches;
-      const dy = y - lastY;
-      if (!desktop) {
-        setNavHidden(false);
-      } else if (y < 72) {
-        setNavHidden(false);
-      } else if (pathname === "/") {
-        setNavHidden(false);
-      } else if (dy > 10) {
-        setNavHidden(true);
-      } else if (dy < -10) {
-        setNavHidden(false);
-      }
-      lastY = y;
-    };
+    const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -164,250 +161,183 @@ export function Navbar() {
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileOpen]);
 
+  const linkClass = (active: boolean) =>
+    `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      active
+        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+        : "text-[var(--fg)] hover:bg-[var(--press-bg)] hover:text-[var(--fg)]"
+    }`;
+
   return (
     <motion.header
-      initial={{ y: -14, opacity: 0 }}
-      animate={
-        reduceMotion
-          ? { y: 0, opacity: 1 }
-          : {
-              y: navHidden ? "-118%" : 0,
-              opacity: navHidden ? 0.94 : 1,
-            }
-      }
-      transition={{
-        duration: 0.42,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-      className={`nav-futuristic sticky top-[calc(env(safe-area-inset-top)+1.75rem)] z-50 sm:top-[calc(env(safe-area-inset-top)+2rem)] transition-[background,backdrop-filter,border-color,box-shadow] duration-300 ${scrolled ? "nav-scrolled" : ""} ${editorialTransparent ? "nav-editorial-home" : "nav-editorial-solid"}`}
-      style={{
-        pointerEvents: navHidden && !mobileOpen ? ("none" as const) : "auto",
-      }}
+      initial={{ y: -8, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className={`nav-futuristic sticky top-[calc(env(safe-area-inset-top)+1.75rem)] z-50 sm:top-[calc(env(safe-area-inset-top)+2rem)] transition-shadow duration-200 ${scrolled ? "nav-scrolled" : ""}`}
     >
-      <div className="relative z-10 mx-auto max-w-6xl px-4 py-2">
-        <div className="flex h-14 items-center justify-between md:hidden">
+      <div className="relative z-10 mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3 md:gap-8">
           <motion.button
             type="button"
-            className="nav-icon-toggle flex h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center"
+            className="nav-icon-toggle flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--fg)] md:hidden"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav-drawer"
             aria-label={mobileOpen ? t("closeMenu") : t("openMenu")}
             onClick={() => setMobileOpen((o) => !o)}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.92 }}
+            whileTap={{ scale: 0.95 }}
           >
             {mobileOpen ? <IconClose className="h-5 w-5" /> : <IconMenuLines className="h-5 w-5" />}
           </motion.button>
 
           <MotionLink
             href="/"
-            className="absolute left-1/2 -translate-x-1/2 rounded-xl opacity-95 transition hover:opacity-100"
+            className="shrink-0 rounded-xl"
             onClick={() => setMobileOpen(false)}
           >
-            <AtlasLogo size={34} />
+            <span className="md:hidden">
+              <AtlasLogo size={34} />
+            </span>
+            <span className="hidden md:inline-flex">
+              <AtlasLogo size={38} />
+            </span>
           </MotionLink>
 
-          <div className="flex items-center gap-2">
-            <div className="nav-util-pill">
-              <motion.button
-                type="button"
-                className="nav-icon-toggle h-11 w-11"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.9 }}
-                aria-label={
-                  theme === "dark" ? tTheme("light") : tTheme("dark")
-                }
-                title={
-                  theme === "dark" ? tTheme("light") : tTheme("dark")
-                }
-              >
-                {theme === "dark" ? <IconSun className="h-4 w-4" /> : <IconMoon className="h-4 w-4" />}
-              </motion.button>
-              <div className="nav-util-divider" aria-hidden />
-              <Link
-                href={pathname}
-                locale={otherLocale}
-                className="nav-util-locale min-h-[44px] min-w-[44px] hover:text-[var(--accent)]"
-                title={localeTitle}
-                aria-label={localeTitle}
-              >
-                {otherLocale.toUpperCase()}
-              </Link>
-            </div>
-
-            <MotionLink
-              href="/cart"
-              className="nav-header-cart relative flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-base"
-              style={{ boxShadow: "0 0 20px -10px var(--accent-glow-soft)" }}
-              aria-label={t("cart")}
-              whileHover={{
-                scale: 1.06,
-                boxShadow: "0 0 28px -8px var(--accent-glow)",
-              }}
-            >
-              <motion.span
-                key={addBumpSeq}
-                className="leading-none inline-block"
-                aria-hidden
-                animate={
-                  reduceMotion || addBumpSeq === 0
-                    ? {}
-                    : { scale: [1, 1.22, 1], rotate: [0, -14, 10, 0] }
-                }
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              >
-                🛒
-              </motion.span>
-              {itemCount > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.5rem] font-bold text-[var(--bg)]">
-                  {itemCount > 9 ? "9+" : itemCount}
-                </span>
-              ) : null}
-            </MotionLink>
-          </div>
-        </div>
-
-        <div className="hidden h-16 items-center justify-between gap-4 md:flex">
-          <MotionLink
-            href="/"
-            className="group min-w-0 shrink-0 rounded-xl opacity-95 transition hover:opacity-100"
-            onClick={() => setMobileOpen(false)}
+          <nav
+            className="hidden items-center gap-0.5 md:flex"
+            aria-label={t("drawerTitle")}
           >
-            <AtlasLogo size={36} />
-          </MotionLink>
-
-          <nav className="nav-dock flex flex-1 items-center justify-center overflow-visible">
             {desktopLinks.map((l) => (
               <MotionLink
                 key={l.href}
                 href={l.href}
-                data-active={navActive(l.href) ? "true" : undefined}
-                className="nav-dock-link relative shrink-0 whitespace-nowrap"
-                whileHover={{ scale: 1.04, y: -1 }}
-                whileTap={{ scale: 0.95 }}
+                className={linkClass(l.active())}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
               >
                 {l.label}
               </MotionLink>
             ))}
           </nav>
+        </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="nav-util-pill">
-              <motion.button
-                type="button"
-                className="nav-icon-toggle"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.9 }}
-                aria-label={
-                  theme === "dark" ? tTheme("light") : tTheme("dark")
-                }
-                title={
-                  theme === "dark" ? tTheme("light") : tTheme("dark")
-                }
-              >
-                {theme === "dark" ? <IconSun /> : <IconMoon />}
-              </motion.button>
-              <div className="nav-util-divider" aria-hidden />
-              <Link
-                href={pathname}
-                locale={otherLocale}
-                className="nav-util-locale hover:text-[var(--accent)]"
-                title={localeTitle}
-                aria-label={localeTitle}
-              >
-                {otherLocale.toUpperCase()}
-              </Link>
-            </div>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <MotionLink
+            href="/shop"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-[var(--press-bg)] hover:text-[var(--accent)]"
+            aria-label={t("searchAria")}
+            title={t("searchAria")}
+            whileTap={{ scale: 0.95 }}
+          >
+            <IconSearch className="h-5 w-5" />
+          </MotionLink>
 
-            <MotionLink
-              href="/cart"
-              className="nav-header-cart relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-sm transition hover:border-[var(--accent)]/35 hover:text-[var(--accent)]"
-              style={{ boxShadow: "0 0 20px -10px var(--accent-glow-soft)" }}
-              aria-label={t("cart")}
-              whileHover={{
-                scale: 1.06,
-                boxShadow: "0 0 26px -8px var(--accent-glow)",
-              }}
+          <MotionLink
+            href="/dashboard"
+            className="hidden h-10 w-10 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-[var(--press-bg)] hover:text-[var(--accent)] sm:flex"
+            aria-label={t("account")}
+            title={t("account")}
+            whileTap={{ scale: 0.95 }}
+          >
+            <IconUser className="h-5 w-5" />
+          </MotionLink>
+
+          <div className="flex items-center rounded-lg border border-[var(--border)] bg-[var(--press-bg)]/80 p-0.5">
+            <Link
+              href={pathname}
+              locale={otherLocale}
+              className="flex min-h-9 min-w-9 items-center justify-center rounded-md px-2 text-xs font-semibold text-[var(--muted)] hover:text-[var(--accent)]"
+              title={localeTitle}
+              aria-label={localeTitle}
             >
-              <motion.span
-                key={addBumpSeq}
-                className="leading-none inline-block"
-                aria-hidden
-                animate={
-                  reduceMotion || addBumpSeq === 0
-                    ? {}
-                    : { scale: [1, 1.2, 1], rotate: [0, -12, 8, 0] }
-                }
-                transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
-              >
-                🛒
-              </motion.span>
-              {itemCount > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.5rem] font-bold text-[var(--bg)]">
-                  {itemCount > 9 ? "9+" : itemCount}
-                </span>
-              ) : null}
-            </MotionLink>
+              {otherLocale.toUpperCase()}
+            </Link>
           </div>
+
+          <MotionLink
+            href="/cart"
+            className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--press-bg)] text-lg transition hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
+            aria-label={t("cart")}
+            whileTap={{ scale: 0.95 }}
+          >
+            <motion.span
+              key={addBumpSeq}
+              aria-hidden
+              animate={
+                reduceMotion || addBumpSeq === 0
+                  ? {}
+                  : { scale: [1, 1.15, 1] }
+              }
+              transition={{ duration: 0.4 }}
+            >
+              🛒
+            </motion.span>
+            {itemCount > 0 ? (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.5rem] font-bold text-white">
+                {itemCount > 9 ? "9+" : itemCount}
+              </span>
+            ) : null}
+          </MotionLink>
         </div>
       </div>
 
       <AnimatePresence>
         {mobileOpen ? (
-          <>
-            <motion.nav
-              id="mobile-nav-drawer"
-              className="fixed inset-0 z-50 flex h-dvh w-full flex-col bg-black/75 backdrop-blur-md md:hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <div className="flex items-center justify-end px-6 pb-3 pt-[env(safe-area-inset-top)]">
-                <motion.button
-                  type="button"
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--press-bg)] text-[var(--muted)]"
-                  whileTap={{ scale: 0.92 }}
-                  aria-label={t("closeMenu")}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <IconClose />
-                </motion.button>
-              </div>
-              <motion.ul
-                className="flex flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2"
-                initial={{ x: 28, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 20, opacity: 0 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          <motion.nav
+            id="mobile-nav-drawer"
+            className="fixed inset-0 z-50 flex h-dvh flex-col bg-[var(--bg)]/98 backdrop-blur-md md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+              <span className="text-sm font-semibold text-[var(--fg)]">
+                {t("drawerTitle")}
+              </span>
+              <motion.button
+                type="button"
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--muted)]"
+                whileTap={{ scale: 0.92 }}
+                aria-label={t("closeMenu")}
+                onClick={() => setMobileOpen(false)}
               >
-                {mobileLinks.map((l) => (
+                <IconClose />
+              </motion.button>
+            </div>
+            <ul className="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+              {mobileLinks.map((l) => {
+                const def = desktopLinks.find((d) => d.href === l.href);
+                const active = def ? def.active() : pathname.startsWith(l.href);
+                return (
                   <li key={l.href}>
                     <MotionLink
                       href={l.href}
-                      data-active={navActive(l.href) ? "true" : undefined}
-                      className={`relative flex min-h-[52px] items-center rounded-xl px-4 text-base font-medium transition ${
-                        navActive(l.href)
-                          ? "bg-[var(--accent-dim)] text-[var(--accent)]"
-                          : "text-[var(--fg)] hover:bg-[var(--press-bg)]"
-                      }`}
+                      className={`flex min-h-[48px] items-center rounded-xl px-4 ${linkClass(active)}`}
                       onClick={() => setMobileOpen(false)}
-                      whileTap={{ scale: 0.98 }}
+                      whileTap={{ scale: 0.99 }}
                     >
                       <span className="flex-1">{l.label}</span>
                       {l.href === "/cart" && itemCount > 0 ? (
-                        <span className="ms-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-xs font-bold text-[var(--bg)]">
+                        <span className="ms-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-xs font-bold text-white">
                           {itemCount > 9 ? "9+" : itemCount}
                         </span>
                       ) : null}
                     </MotionLink>
                   </li>
-                ))}
-              </motion.ul>
-            </motion.nav>
-          </>
+                );
+              })}
+              <li className="pt-2">
+                <MotionLink
+                  href="/dashboard"
+                  className="flex min-h-[48px] items-center gap-2 rounded-xl px-4 text-sm font-medium text-[var(--muted)] hover:bg-[var(--press-bg)]"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <IconUser className="h-5 w-5" />
+                  {t("account")}
+                </MotionLink>
+              </li>
+            </ul>
+          </motion.nav>
         ) : null}
       </AnimatePresence>
     </motion.header>

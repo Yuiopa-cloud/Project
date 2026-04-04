@@ -65,18 +65,17 @@ export function ShopProductCard({
     >
       <MotionLink
         href={`/product/${product.slug}`}
-        className="card-chrome premium-product-card block overflow-hidden rounded-2xl"
+        className="premium-product-card group/card block overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm transition hover:border-[var(--accent)]/20 hover:shadow-md"
       >
-        <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900 sm:aspect-video">
+        <div className="relative aspect-[4/3] overflow-hidden bg-[var(--press-bg)] sm:aspect-[5/4]">
           <ProductImage
             src={product.images?.[0]}
             alt={title}
             fill
-            className="transition duration-700 ease-out group-hover/card:scale-[1.08]"
+            className="object-cover transition duration-500 ease-out group-hover/card:scale-[1.04]"
           />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--bg)]/70 via-transparent to-transparent opacity-60 transition group-hover/card:opacity-90" />
           {product.lowStock ? (
-            <span className="absolute left-3 top-3 rounded-full bg-rose-500/90 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg">
+            <span className="absolute left-3 top-3 rounded-md bg-rose-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
               {t("lowStockBadge")}
             </span>
           ) : null}
@@ -84,29 +83,40 @@ export function ShopProductCard({
             type="button"
             onClick={quickAdd}
             disabled={product.stock < 1 || adding}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="absolute bottom-3 end-3 z-10 flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--primary-from)] to-[var(--primary-to)] text-lg font-bold leading-none text-[#f8fafc] shadow-[0_10px_32px_-8px_color-mix(in_srgb,var(--primary-mid)_40%,transparent)] disabled:opacity-40"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            className="absolute bottom-3 end-3 z-10 flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-[var(--accent)] text-lg font-bold leading-none text-white shadow-lg disabled:opacity-40"
             aria-label={t("quickAddAria")}
           >
-            {adding ? <MiniSpinner className="h-4 w-4 border-2" /> : "+"}
+            {adding ? <MiniSpinner className="h-4 w-4 border-2 border-white border-t-transparent" /> : "+"}
           </motion.button>
         </div>
-        <div className="p-4">
-          <p className="line-clamp-2 text-sm font-medium text-[var(--fg)] transition group-hover/card:text-[var(--accent)]">
+        <div className="space-y-3 p-4">
+          <p className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-[var(--fg)]">
             {title}
           </p>
-          <p className="mt-2 flex flex-wrap items-baseline gap-2">
-            <span className="text-lg font-bold tabular-nums text-[var(--accent-hot)]">
-              {product.priceMad}
-            </span>
-            <span className="text-xs text-[var(--muted)]">MAD</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             {product.ratingAvg != null ? (
               <span className="text-xs font-medium text-[var(--muted)]">
                 ★ {product.ratingAvg.toFixed(1)}
               </span>
-            ) : null}
-          </p>
+            ) : (
+              <span className="text-xs text-[var(--muted)]">—</span>
+            )}
+            <span className="text-xs text-[var(--border)]">·</span>
+            <span className="text-xs text-[var(--muted)]">
+              {product.stock < 1 ? t("outOfStock") : t("inStock")}
+            </span>
+          </div>
+          <div className="flex items-end justify-between gap-2 border-t border-[var(--border)] pt-3">
+            <p className="text-lg font-bold tabular-nums text-[var(--fg)]">
+              {product.priceMad}{" "}
+              <span className="text-xs font-normal text-[var(--muted)]">MAD</span>
+            </p>
+            <span className="rounded-lg bg-[var(--accent-dim)] px-2.5 py-1 text-xs font-semibold text-[var(--accent)]">
+              {t("viewProduct")}
+            </span>
+          </div>
         </div>
       </MotionLink>
     </motion.div>

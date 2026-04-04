@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -55,7 +56,13 @@ export default async function LocaleLayout({
           <GoogleAnalytics />
           <div className="flex min-h-dvh min-h-full flex-col">
             <TopAnnouncementMarquee />
-            <Navbar />
+            <Suspense
+              fallback={
+                <div className="h-14 border-b border-[var(--border)] bg-white sm:h-16" />
+              }
+            >
+              <Navbar />
+            </Suspense>
             <main className="min-w-0 flex-1 pb-[max(0px,env(safe-area-inset-bottom))]">
               {children}
             </main>

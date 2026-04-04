@@ -91,6 +91,12 @@ export default async function ProductPage({
           trustCod: t("trustCod"),
           trustDelivery: t("trustDelivery"),
           trustClients: t("trustClients"),
+          benefit1: t("benefit1"),
+          benefit2: t("benefit2"),
+          benefit3: t("benefit3"),
+          inStock: t("inStock"),
+          outOfStock: t("outOfStock"),
+          secureCheckout: t("secureCheckout"),
         }}
       />
     </div>

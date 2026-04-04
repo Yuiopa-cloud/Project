@@ -116,14 +116,14 @@ export function ProductClient({
         </motion.div>
       ) : null}
 
-      <div className="grid gap-8 sm:gap-10 lg:grid-cols-2">
-        <div className="space-y-3">
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
+        <div className="space-y-4">
           <motion.button
             type="button"
             onClick={() => setZoom(true)}
             whileHover={{ scale: 1.01 }}
             transition={{ type: "spring", stiffness: 300, damping: 24 }}
-            className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-zinc-900 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.75)] sm:aspect-square sm:rounded-3xl sm:shadow-[0_32px_100px_-28px_rgba(0,0,0,0.8)]"
+            className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--press-bg)] shadow-sm sm:rounded-3xl"
           >
             <ProductImage
               src={main}
@@ -151,28 +151,57 @@ export function ProductClient({
             ))}
           </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-semibold leading-tight text-[var(--fg)] sm:text-3xl">
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-semibold leading-tight text-[var(--fg)] sm:text-3xl lg:text-4xl">
             {title}
           </h1>
-          <p className="mt-4 text-2xl font-medium text-[var(--accent-hot)]">
+          <p className="mt-4 text-3xl font-bold tabular-nums text-[var(--fg)] sm:text-4xl">
             {product.priceMad}{" "}
-            <span className="text-sm text-[var(--muted)]">MAD</span>
+            <span className="text-lg font-medium text-[var(--muted)]">MAD</span>
           </p>
-          {product.lowStock ? (
-            <p className="mt-2 text-sm text-rose-400">{labels.lowStock}</p>
-          ) : null}
-          <p className="mt-2 text-xs text-[var(--muted)]">{labels.boughtBy}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-full border border-[var(--accent)]/35 bg-[var(--accent-dim)] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--accent)]">
-              {labels.trustCod ?? "COD"}
-            </span>
-            <span className="rounded-full border border-[var(--border)] bg-[var(--press-bg)] px-3 py-1 text-[11px] font-medium text-[var(--muted)]">
-              {labels.trustDelivery ?? ""}
-            </span>
-            <span className="rounded-full border border-[var(--border)] bg-[var(--press-bg)] px-3 py-1 text-[11px] font-medium text-[var(--muted)]">
-              {labels.trustClients ?? ""}
-            </span>
+          <p className="mt-2 text-sm font-medium text-[var(--accent)]">
+            {product.stock < 1
+              ? labels.outOfStock
+              : product.lowStock
+                ? labels.lowStock
+                : labels.inStock}
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">{labels.boughtBy}</p>
+          <ul className="mt-6 space-y-2 border-t border-[var(--border)] pt-6 text-sm text-[var(--fg)]">
+            <li className="flex gap-2">
+              <span className="text-[var(--accent)]" aria-hidden>
+                ✓
+              </span>
+              {labels.benefit1}
+            </li>
+            <li className="flex gap-2">
+              <span className="text-[var(--accent)]" aria-hidden>
+                ✓
+              </span>
+              {labels.benefit2}
+            </li>
+            <li className="flex gap-2">
+              <span className="text-[var(--accent)]" aria-hidden>
+                ✓
+              </span>
+              {labels.benefit3}
+            </li>
+          </ul>
+          <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--press-bg)]/80 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              {labels.secureCheckout}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-dim)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
+                {labels.trustCod}
+              </span>
+              <span className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-[11px] font-medium text-[var(--muted)]">
+                {labels.trustDelivery}
+              </span>
+              <span className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-[11px] font-medium text-[var(--muted)]">
+                {labels.trustClients}
+              </span>
+            </div>
           </div>
           <p className="mt-6 whitespace-pre-line text-sm leading-relaxed text-[var(--muted)]">
             {description}
@@ -184,7 +213,7 @@ export function ProductClient({
           ) : null}
           <motion.div
             layout
-            className="mt-8 flex flex-col gap-3 border-t border-[var(--border)] bg-[var(--bg)]/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl fixed inset-x-0 bottom-0 z-40 md:static md:border-0 md:bg-transparent md:p-0 md:pb-0 md:backdrop-blur-0"
+            className="mt-8 flex flex-col gap-3 border-t border-[var(--border)] bg-[var(--card)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_-12px_rgba(15,23,42,0.08)] fixed inset-x-0 bottom-0 z-40 md:static md:rounded-2xl md:border md:p-5 md:shadow-sm"
           >
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-stretch">
               <motion.button
@@ -194,11 +223,11 @@ export function ProductClient({
                 animate={
                   addedPulse
                     ? {
-                        scale: [1, 1.04, 1],
+                        scale: [1, 1.03, 1],
                         boxShadow: [
-                          "0 0 0 0 rgba(45,212,191,0.35)",
-                          "0 0 0 14px rgba(45,212,191,0)",
-                          "0 0 0 0 rgba(45,212,191,0)",
+                          "0 0 0 0 rgba(22,163,74,0.35)",
+                          "0 0 0 12px rgba(22,163,74,0)",
+                          "0 0 0 0 rgba(22,163,74,0)",
                         ],
                       }
                     : {}
@@ -209,11 +238,11 @@ export function ProductClient({
                   y: adding || product.stock < 1 ? 0 : -1,
                 }}
                 whileTap={{ scale: 0.97 }}
-                className="btn-primary-motion min-h-[52px] flex-1 rounded-2xl bg-gradient-to-r from-[var(--primary-from)] via-[var(--primary-mid)] to-[var(--primary-to)] px-6 py-3.5 text-sm font-semibold text-[#f8fafc] disabled:opacity-40"
+                className="min-h-[52px] flex-1 rounded-xl bg-[var(--accent)] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_32px_-12px_rgba(22,163,74,0.4)] disabled:opacity-40"
               >
                 {adding ? (
                   <MiniSpinner
-                    className="h-5 w-5 border-2 border-[#f8fafc]/85 border-t-transparent"
+                    className="h-5 w-5 border-2 border-white/85 border-t-transparent"
                     label={String(labels.addToCart)}
                   />
                 ) : (
@@ -226,7 +255,7 @@ export function ProductClient({
                 disabled={product.stock < 1}
                 whileHover={{ scale: product.stock < 1 ? 1 : 1.02 }}
                 whileTap={{ scale: 0.97 }}
-                className="min-h-[52px] flex-1 rounded-2xl border-2 border-[color-mix(in_srgb,var(--primary-mid)_55%,var(--glass-border))] bg-[var(--glass-bg)] px-6 py-3.5 text-sm font-semibold text-[var(--fg)] shadow-[0_0_24px_-10px_color-mix(in_srgb,var(--primary-mid)_25%,transparent)] backdrop-blur-md disabled:opacity-40"
+                className="min-h-[52px] flex-1 rounded-xl border-2 border-[var(--accent)] bg-[var(--card)] px-6 py-3.5 text-sm font-semibold text-[var(--accent)] disabled:opacity-40"
               >
                 {labels.buyNow ?? "Buy now"}
               </motion.button>

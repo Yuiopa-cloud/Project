@@ -464,7 +464,7 @@ export function CheckoutClient() {
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       onKeyDown={focusNextOnEnter(lastNameRef)}
-                      className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
+                      className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                       whileFocus={{ scale: 1.005 }}
                       transition={{ duration: 0.2 }}
                     />
@@ -480,7 +480,7 @@ export function CheckoutClient() {
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       onKeyDown={focusNextOnEnter(emailRef)}
-                      className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
+                      className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                       whileFocus={{ scale: 1.005 }}
                       transition={{ duration: 0.2 }}
                     />
@@ -498,7 +498,7 @@ export function CheckoutClient() {
                     value={guestEmail}
                     onChange={(e) => setGuestEmail(e.target.value)}
                     onKeyDown={focusNextOnEnter(phoneRef)}
-                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
+                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                     whileFocus={{ scale: 1.005 }}
                     transition={{ duration: 0.2 }}
                   />
@@ -517,7 +517,7 @@ export function CheckoutClient() {
                     onChange={(e) => setPhone(e.target.value)}
                     onKeyDown={focusNextOnEnter(cityRef)}
                     placeholder="0612345678"
-                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
+                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                     whileFocus={{ scale: 1.005 }}
                     transition={{ duration: 0.2 }}
                   />
@@ -543,7 +543,7 @@ export function CheckoutClient() {
                     value={cityCode}
                     onChange={(e) => setCityCode(e.target.value)}
                     onKeyDown={focusNextOnEnter(line1Ref)}
-                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
+                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                   >
                     {zones.length === 0 ? (
                       <option value="CASA">Casablanca (CASA)</option>
@@ -569,7 +569,7 @@ export function CheckoutClient() {
                     value={line1}
                     onChange={(e) => setLine1(e.target.value)}
                     onKeyDown={focusNextOnEnter(quarterRef)}
-                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
+                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                     whileFocus={{ scale: 1.005 }}
                     transition={{ duration: 0.2 }}
                   />
@@ -585,7 +585,7 @@ export function CheckoutClient() {
                     value={quarter}
                     onChange={(e) => setQuarter(e.target.value)}
                     onKeyDown={focusNextOnEnter(postalRef)}
-                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
+                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                     whileFocus={{ scale: 1.005 }}
                     transition={{ duration: 0.2 }}
                   />
@@ -601,7 +601,7 @@ export function CheckoutClient() {
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
                     onKeyDown={submitFormOnEnter}
-                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-black/20 px-3 py-2.5 text-sm text-[var(--fg)]"
+                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                     whileFocus={{ scale: 1.005 }}
                     transition={{ duration: 0.2 }}
                   />
@@ -623,7 +623,7 @@ export function CheckoutClient() {
                     className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 text-sm transition-colors ${
                       payment === "CASH_ON_DELIVERY"
                         ? "border-[var(--accent)]/60 bg-[var(--accent-dim)]/35"
-                        : "border-[var(--border)] bg-black/15"
+                        : "border-[var(--border)] bg-[var(--press-bg)]"
                     }`}
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
@@ -641,7 +641,7 @@ export function CheckoutClient() {
                     className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 text-sm transition-colors ${
                       payment === "STRIPE"
                         ? "border-[var(--accent)]/60 bg-[var(--accent-dim)]/35"
-                        : "border-[var(--border)] bg-black/15 opacity-90"
+                        : "border-[var(--border)] bg-[var(--press-bg)] opacity-90"
                     }`}
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
@@ -707,7 +707,7 @@ export function CheckoutClient() {
                 }}
                 whileTap={{ scale: 0.97 }}
                 transition={spring}
-                className="relative w-full overflow-hidden rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] py-3.5 text-sm font-bold text-slate-900 shadow-[0_10px_32px_-10px_var(--accent-glow)] disabled:opacity-45"
+                className="relative w-full overflow-hidden rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] py-3.5 text-sm font-bold text-white shadow-[0_10px_32px_-10px_var(--accent-glow)] disabled:opacity-45"
               >
                 {!busy && canSubmit ? (
                   <motion.span

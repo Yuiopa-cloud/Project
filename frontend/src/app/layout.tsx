@@ -11,10 +11,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f2efe9" },
-    { media: "(prefers-color-scheme: dark)", color: "#050508" },
-  ],
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#f4f7f4" }],
 };
 
 const inter = Inter({
@@ -40,7 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       dir="ltr"
       suppressHydrationWarning
       className="h-full"
-      data-store="editorial"
+      data-theme="light"
     >
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} min-h-dvh min-h-full overflow-x-clip bg-[var(--bg)] font-sans text-[var(--fg)] antialiased [font-feature-settings:'cv02','cv03','cv04','cv11']`}

@@ -2,7 +2,15 @@
   "brand": "Good Deals",
   "footer": {
     "tagline": "Accessoires premium · Maroc · Livraison & paiement sécurisés.",
-    "trustBadgesAlt": "Engagements : qualité premium, garantie satisfait ou remboursé, paiement à la livraison, livraison gratuite."
+    "trustBadgesAlt": "Engagements : qualité premium, garantie satisfait ou remboursé, paiement à la livraison, livraison gratuite.",
+    "newsletterTitle": "Newsletter",
+    "newsletterHint": "Offres et nouveautés — pas plus d’un email par semaine.",
+    "newsletterPlaceholder": "Votre email",
+    "newsletterCta": "S’inscrire",
+    "newsletterThanks": "Merci pour votre inscription.",
+    "colShop": "Boutique",
+    "colCompany": "Entreprise",
+    "colCategories": "Catégories"
   },
   "announcement": {
     "shipping": "30DH — FREE SHIPPING ALL OVER MOROCCO",
@@ -12,6 +20,10 @@
   "nav": {
     "home": "Accueil",
     "shop": "Boutique",
+    "blog": "Blog",
+    "deals": "Promos",
+    "searchAria": "Rechercher dans la boutique",
+    "account": "Mon compte",
     "cart": "Panier",
     "checkout": "Paiement",
     "dashboard": "Espace client",
@@ -23,6 +35,31 @@
     "drawerTitle": "Navigation"
   },
   "home": {
+    "storeHeroHeadline": "Votre voiture mérite des accessoires qui durent.",
+    "storeHeroSub": "Pièces et accessoires auto sélectionnés pour le Maroc — livraison simple, paiement à la réception, support réactif.",
+    "storeHeroCta": "Acheter maintenant",
+    "storeHeroImageAlt": "Accessoires automobile premium",
+    "categoryShortcutsTitle": "Parcourir par catégorie",
+    "featuredTitle": "Produits vedettes",
+    "featuredSub": "Les articles les plus demandés par nos clients.",
+    "whyUsSectionTitle": "Pourquoi nous choisir",
+    "whyUsDeliveryTitle": "Livraison partout",
+    "whyUsDeliveryBody": "Expédition au Maroc avec options adaptées à votre ville.",
+    "whyUsReturnsTitle": "Retours simples",
+    "whyUsReturnsBody": "Un souci ? Nous trouvons une solution avec vous.",
+    "whyUsSupportTitle": "Support WhatsApp",
+    "whyUsSupportBody": "Conseils et suivi en français ou en arabe.",
+    "whyUsTrustTitle": "Paiement à la réception",
+    "whyUsTrustBody": "COD là où c’est possible — vous payez à la livraison.",
+    "bestSellersTitle": "Meilleures ventes",
+    "bestSellersSub": "Ce que les conducteurs achètent en ce moment.",
+    "brandStripTitle": "Ils nous font confiance",
+    "brandStripAria": "Partenaires et marques",
+    "brandStrip1": "Premium Auto",
+    "brandStrip2": "Atlas Parts",
+    "brandStrip3": "RoadReady",
+    "brandStrip4": "CleanDrive",
+    "brandStrip5": "MotorCare",
     "heroEditorialKicker": "JUSQU’À -30 % SUR UNE SÉLECTION",
     "heroEditorialTitle": "GOOD DEALS — ACCESSOIRES AUTO",
     "heroEditorialSub": "PLUS QU’UNE BOUTIQUE.",
@@ -97,7 +134,17 @@
     "apiErrorGeneric": "Erreur réseau ou timeout. Vérifiez la configuration Vercel → Railway.",
     "catalogEmpty": "Le catalogue API est vide. Après déploiement Railway, un jeu minimal de produits est créé automatiquement ; sinon lancez : npx prisma db seed",
     "lowStockBadge": "Stock limité",
-    "quickAddAria": "Ajouter au panier"
+    "quickAddAria": "Ajouter au panier",
+    "sidebarCategories": "Catégories",
+    "sidebarSort": "Trier par",
+    "allProducts": "Tous les produits",
+    "sortPopular": "Popularité",
+    "sortNew": "Nouveautés",
+    "sortPriceAsc": "Prix croissant",
+    "sortPriceDesc": "Prix décroissant",
+    "inStock": "En stock",
+    "outOfStock": "Rupture",
+    "viewProduct": "Voir"
   },
   "product": {
     "addToCart": "Ajouter au panier",
@@ -110,14 +157,25 @@
     "related": "Recommandé pour vous",
     "lowStock": "Stock limité — commandez vite",
     "boughtBy": "{count} acheteurs satisfaits ce mois-ci",
-    "shippingFreeHint": "Livraison offerte selon votre panier et votre ville."
+    "shippingFreeHint": "Livraison offerte selon votre panier et votre ville.",
+    "benefit1": "Qualité vérifiée — emballage soigné",
+    "benefit2": "Adapté à l’usage quotidien au Maroc",
+    "benefit3": "Support client sur WhatsApp",
+    "inStock": "En stock — expédition rapide",
+    "outOfStock": "Actuellement indisponible",
+    "secureCheckout": "Paiement & livraison"
   },
   "cart": {
     "title": "Panier",
     "empty": "Votre panier est vide.",
     "subtotal": "Sous-total",
     "shippingNote": "Frais calculés à la commande (par zone)",
-    "checkout": "Passer commande"
+    "checkout": "Passer commande",
+    "continueShopping": "Continuer mes achats",
+    "orderSummary": "Résumé",
+    "estimatedTotal": "Total estimé",
+    "itemsCount": "{count, plural, one {# article} other {# articles}}",
+    "refresh": "Actualiser"
   },
   "checkout": {
     "title": "Commande",
@@ -230,6 +288,12 @@
     "instagramDesc": "Nouveautés, coulisses et inspirations auto sur notre compte @ysf._.xfk.",
     "instagramCta": "Voir le profil Instagram",
     "instagramHandleLabel": "Compte"
+  },
+  "blog": {
+    "eyebrow": "Blog",
+    "title": "Conseils & actualités",
+    "body": "Bientôt : guides d’achat, entretien auto et nouveautés catalogue. En attendant, parcourez la boutique.",
+    "ctaShop": "Voir la boutique"
   },
   "theme": {
     "light": "Clair",

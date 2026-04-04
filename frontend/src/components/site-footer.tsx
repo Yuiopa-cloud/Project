@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { AtlasLogo } from "./atlas-logo";
 import { MotionLink } from "@/components/motion-link";
+import { FooterNewsletter } from "@/components/footer-newsletter";
 import { IconInstagram } from "@/components/icon-instagram";
 import {
   INSTAGRAM_URL,
@@ -15,46 +16,31 @@ import {
 export function SiteFooter() {
   const t = useTranslations();
   const tFooter = useTranslations("footer");
+  const tHome = useTranslations("home");
 
   return (
     <motion.footer
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.6 }}
-      className="relative mt-24 overflow-hidden border-t border-[var(--glass-border)] bg-[var(--footer-bg)] px-4 py-12 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-14 md:px-6"
+      transition={{ duration: 0.5 }}
+      className="mt-20 border-t border-[var(--border)] bg-[var(--footer-bg)] px-4 py-14 pb-[max(2rem,env(safe-area-inset-bottom))] md:px-6"
     >
-      <div className="footer-aurora pointer-events-none absolute inset-0" />
-      <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-6 text-center md:flex-row md:justify-between md:text-start">
-        <MotionLink href="/" className="flex items-center gap-3 rounded-xl">
-          <AtlasLogo size={48} />
-        </MotionLink>
-        <p className="max-w-sm text-sm leading-relaxed text-[var(--muted)]">
-          {tFooter("tagline")}
-        </p>
-        <div className="flex flex-col items-center gap-5 md:items-end">
-          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-[var(--muted)] md:justify-end">
-            <MotionLink href="/shop" className="footer-link">
-              Boutique
-            </MotionLink>
-            <MotionLink href="/faq" className="footer-link">
-              FAQ
-            </MotionLink>
-            <MotionLink href="/contact" className="footer-link">
-              Contact
-            </MotionLink>
-            <MotionLink href="/admin" className="footer-link">
-              Admin
-            </MotionLink>
-          </div>
-          <div className="flex items-center justify-center gap-3 md:justify-end">
+      <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">
+        <div className="lg:col-span-4">
+          <MotionLink href="/" className="inline-flex rounded-xl">
+            <AtlasLogo size={44} />
+          </MotionLink>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-[var(--muted)]">
+            {tFooter("tagline")}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
             <a
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noreferrer"
-              className="flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--muted)] backdrop-blur-md transition hover:border-[var(--accent)]/35 hover:text-[var(--accent)] hover:shadow-[0_0_24px_-8px_var(--accent-glow)]"
-              aria-label="Instagram @ysf._.xfk"
-              title="Instagram @ysf._.xfk"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--muted)] transition hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
+              aria-label="Instagram"
             >
               <IconInstagram size={20} />
             </a>
@@ -62,27 +48,120 @@ export function SiteFooter() {
               href={WHATSAPP_CHAT_URL}
               target="_blank"
               rel="noreferrer"
-              className="min-h-[44px] rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-sm font-semibold text-[var(--muted)] backdrop-blur-md transition hover:border-[#25D366]/50 hover:text-[#25D366]"
+              className="inline-flex min-h-11 items-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-sm font-semibold text-[var(--muted)] transition hover:border-[#25D366]/40 hover:text-[#25D366]"
             >
               WhatsApp
             </a>
-            <span className="text-[0.65rem] text-[var(--muted)]">{PHONE_DISPLAY_FR}</span>
+          </div>
+          <p className="mt-4 text-xs text-[var(--muted)]">{PHONE_DISPLAY_FR}</p>
+        </div>
+
+        <div className="grid gap-10 sm:grid-cols-2 lg:col-span-5 lg:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              {tFooter("colShop")}
+            </p>
+            <ul className="mt-4 space-y-2 text-sm">
+              <li>
+                <MotionLink href="/shop" className="footer-link text-[var(--fg)]">
+                  {t("nav.shop")}
+                </MotionLink>
+              </li>
+              <li>
+                <MotionLink
+                  href="/shop?sort=popular"
+                  className="footer-link text-[var(--fg)]"
+                >
+                  {t("nav.deals")}
+                </MotionLink>
+              </li>
+              <li>
+                <MotionLink href="/cart" className="footer-link text-[var(--fg)]">
+                  {t("nav.cart")}
+                </MotionLink>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              {tFooter("colCompany")}
+            </p>
+            <ul className="mt-4 space-y-2 text-sm">
+              <li>
+                <MotionLink href="/blog" className="footer-link text-[var(--fg)]">
+                  {t("nav.blog")}
+                </MotionLink>
+              </li>
+              <li>
+                <MotionLink href="/contact" className="footer-link text-[var(--fg)]">
+                  {t("nav.contact")}
+                </MotionLink>
+              </li>
+              <li>
+                <MotionLink href="/faq" className="footer-link text-[var(--fg)]">
+                  {t("nav.faq")}
+                </MotionLink>
+              </li>
+            </ul>
+          </div>
+          <div className="sm:col-span-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              {tFooter("colCategories")}
+            </p>
+            <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <li>
+                <MotionLink
+                  href="/shop?category=interieur"
+                  className="footer-link text-[var(--fg)]"
+                >
+                  {tHome("catInterior")}
+                </MotionLink>
+              </li>
+              <li>
+                <MotionLink
+                  href="/shop?category=exterieur"
+                  className="footer-link text-[var(--fg)]"
+                >
+                  {tHome("catExterior")}
+                </MotionLink>
+              </li>
+              <li>
+                <MotionLink
+                  href="/shop?category=performance"
+                  className="footer-link text-[var(--fg)]"
+                >
+                  {tHome("catPerformance")}
+                </MotionLink>
+              </li>
+              <li>
+                <MotionLink
+                  href="/shop?category=entretien"
+                  className="footer-link text-[var(--fg)]"
+                >
+                  {tHome("catCare")}
+                </MotionLink>
+              </li>
+            </ul>
           </div>
         </div>
-      </div>
-      <div className="relative mx-auto mt-10 w-full max-w-3xl px-2">
-        <div className="rounded-2xl border border-[color-mix(in_srgb,var(--accent)_14%,var(--glass-border))] bg-[var(--glass-bg)] px-4 py-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_16px_40px_-28px_rgba(0,0,0,0.25)] backdrop-blur-xl">
-          <Image
-            src="/brand/trust-badges.png"
-            alt={tFooter("trustBadgesAlt")}
-            width={790}
-            height={241}
-            className="mx-auto h-auto w-full max-h-20 object-contain opacity-95 sm:max-h-24 md:max-h-[5.5rem] dark:brightness-[1.08] dark:contrast-[1.02]"
-            sizes="(max-width: 768px) 100vw, 672px"
-          />
+
+        <div className="lg:col-span-3">
+          <FooterNewsletter />
         </div>
       </div>
-      <p className="relative mt-8 text-center text-[0.65rem] text-[var(--muted)]">
+
+      <div className="mx-auto mt-12 max-w-6xl rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-5">
+        <Image
+          src="/brand/trust-badges.png"
+          alt={tFooter("trustBadgesAlt")}
+          width={790}
+          height={241}
+          className="mx-auto h-auto max-h-20 w-full object-contain sm:max-h-24"
+          sizes="(max-width: 768px) 100vw, 672px"
+        />
+      </div>
+
+      <p className="mx-auto mt-8 max-w-6xl text-center text-[0.7rem] text-[var(--muted)]">
         © {new Date().getFullYear()} {t("brand")} · Maroc
       </p>
     </motion.footer>
