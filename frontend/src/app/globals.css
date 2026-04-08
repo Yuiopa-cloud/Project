@@ -182,61 +182,61 @@ html[data-theme="light"] .skeleton {
   );
 }
 
-/* Good Deals logo: ambient glow + hover sweep (see atlas-logo.tsx) */
-.good-deals-logo-glow {
+/* Easy Handles logo: ambient glow + hover sweep (see atlas-logo.tsx) */
+.easy-handles-logo-glow {
   background: radial-gradient(
     ellipse at center,
-    color-mix(in srgb, var(--accent) 55%, transparent) 0%,
-    transparent 68%
+    color-mix(in srgb, var(--accent) 50%, transparent) 0%,
+    transparent 70%
   );
-  filter: blur(12px);
-  animation: good-deals-glow-pulse 3s ease-in-out infinite;
+  filter: blur(14px);
+  animation: easy-handles-glow-pulse 3.2s ease-in-out infinite;
 }
 
-@keyframes good-deals-glow-pulse {
+@keyframes easy-handles-glow-pulse {
   0%,
   100% {
-    opacity: 0.45;
-    transform: scale(0.88);
+    opacity: 0.42;
+    transform: scale(0.9);
   }
   50% {
-    opacity: 0.9;
-    transform: scale(1.06);
+    opacity: 0.88;
+    transform: scale(1.05);
   }
 }
 
-.good-deals-logo-ring {
+.easy-handles-logo-ring {
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent),
-    0 0 28px -6px color-mix(in srgb, var(--accent) 45%, transparent),
-    0 0 48px -12px color-mix(in srgb, var(--accent-hot) 25%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--fg) 12%, transparent),
+    0 0 32px -8px color-mix(in srgb, var(--accent) 42%, transparent),
+    0 0 52px -14px color-mix(in srgb, var(--accent-hot) 22%, transparent);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.32s ease;
 }
 
-.good-deals-logo-root:hover .good-deals-logo-ring {
+.easy-handles-logo-root:hover .easy-handles-logo-ring {
   opacity: 1;
 }
 
-.good-deals-logo-root:hover .good-deals-logo-shimmer-bar {
-  animation: good-deals-sweep 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+.easy-handles-logo-root:hover .easy-handles-logo-shimmer-bar {
+  animation: easy-handles-sweep 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-@keyframes good-deals-sweep {
+@keyframes easy-handles-sweep {
   from {
-    transform: translateX(-130%);
+    transform: translateX(-140%);
   }
   to {
-    transform: translateX(320%);
+    transform: translateX(340%);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .good-deals-logo-glow {
+  .easy-handles-logo-glow {
     animation: none;
-    opacity: 0.55;
+    opacity: 0.52;
   }
-  .good-deals-logo-root:hover .good-deals-logo-shimmer-bar {
+  .easy-handles-logo-root:hover .easy-handles-logo-shimmer-bar {
     animation: none;
     opacity: 0;
   }
