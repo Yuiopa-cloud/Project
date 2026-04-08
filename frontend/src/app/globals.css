@@ -23,6 +23,28 @@ html[data-theme="light"] {
   --press-bg: rgba(15, 23, 42, 0.045);
   --announcement-bar: #166534;
   --font-display: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
+
+  /* Page backdrop — derived from theme greens so UI stays on-brand */
+  --bg-page-mesh: radial-gradient(
+      ellipse 100% 55% at 100% -5%,
+      color-mix(in srgb, var(--primary-mid) 14%, transparent),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 85% 45% at 0% 105%,
+      color-mix(in srgb, var(--accent-hot) 10%, transparent),
+      transparent 48%
+    ),
+    radial-gradient(
+      ellipse 120% 80% at 50% -18%,
+      color-mix(in srgb, var(--primary-mid) 9%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(
+      180deg,
+      var(--bg) 0%,
+      color-mix(in srgb, var(--footer-bg) 35%, var(--bg)) 100%
+    );
 }
 
 @theme inline {
@@ -33,6 +55,8 @@ html[data-theme="light"] {
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  min-height: 100%;
+  background-color: var(--bg);
 }
 
 h1,
@@ -52,18 +76,20 @@ h3,
 }
 
 body {
-  background-color: var(--bg);
-  background-image: radial-gradient(
-    ellipse 120% 80% at 50% -20%,
-    rgba(22, 163, 74, 0.06),
-    transparent 55%
-  );
+  background-color: transparent;
+  background-image: var(--bg-page-mesh);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
   line-height: 1.6;
 }
 
 @media (prefers-reduced-motion: reduce) {
   body {
-    background-image: none;
+    background-image: linear-gradient(
+      180deg,
+      var(--bg) 0%,
+      color-mix(in srgb, var(--footer-bg) 40%, var(--bg)) 100%
+    );
   }
 }
 
