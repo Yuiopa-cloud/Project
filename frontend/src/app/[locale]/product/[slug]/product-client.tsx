@@ -65,6 +65,7 @@ export function ProductClient({
   const [addedPulse, setAddedPulse] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const mainImageRef = useRef<HTMLButtonElement>(null);
+  const addToCartBtnRef = useRef<HTMLButtonElement>(null);
   const { addItem } = useCart();
   const { flyToCart } = useCartFly();
   const main = product.images[img] ?? product.images[0];
@@ -88,7 +89,8 @@ export function ProductClient({
       await addItem(product.id, 1, lineSnapshot());
       flyToCart({
         imageSrc: main,
-        sourceEl: mainImageRef.current,
+        sourceEl:
+          addToCartBtnRef.current ?? mainImageRef.current ?? undefined,
       });
       setAddedPulse(true);
       setTimeout(() => setAddedPulse(false), 1200);
@@ -225,6 +227,7 @@ export function ProductClient({
           >
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-stretch">
               <motion.button
+                ref={addToCartBtnRef}
                 type="button"
                 onClick={() => void handleAdd()}
                 disabled={adding || product.stock < 1}
