@@ -314,48 +314,69 @@ export function AdminDashboard() {
 
   if (!token) {
     return (
-      <div className="mx-auto flex max-w-md flex-col gap-8 px-4 py-14">
+      <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center overflow-hidden px-4 py-10">
+        <div className="pointer-events-none absolute inset-0 bg-[#050810]" />
+        <div className="pointer-events-none absolute -left-24 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-emerald-400/30 blur-[120px]" />
+        <div className="pointer-events-none absolute right-[-6rem] top-[20%] h-72 w-72 rounded-full bg-fuchsia-500/30 blur-[120px]" />
+        <div className="pointer-events-none absolute bottom-[-5rem] right-[20%] h-64 w-64 rounded-full bg-red-500/30 blur-[120px]" />
+        <div className="pointer-events-none absolute left-[32%] top-[12%] h-56 w-56 rounded-full bg-indigo-500/25 blur-[120px]" />
+
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="card-chrome relative overflow-hidden rounded-3xl p-8"
+          initial={{ opacity: 0, y: 12, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="relative z-10 w-full max-w-sm rounded-[28px] border border-white/20 bg-white/10 p-7 shadow-[0_25px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl"
         >
-          <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-[var(--accent)]/15 blur-3xl" />
-          <div className="pointer-events-none absolute -left-10 bottom-4 h-36 w-36 rounded-full bg-[var(--accent-hot)]/10 blur-3xl" />
-          <div className="relative mb-6 flex justify-center">
-            <AtlasLogo size={56} />
+          <div className="mb-5 flex justify-center">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-white/80 text-slate-900 shadow-sm">
+              <AtlasLogo size={26} />
+            </div>
           </div>
-          <h1 className="relative text-center text-xl font-semibold text-[var(--fg)]">
-            {tAdmin("title")}
+
+          <h1 className="text-center text-3xl font-semibold tracking-tight text-white">
+            Vault Access
           </h1>
-          <p className="relative mt-2 text-center text-sm text-[var(--muted)]">
-            {tAdmin("loginSubtitle")}
+          <p className="mt-1 text-center text-xs tracking-wide text-white/55">
+            Quantum encrypted authentication
           </p>
-          <form onSubmit={login} className="relative mt-8 space-y-3">
+
+          <form onSubmit={login} className="mt-6 space-y-3">
+            <input
+              type="text"
+              value="admin"
+              readOnly
+              className="w-full rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-sm text-white/70 outline-none placeholder:text-white/35"
+              aria-label="Username"
+            />
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="checkout-input w-full rounded-xl border border-[var(--border)] bg-black/30 px-3 py-2.5 text-sm"
+              className="w-full rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35"
               placeholder={tAdmin("loginPlaceholder")}
               autoComplete="current-password"
             />
             <motion.button
               type="submit"
               disabled={loading}
-              whileHover={{ scale: loading ? 1 : 1.02, y: loading ? 0 : -2 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: loading ? 1 : 1.01, y: loading ? 0 : -1 }}
+              whileTap={{ scale: 0.98 }}
               transition={{ type: "spring", stiffness: 400, damping: 28 }}
-              className="btn-primary-motion w-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] py-3 text-sm font-semibold text-slate-900"
+              className="mt-1 w-full rounded-xl bg-white py-3 text-xs font-bold tracking-[0.22em] text-slate-900 shadow-[0_10px_30px_rgba(255,255,255,0.16)]"
             >
-              {loading ? tAdmin("loginLoading") : tAdmin("loginCta")}
+              {loading ? tAdmin("loginLoading") : "ENTER SYSTEM"}
             </motion.button>
           </form>
+
           {msg ? (
-            <p className="relative mt-4 rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-center text-sm text-rose-200">
+            <p className="mt-4 rounded-lg border border-rose-300/45 bg-rose-500/15 px-3 py-2 text-center text-sm text-rose-100">
               {msg}
             </p>
           ) : null}
+
+          <p className="mt-5 text-center text-xs text-white/45">
+            Forgotten?{" "}
+            <span className="font-semibold text-cyan-300">Recover Access</span>
+          </p>
         </motion.div>
       </div>
     );
