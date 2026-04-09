@@ -6,14 +6,9 @@ import { ProductImage } from "@/components/product-image";
 import { useLocale, useTranslations } from "next-intl";
 import { MotionLink } from "@/components/motion-link";
 import { useCart } from "@/contexts/cart-context";
+import { formatSar, parseAmount } from "@/lib/price";
 
 const tap = { scale: 0.9 };
-
-function parseMad(v: string | number): number {
-  const s = String(v).replace(",", ".").replace(/[^\d.-]/g, "");
-  const n = Number.parseFloat(s);
-  return Number.isFinite(n) ? n : 0;
-}
 
 export function CartPageClient() {
   const t = useTranslations("cart");
@@ -26,7 +21,7 @@ export function CartPageClient() {
     let sum = 0;
     let c = 0;
     for (const line of lines) {
-      const unit = parseMad(line.product.priceMad);
+      const unit = parseAmount(line.product.priceMad);
       sum += unit * line.quantity;
       c += line.quantity;
     }
@@ -108,7 +103,7 @@ export function CartPageClient() {
                     {title}
                   </MotionLink>
                   <p className="mt-1 text-sm font-medium text-[var(--fg)]">
-                    {price} MAD
+                    {formatSar(price, locale)}
                   </p>
                   <div className="mt-3 flex items-center gap-2">
                     <motion.button
@@ -157,7 +152,7 @@ export function CartPageClient() {
               {t("estimatedTotal")}
             </span>
             <span className="text-xl font-bold tabular-nums text-[var(--fg)]">
-              {subtotal.toFixed(2)} MAD
+              {formatSar(subtotal, locale)}
             </span>
           </div>
           <p className="mt-2 text-xs text-[var(--muted)]">{t("shippingNote")}</p>

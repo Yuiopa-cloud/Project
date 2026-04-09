@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { MotionLink } from "@/components/motion-link";
 import { ProductImage } from "@/components/product-image";
 import type { ProductList } from "@/lib/api";
+import { formatSar } from "@/lib/price";
 
 export function HomeFeaturedProduct({
   product,
@@ -47,8 +48,7 @@ export function HomeFeaturedProduct({
             {title}
           </p>
           <p className="text-2xl font-semibold tabular-nums text-[color-mix(in_srgb,var(--accent)_80%,var(--primary-mid))] md:text-3xl">
-            {product.priceMad}{" "}
-            <span className="text-base font-medium text-[var(--muted)]">MAD</span>
+            {formatSar(product.priceMad, locale)}
           </p>
           <span className="btn-primary pointer-events-none inline-flex w-fit min-h-[3rem] select-none px-6 text-sm md:min-h-[3.25rem] md:text-base">
             {ctaLabel}

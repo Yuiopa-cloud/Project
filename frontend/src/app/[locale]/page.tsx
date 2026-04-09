@@ -33,10 +33,10 @@ export default async function HomePage({
   const items = await getProducts();
 
   const categories = [
-    { slug: "interieur", label: t("catInterior") },
-    { slug: "exterieur", label: t("catExterior") },
-    { slug: "performance", label: t("catPerformance") },
-    { slug: "entretien", label: t("catCare") },
+    { slug: "winter-tools", label: t("catInterior") },
+    { slug: "home-garden", label: t("catExterior") },
+    { slug: "power-tools", label: t("catPerformance") },
+    { slug: "cleaning-care", label: t("catCare") },
   ];
 
   const featured = items.slice(0, 8);

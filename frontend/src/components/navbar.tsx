@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Link, usePathname } from "@/i18n/navigation";
+import { usePathname } from "@/i18n/navigation";
 import { AtlasLogo } from "./atlas-logo";
 import { useCart } from "@/contexts/cart-context";
 import { MotionLink } from "@/components/motion-link";
@@ -85,11 +85,9 @@ function IconUser({ className }: { className?: string }) {
 
 export function Navbar() {
   const t = useTranslations("nav");
-  const locale = useLocale();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { itemCount, addBumpSeq } = useCart();
-  const otherLocale = locale === "fr" ? "ar" : "fr";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -129,8 +127,6 @@ export function Navbar() {
     { href: "/cart", label: t("cart") },
     { href: "/dashboard", label: t("account") },
   ];
-
-  const localeTitle = otherLocale === "ar" ? "العربية" : "Français";
 
   useEffect(() => {
     queueMicrotask(() => setMobileOpen(false));
@@ -240,18 +236,6 @@ export function Navbar() {
           >
             <IconUser className="h-5 w-5" />
           </MotionLink>
-
-          <div className="flex items-center rounded-lg border border-[var(--border)] bg-[var(--press-bg)]/80 p-0.5">
-            <Link
-              href={pathname}
-              locale={otherLocale}
-              className="flex min-h-9 min-w-9 items-center justify-center rounded-md px-2 text-xs font-semibold text-[var(--muted)] hover:text-[var(--accent)]"
-              title={localeTitle}
-              aria-label={localeTitle}
-            >
-              {otherLocale.toUpperCase()}
-            </Link>
-          </div>
 
           <MotionLink
             href="/cart"

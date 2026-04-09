@@ -13,17 +13,17 @@ import { SiteFooter } from "@/components/site-footer";
 import { GoogleAnalytics } from "@/components/google-analytics";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://atlas-auto.ma"),
+  metadataBase: new URL("https://gooddeals.sa"),
   title: {
-    default: "Atlas Auto — Accessoires automobile Maroc",
-    template: "%s | Atlas Auto",
+    default: "جود ديلز السعودية — متجر منتجات عملية",
+    template: "%s | جود ديلز",
   },
   description:
-    "E-commerce accessoires auto premium au Maroc. MAD, livraison par ville, paiement à la livraison, WhatsApp.",
+    "متجر سعودي بواجهة عربية كاملة لمنتجات عملية وسهلة الاستخدام مع أسعار بالريال السعودي.",
   openGraph: {
-    title: "Atlas Auto Morocco",
-    description: "Premium automotive accessories — Casablanca & nationwide zones.",
-    locale: "fr_MA",
+    title: "جود ديلز السعودية",
+    description: "منتجات عملية للمنزل والحديقة والشتاء — واجهة عربية وأسعار بالريال السعودي.",
+    locale: "ar_SA",
     type: "website",
   },
 };

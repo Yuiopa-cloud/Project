@@ -9,6 +9,7 @@ import { useCart, type CartLineProduct } from "@/contexts/cart-context";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { useTranslations } from "next-intl";
 import { MiniSpinner } from "@/components/mini-spinner";
+import { formatSar } from "@/lib/price";
 
 export function ShopProductCard({
   product,
@@ -110,8 +111,7 @@ export function ShopProductCard({
           </div>
           <div className="flex items-end justify-between gap-2 border-t border-[var(--border)] pt-3">
             <p className="text-lg font-bold tabular-nums text-[var(--fg)]">
-              {product.priceMad}{" "}
-              <span className="text-xs font-normal text-[var(--muted)]">MAD</span>
+              {formatSar(product.priceMad, locale)}
             </p>
             <span className="rounded-lg bg-[var(--accent-dim)] px-2.5 py-1 text-xs font-semibold text-[var(--accent)]">
               {t("viewProduct")}

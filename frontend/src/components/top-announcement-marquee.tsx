@@ -12,7 +12,7 @@ export function TopAnnouncementMarquee() {
       aria-label={t("shippingLong")}
     >
       <div className="flex h-7 items-center justify-center px-3 sm:h-8">
-        <p className="text-center text-[0.55rem] font-medium uppercase tracking-[0.16em] text-white/95 sm:text-[0.58rem] sm:tracking-[0.18em]">
+        <p className="text-center text-[0.65rem] font-semibold tracking-[0.02em] text-white/95 sm:text-[0.72rem]">
           {t("barLine")}
         </p>
       </div>

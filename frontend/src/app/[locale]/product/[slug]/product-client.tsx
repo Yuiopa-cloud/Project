@@ -8,6 +8,7 @@ import { ProductImage } from "@/components/product-image";
 import { MiniSpinner } from "@/components/mini-spinner";
 import { useCart, type CartLineProduct } from "@/contexts/cart-context";
 import { setBuyNow } from "@/lib/buy-now";
+import { formatSar } from "@/lib/price";
 
 type Product = {
   id: string;
@@ -156,8 +157,7 @@ export function ProductClient({
             {title}
           </h1>
           <p className="mt-4 text-3xl font-bold tabular-nums text-[var(--fg)] sm:text-4xl">
-            {product.priceMad}{" "}
-            <span className="text-lg font-medium text-[var(--muted)]">MAD</span>
+            {formatSar(product.priceMad, locale)}
           </p>
           <p className="mt-2 text-sm font-medium text-[var(--accent)]">
             {product.stock < 1

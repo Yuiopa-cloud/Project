@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { MotionLink } from "@/components/motion-link";
+import { formatSar } from "@/lib/price";
 
 const spring = { type: "spring" as const, stiffness: 380, damping: 32 };
 const springSoft = { type: "spring" as const, stiffness: 280, damping: 28 };
@@ -236,7 +237,7 @@ export function ThankYouClient({
                     {t("successTotal")}
                   </dt>
                   <dd className="mt-1 text-lg font-semibold text-[var(--fg)]">
-                    {totalMad} MAD
+                    {formatSar(totalMad, "ar")}
                   </dd>
                 </div>
               ) : null}

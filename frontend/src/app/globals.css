@@ -1,27 +1,27 @@
 @import "tailwindcss";
 
-/* Light-only commerce theme: green primary + neutral surfaces */
+/* Light-only commerce theme: warm banner-aligned palette */
 :root,
 html[data-theme="light"] {
-  --bg: #f4f7f4;
-  --fg: #0f172a;
-  --muted: #64748b;
-  --card: #ffffff;
-  --primary-from: #15803d;
-  --primary-mid: #16a34a;
-  --primary-to: #166534;
-  --accent: #15803d;
-  --accent-hot: #22c55e;
-  --accent-dim: rgba(22, 163, 74, 0.14);
-  --accent-glow: rgba(22, 163, 74, 0.3);
-  --accent-glow-soft: rgba(21, 128, 61, 0.2);
-  --border: rgba(15, 23, 42, 0.1);
+  --bg: #f7f1ea;
+  --fg: #2f1f14;
+  --muted: #7c5a46;
+  --card: #fffdf9;
+  --primary-from: #7c2d12;
+  --primary-mid: #b45309;
+  --primary-to: #dc2626;
+  --accent: #b45309;
+  --accent-hot: #dc2626;
+  --accent-dim: rgba(180, 83, 9, 0.14);
+  --accent-glow: rgba(220, 38, 38, 0.24);
+  --accent-glow-soft: rgba(180, 83, 9, 0.2);
+  --border: rgba(120, 80, 54, 0.2);
   --glass-bg: #ffffff;
   --glass-border: rgba(15, 23, 42, 0.08);
   --chrome: linear-gradient(180deg, #ffffff 0%, #f6faf6 100%);
-  --footer-bg: #ecf4ec;
-  --press-bg: rgba(15, 23, 42, 0.045);
-  --announcement-bar: #166534;
+  --footer-bg: #f3e6da;
+  --press-bg: rgba(80, 42, 23, 0.06);
+  --announcement-bar: #7c2d12;
   --font-display: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
 
   /* Page backdrop — derived from theme greens so UI stays on-brand */
@@ -66,6 +66,18 @@ h3,
   font-family: var(--font-display);
   letter-spacing: -0.03em;
   font-weight: 600;
+}
+
+html[lang="ar"] body {
+  font-family: var(--font-arabic), var(--font-inter), system-ui, sans-serif;
+}
+
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3,
+html[lang="ar"] .font-display {
+  font-family: var(--font-arabic), var(--font-inter), system-ui, sans-serif;
+  letter-spacing: normal;
 }
 
 /* Mobile: fixed backgrounds often jank on iOS; scroll behaves better. */

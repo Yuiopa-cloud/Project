@@ -111,7 +111,7 @@ export function SiteFooter() {
             <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <li>
                 <MotionLink
-                  href="/shop?category=interieur"
+                  href="/shop?category=winter-tools"
                   className="footer-link text-[var(--fg)]"
                 >
                   {tHome("catInterior")}
@@ -119,7 +119,7 @@ export function SiteFooter() {
               </li>
               <li>
                 <MotionLink
-                  href="/shop?category=exterieur"
+                  href="/shop?category=home-garden"
                   className="footer-link text-[var(--fg)]"
                 >
                   {tHome("catExterior")}
@@ -127,7 +127,7 @@ export function SiteFooter() {
               </li>
               <li>
                 <MotionLink
-                  href="/shop?category=performance"
+                  href="/shop?category=power-tools"
                   className="footer-link text-[var(--fg)]"
                 >
                   {tHome("catPerformance")}
@@ -135,7 +135,7 @@ export function SiteFooter() {
               </li>
               <li>
                 <MotionLink
-                  href="/shop?category=entretien"
+                  href="/shop?category=cleaning-care"
                   className="footer-link text-[var(--fg)]"
                 >
                   {tHome("catCare")}
@@ -162,7 +162,7 @@ export function SiteFooter() {
       </div>
 
       <p className="mx-auto mt-8 max-w-6xl text-center text-[0.7rem] text-[var(--muted)]">
-        © {new Date().getFullYear()} {t("brand")} · Maroc
+        © {new Date().getFullYear()} {t("brand")} · السعودية
       </p>
     </motion.footer>
   );

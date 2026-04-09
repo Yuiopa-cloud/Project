@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { MotionLink } from "@/components/motion-link";
 import { ProductImage } from "@/components/product-image";
 import type { ProductList } from "@/lib/api";
+import { formatSar } from "@/lib/price";
 
 export function TrendingCard({
   product,
@@ -45,8 +46,7 @@ export function TrendingCard({
             {title}
           </p>
           <p className="text-[var(--accent-hot)]">
-            {product.priceMad}{" "}
-            <span className="text-xs text-[var(--muted)]">MAD</span>
+            {formatSar(product.priceMad, locale)}
           </p>
           {product.lowStock ? (
             <p className="text-xs text-rose-400">Stock limité</p>

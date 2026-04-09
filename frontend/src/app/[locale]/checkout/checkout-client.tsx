@@ -224,7 +224,7 @@ export function CheckoutClient() {
         : NaN;
       trackEvent("purchase", {
         value: Number.isFinite(totalAmount) ? totalAmount : 0,
-        currency: "MAD",
+        currency: "SAR",
         transaction_id: orderNumber,
       });
       try {

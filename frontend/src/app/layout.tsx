@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Cairo, Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,6 +17,12 @@ export const viewport: Viewport = {
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const cairo = Cairo({
+  variable: "--font-arabic",
+  subsets: ["arabic", "latin"],
   display: "swap",
 });
 
@@ -40,7 +46,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       data-theme="light"
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} min-h-dvh min-h-full overflow-x-clip bg-[var(--bg)] font-sans text-[var(--fg)] antialiased [font-feature-settings:'cv02','cv03','cv04','cv11']`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${cairo.variable} min-h-dvh min-h-full overflow-x-clip bg-[var(--bg)] font-sans text-[var(--fg)] antialiased [font-feature-settings:'cv02','cv03','cv04','cv11']`}
       >
         {children}
       </body>
