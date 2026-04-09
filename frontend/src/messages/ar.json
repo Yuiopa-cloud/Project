@@ -1,5 +1,5 @@
 {
-  "brand": "جود ديلز السعودية",
+  "brand": "Easy Handles",
   "footer": {
     "tagline": "منتجات عملية يومية · السعودية · شحن موثوق ودفع آمن.",
     "trustBadgesAlt": "جودة ممتازة، ضمان استرداد المال، الدفع عند الاستلام، شحن مجاني.",
@@ -61,10 +61,10 @@
     "brandStrip4": "CleanDrive",
     "brandStrip5": "MotorCare",
     "heroEditorialKicker": "حتى خصم 30٪ على مجموعة مختارة",
-    "heroEditorialTitle": "جود ديلز — إكسسوارات السيارات",
+    "heroEditorialTitle": "Easy Handles — منتجات عملية يومية",
     "heroEditorialSub": "أكثر من متجر.",
     "heroEditorialCtaShop": "المتجر",
-    "heroKicker": "Good Deals · المغرب",
+    "heroKicker": "Easy Handles · السعودية",
     "heroTitle": "عندما تستحق سيارتك الأفضل.",
     "heroSub": "آلاف الإكسسوارات المختارة — جودة ممتازة، أسعار مناسبة، توصيل في أنحاء المغرب والدفع عند الاستلام.",
     "ctaOrder": "اطلب الآن",
@@ -115,7 +115,7 @@
     "testimonial2Author": "سلمى ك. — الرباط",
     "galleryTitle": "معرض لا ينتهي",
     "gallerySub": "صفوف من المنتجات للأناقة والراحة والمتانة — خيارات لا حصر لها لتخصيص سيارتك.",
-    "wowEyebrow": "تجربة Good Deals",
+    "wowEyebrow": "تجربة Easy Handles",
     "wowTitle": "صُمم ليبهر، وبُني ليدوم.",
     "wowBody": "كل التفاصيل تهم: تشطيبات دقيقة، تغليف يحمي، وفريق يجيبك على واتساب. ليس مجرد شراء — بل متعة فتح طرد يستحق الانتظار.",
     "wowCta": "تصفح المتجر",
@@ -260,7 +260,7 @@
     "priceNote": "عرض الأسعار بالمتجر يستخدم أرقامًا غربية (0–9) مع الريال السعودي."
   },
   "admin": {
-    "title": "لوحة أطلس",
+    "title": "لوحة Easy Handles",
     "revenue": "الإيرادات التقريبية",
     "fraud": "ملفات الاحتيال",
     "loginSubtitle": "دخول مخصص للفريق — اتصال آمن.",
@@ -306,7 +306,7 @@
     "phoneCardDesc": "اتصل بنا للأسئلة العاجلة أو التوافق.",
     "phoneCta": "اتصال",
     "instagramSectionTitle": "إنستغرام",
-    "instagramTitle": "تابع أطلس أوتو",
+    "instagramTitle": "تابع Easy Handles",
     "instagramDesc": "جديد وصور وإلهام على حسابنا @ysf._.xfk.",
     "instagramCta": "فتح إنستغرام",
     "instagramHandleLabel": "الحساب"

@@ -434,7 +434,7 @@ export function AdminDashboard() {
           <div className="flex items-center gap-3">
             <AtlasLogo size={42} />
             <div>
-              <h1 className="text-xl font-semibold text-[var(--fg)] md:text-2xl">Atlas Admin</h1>
+              <h1 className="text-xl font-semibold text-[var(--fg)] md:text-2xl">{tAdmin("title")}</h1>
               <p className="text-xs text-[var(--muted)] md:text-sm">
                 Live monitoring - orders, fraud checks, fulfillment status.
               </p>

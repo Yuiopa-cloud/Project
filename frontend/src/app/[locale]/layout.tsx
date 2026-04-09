@@ -16,14 +16,14 @@ import { GoogleAnalytics } from "@/components/google-analytics";
 export const metadata: Metadata = {
   metadataBase: new URL("https://gooddeals.sa"),
   title: {
-    default: "جود ديلز السعودية — متجر منتجات عملية",
-    template: "%s | جود ديلز",
+    default: "Easy Handles — متجر منتجات عملية",
+    template: "%s | Easy Handles",
   },
   description:
-    "متجر سعودي بواجهة عربية كاملة لمنتجات عملية وسهلة الاستخدام مع أسعار بالريال السعودي.",
+    "Easy Handles: متجر سعودي بواجهة عربية لمنتجات عملية وسهلة الاستخدام مع أسعار بالريال السعودي.",
   openGraph: {
-    title: "جود ديلز السعودية",
-    description: "منتجات عملية للمنزل والحديقة والشتاء — واجهة عربية وأسعار بالريال السعودي.",
+    title: "Easy Handles",
+    description: "منتجات عملية للمنزل والحديقة والشتاء — Easy Handles — أسعار بالريال السعودي.",
     locale: "ar_SA",
     type: "website",
   },

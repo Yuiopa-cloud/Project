@@ -112,7 +112,7 @@ export function ContactPageClient() {
           </p>
           <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
             <motion.a
-              href={`mailto:${email}?subject=Atlas%20Auto%20—%20contact`}
+              href={`mailto:${email}?subject=Easy%20Handles%20—%20contact`}
               className="btn-primary inline-flex min-h-12 flex-1 touch-manipulation items-center justify-center px-4 text-center text-sm active:scale-[0.98] sm:min-h-11"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}

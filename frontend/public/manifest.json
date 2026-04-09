@@ -1,12 +1,12 @@
 {
-  "name": "Good Deals",
-  "short_name": "Good Deals",
-  "description": "Accessoires automobile premium au Maroc",
-  "start_url": "/fr",
+  "name": "Easy Handles",
+  "short_name": "Easy Handles",
+  "description": "Easy Handles — متجر منتجات عملية في السعودية",
+  "start_url": "/ar",
   "display": "standalone",
-  "background_color": "#050508",
-  "theme_color": "#6366f1",
-  "lang": "fr",
+  "background_color": "#f7f1ea",
+  "theme_color": "#b45309",
+  "lang": "ar",
   "icons": [
     {
       "src": "/icons/pwa-192.png",
