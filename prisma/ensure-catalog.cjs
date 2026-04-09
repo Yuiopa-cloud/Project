@@ -1,43 +1,25 @@
 /**
- * If there are no active products, seed a minimal catalog + delivery zones so
- * shop + checkout work on a fresh Railway DB without running full `prisma db seed`.
+ * Railway bootstrap: ensure delivery zones exist when the DB is empty of zones.
+ * Does NOT create products (catalog is managed manually or via prisma db seed).
  */
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const count = await prisma.product.count({ where: { isActive: true } });
-  if (count > 0) {
+  const productCount = await prisma.product.count({ where: { isActive: true } });
+  // eslint-disable-next-line no-console
+  console.log('[ensure-catalog] active products:', productCount);
+
+  const zoneCount = await prisma.deliveryZone.count({ where: { isActive: true } });
+  if (zoneCount > 0) {
     // eslint-disable-next-line no-console
-    console.log('[ensure-catalog] active products:', count, '— skip');
+    console.log('[ensure-catalog] delivery zones:', zoneCount, '— skip zone seed');
     return;
   }
 
   // eslint-disable-next-line no-console
-  console.log('[ensure-catalog] no products — seeding minimal catalog');
-
-  const cInterior = await prisma.category.upsert({
-    where: { slug: 'interieur' },
-    update: {},
-    create: {
-      slug: 'interieur',
-      nameFr: 'Intérieur & Confort',
-      nameAr: 'الداخل والراحة',
-      sortOrder: 1,
-    },
-  });
-
-  const cPerformance = await prisma.category.upsert({
-    where: { slug: 'performance' },
-    update: {},
-    create: {
-      slug: 'performance',
-      nameFr: 'Performance',
-      nameAr: 'الأداء',
-      sortOrder: 3,
-    },
-  });
+  console.log('[ensure-catalog] no delivery zones — seeding minimal zones only');
 
   const zones = [
     {
@@ -71,55 +53,8 @@ async function main() {
     });
   }
 
-  await prisma.product.upsert({
-    where: { sku: 'ATL-ALU-MAT01' },
-    update: { isActive: true },
-    create: {
-      sku: 'ATL-ALU-MAT01',
-      slug: 'tapis-aluminium-premium',
-      nameFr: 'Tapis aluminium premium — effet métal brossé',
-      nameAr: 'سجات ألمنيوم بريميوم',
-      descriptionFr:
-        'Finition premium, bords cousus, résistant eau & boue. Look sport haut de gamme pour SUV et berlines.',
-      descriptionAr:
-        'تشطيب عالي الجودة، حواف مخيطة، مقاوم للماء والطين.',
-      priceMad: 449,
-      compareAtMad: 549,
-      stock: 32,
-      lowStockThreshold: 5,
-      purchaseCount: 128,
-      images: [
-        'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?w=800',
-      ],
-      categoryId: cInterior.id,
-      metadata: { material: 'PVC + textile', fit: 'universal trimmable' },
-    },
-  });
-
-  await prisma.product.upsert({
-    where: { sku: 'ATL-LED-DRL02' },
-    update: { isActive: true },
-    create: {
-      sku: 'ATL-LED-DRL02',
-      slug: 'feux-jour-led-matrix',
-      nameFr: 'Feux jour LED — signature Matrix',
-      nameAr: 'إضاءة نهارية LED',
-      descriptionFr:
-        'Module LED haute définition. Installation plug-and-play sur supports universels.',
-      descriptionAr: 'وحدة LED عالية الوضوح.',
-      priceMad: 899,
-      stock: 14,
-      lowStockThreshold: 6,
-      purchaseCount: 64,
-      images: [
-        'https://images.unsplash.com/photo-1486754735734-325b5831c3ad?w=800',
-      ],
-      categoryId: cPerformance.id,
-    },
-  });
-
   // eslint-disable-next-line no-console
-  console.log('[ensure-catalog] done (2 products, 2 zones)');
+  console.log('[ensure-catalog] done (zones only, no products)');
 }
 
 main()

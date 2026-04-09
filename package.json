@@ -21,7 +21,8 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "db:ensure-admin": "node prisma/ensure-admin.cjs",
-    "db:ensure-catalog": "node prisma/ensure-catalog.cjs"
+    "db:ensure-catalog": "node prisma/ensure-catalog.cjs",
+    "db:delete-products": "node prisma/delete-all-products.cjs"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
