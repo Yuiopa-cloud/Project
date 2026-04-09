@@ -9,6 +9,7 @@ import { TopAnnouncementMarquee } from "@/components/top-announcement-marquee";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleHtmlAttributes } from "@/components/locale-html";
 import { CartProvider } from "@/contexts/cart-context";
+import { CartFlyProvider } from "@/contexts/cart-fly-context";
 import { CustomerAuthProvider } from "@/contexts/customer-auth-context";
 import { SiteFooter } from "@/components/site-footer";
 import { GoogleAnalytics } from "@/components/google-analytics";
@@ -55,6 +56,7 @@ export default async function LocaleLayout({
       <ThemeProvider>
         <CustomerAuthProvider>
           <CartProvider>
+            <CartFlyProvider>
             <GoogleAnalytics />
             <div className="flex min-h-dvh min-h-full flex-col">
               <TopAnnouncementMarquee />
@@ -70,6 +72,7 @@ export default async function LocaleLayout({
               </main>
               <SiteFooter />
             </div>
+            </CartFlyProvider>
           </CartProvider>
         </CustomerAuthProvider>
       </ThemeProvider>

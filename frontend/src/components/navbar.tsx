@@ -7,6 +7,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { usePathname } from "@/i18n/navigation";
 import { AtlasLogo } from "./atlas-logo";
 import { useCart } from "@/contexts/cart-context";
+import { useCartFly } from "@/contexts/cart-fly-context";
 import { MotionLink } from "@/components/motion-link";
 
 function IconMenuLines({ className }: { className?: string }) {
@@ -88,6 +89,7 @@ export function Navbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { itemCount, addBumpSeq } = useCart();
+  const { registerCartAnchor } = useCartFly();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -240,30 +242,36 @@ export function Navbar() {
             <IconUser className="h-5 w-5" />
           </MotionLink>
 
-          <MotionLink
-            href="/cart"
-            className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--press-bg)] text-lg transition hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
-            aria-label={t("cart")}
-            whileTap={{ scale: 0.95 }}
+          <span
+            ref={registerCartAnchor}
+            className="inline-flex rounded-lg"
+            data-cart-anchor
           >
-            <motion.span
-              key={addBumpSeq}
-              aria-hidden
-              animate={
-                reduceMotion || addBumpSeq === 0
-                  ? {}
-                  : { scale: [1, 1.15, 1] }
-              }
-              transition={{ duration: 0.4 }}
+            <MotionLink
+              href="/cart"
+              className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--press-bg)] text-lg transition hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
+              aria-label={t("cart")}
+              whileTap={{ scale: 0.95 }}
             >
-              🛒
-            </motion.span>
-            {itemCount > 0 ? (
-              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.5rem] font-bold text-white">
-                {itemCount > 9 ? "9+" : itemCount}
-              </span>
-            ) : null}
-          </MotionLink>
+              <motion.span
+                key={addBumpSeq}
+                aria-hidden
+                animate={
+                  reduceMotion || addBumpSeq === 0
+                    ? {}
+                    : { scale: [1, 1.15, 1] }
+                }
+                transition={{ duration: 0.4 }}
+              >
+                🛒
+              </motion.span>
+              {itemCount > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-0.5 text-[0.5rem] font-bold text-white">
+                  {itemCount > 9 ? "9+" : itemCount}
+                </span>
+              ) : null}
+            </MotionLink>
+          </span>
         </div>
       </div>
 

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { MotionLink } from "@/components/motion-link";
 import { ProductImage } from "@/components/product-image";
 import type { ProductList } from "@/lib/api";
 import { useCart, type CartLineProduct } from "@/contexts/cart-context";
+import { useCartFly } from "@/contexts/cart-fly-context";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { useTranslations } from "next-intl";
 import { MiniSpinner } from "@/components/mini-spinner";
@@ -21,7 +22,9 @@ export function ShopProductCard({
   index: number;
 }) {
   const t = useTranslations("shop");
+  const imageWrapRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
+  const { flyToCart } = useCartFly();
   const [adding, setAdding] = useState(false);
   const title = locale === "ar" ? product.nameAr : product.nameFr;
 
@@ -48,6 +51,10 @@ export function ShopProductCard({
       } else {
         await addItem(product.id, 1, snapshot());
       }
+      flyToCart({
+        imageSrc: product.images?.[0] ?? null,
+        sourceEl: imageWrapRef.current,
+      });
     } catch {
       /* toast optional */
     } finally {
@@ -68,7 +75,10 @@ export function ShopProductCard({
         href={`/product/${product.slug}`}
         className="premium-product-card group/card block overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm transition hover:border-[var(--accent)]/20 hover:shadow-md"
       >
-        <div className="relative aspect-[4/3] overflow-hidden bg-[var(--press-bg)] sm:aspect-[5/4]">
+        <div
+          ref={imageWrapRef}
+          className="relative aspect-[4/3] overflow-hidden bg-[var(--press-bg)] sm:aspect-[5/4]"
+        >
           <ProductImage
             src={product.images?.[0]}
             alt={title}

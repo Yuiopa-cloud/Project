@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MotionLink } from "@/components/motion-link";
 import { useRouter } from "@/i18n/navigation";
 import { ProductImage } from "@/components/product-image";
 import { MiniSpinner } from "@/components/mini-spinner";
 import { useCart, type CartLineProduct } from "@/contexts/cart-context";
+import { useCartFly } from "@/contexts/cart-fly-context";
 import { setBuyNow } from "@/lib/buy-now";
 import { formatSar } from "@/lib/price";
 
@@ -63,7 +64,9 @@ export function ProductClient({
   const [adding, setAdding] = useState(false);
   const [addedPulse, setAddedPulse] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const mainImageRef = useRef<HTMLButtonElement>(null);
   const { addItem } = useCart();
+  const { flyToCart } = useCartFly();
   const main = product.images[img] ?? product.images[0];
 
   function lineSnapshot(): CartLineProduct {
@@ -83,6 +86,10 @@ export function ProductClient({
     setAdding(true);
     try {
       await addItem(product.id, 1, lineSnapshot());
+      flyToCart({
+        imageSrc: main,
+        sourceEl: mainImageRef.current,
+      });
       setAddedPulse(true);
       setTimeout(() => setAddedPulse(false), 1200);
     } catch (e: unknown) {
@@ -120,6 +127,7 @@ export function ProductClient({
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
         <div className="space-y-4">
           <motion.button
+            ref={mainImageRef}
             type="button"
             onClick={() => setZoom(true)}
             whileHover={{ scale: 1.01 }}
