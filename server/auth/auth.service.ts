@@ -16,16 +16,36 @@ import { LoginDto } from './dto/login.dto';
 import { UserRole } from '@prisma/client';
 import type { JwtPayload } from './jwt.strategy';
 
-function normalizeMaPhone(raw: string): string {
+/** E.164-style: supports Saudi (+966) and Morocco (+212) local formats. */
+function normalizePhone(raw: string): string {
   let p = raw.replace(/\s/g, '');
   if (p.startsWith('00')) p = '+' + p.slice(2);
-  if (p.startsWith('0') && p.length === 10) {
-    p = '+212' + p.slice(1);
+  if (p.startsWith('+')) return p;
+
+  // Saudi: 05xxxxxxxx -> +9665xxxxxxxx
+  if (/^05\d{8}$/.test(p)) {
+    return '+966' + p.slice(1);
   }
-  if (!p.startsWith('+')) {
-    if (p.startsWith('212')) p = '+' + p;
-    else if (/^[567]/.test(p) && p.length === 9) p = '+212' + p;
+  // Saudi: 9665... or local 9 digits starting with 5
+  if (/^966\d{9}$/.test(p)) {
+    return '+' + p;
   }
+  if (/^5\d{8}$/.test(p)) {
+    return '+966' + p;
+  }
+
+  // Morocco: 0[6-7]xxxxxxxx -> +212...
+  if (p.startsWith('0') && p.length === 10 && /^0[6-7]/.test(p)) {
+    return '+212' + p.slice(1);
+  }
+  if (p.startsWith('212')) {
+    return '+' + p;
+  }
+  // MA 9-digit local (6x/7x)
+  if (/^[6-7]\d{8}$/.test(p)) {
+    return '+212' + p;
+  }
+
   return p;
 }
 
@@ -40,7 +60,7 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const phone = normalizeMaPhone(dto.phone);
+    const phone = normalizePhone(dto.phone);
     const exists = await this.prisma.user.findUnique({ where: { phone } });
     if (exists) throw new ConflictException('Phone already registered');
 
@@ -53,7 +73,7 @@ export class AuthService {
         passwordHash,
         firstName: dto.firstName.trim(),
         lastName: dto.lastName.trim(),
-        locale: dto.locale ?? 'fr',
+        locale: dto.locale ?? 'ar',
         role: UserRole.CUSTOMER,
         loyaltyAccount: { create: { balance: 0 } },
       },
@@ -64,7 +84,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const phone = normalizeMaPhone(dto.phone);
+    const phone = normalizePhone(dto.phone);
     const user = await this.prisma.user.findUnique({ where: { phone } });
     if (!user?.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');

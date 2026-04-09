@@ -9,6 +9,7 @@ import { TopAnnouncementMarquee } from "@/components/top-announcement-marquee";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleHtmlAttributes } from "@/components/locale-html";
 import { CartProvider } from "@/contexts/cart-context";
+import { CustomerAuthProvider } from "@/contexts/customer-auth-context";
 import { SiteFooter } from "@/components/site-footer";
 import { GoogleAnalytics } from "@/components/google-analytics";
 
@@ -52,23 +53,25 @@ export default async function LocaleLayout({
     <NextIntlClientProvider messages={messages}>
       <LocaleHtmlAttributes locale={locale} dir={dir} />
       <ThemeProvider>
-        <CartProvider>
-          <GoogleAnalytics />
-          <div className="flex min-h-dvh min-h-full flex-col">
-            <TopAnnouncementMarquee />
-            <Suspense
-              fallback={
-                <div className="h-14 border-b border-[var(--border)] bg-white sm:h-16" />
-              }
-            >
-              <Navbar />
-            </Suspense>
-            <main className="min-w-0 flex-1 pb-[max(0px,env(safe-area-inset-bottom))]">
-              {children}
-            </main>
-            <SiteFooter />
-          </div>
-        </CartProvider>
+        <CustomerAuthProvider>
+          <CartProvider>
+            <GoogleAnalytics />
+            <div className="flex min-h-dvh min-h-full flex-col">
+              <TopAnnouncementMarquee />
+              <Suspense
+                fallback={
+                  <div className="h-14 border-b border-[var(--border)] bg-white sm:h-16" />
+                }
+              >
+                <Navbar />
+              </Suspense>
+              <main className="min-w-0 flex-1 pb-[max(0px,env(safe-area-inset-bottom))]">
+                {children}
+              </main>
+              <SiteFooter />
+            </div>
+          </CartProvider>
+        </CustomerAuthProvider>
       </ThemeProvider>
     </NextIntlClientProvider>
   );

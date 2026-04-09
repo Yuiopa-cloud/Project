@@ -80,6 +80,32 @@ html[lang="ar"] .font-display {
   letter-spacing: normal;
 }
 
+@keyframes member-space-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 20px 50px -24px rgba(124, 45, 18, 0.2),
+      0 0 0 1px color-mix(in srgb, var(--border) 80%, transparent);
+  }
+  50% {
+    transform: scale(1.012);
+    box-shadow:
+      0 26px 56px -20px color-mix(in srgb, var(--accent) 28%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+}
+
+.member-space-breathe {
+  animation: member-space-breathe 5.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-space-breathe {
+    animation: none;
+  }
+}
+
 /* Mobile: fixed backgrounds often jank on iOS; scroll behaves better. */
 @media (max-width: 768px) {
   body {
@@ -93,6 +119,7 @@ body {
   background-repeat: no-repeat;
   background-size: 100% 100%;
   line-height: 1.6;
+  font-weight: 500;
 }
 
 @media (prefers-reduced-motion: reduce) {

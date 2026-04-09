@@ -8,9 +8,9 @@ import {
   MaxLength,
 } from 'class-validator';
 
-/// Moroccan mobile: +212 or 0 prefix normalize on server
+/// Mobile: Saudi 05xxxxxxxx or +966…; Morocco +212… — normalized on server
 export class RegisterDto {
-  @ApiProperty({ example: '+212612345678' })
+  @ApiProperty({ example: '+966501234567' })
   @IsString()
   @MinLength(8)
   @MaxLength(20)

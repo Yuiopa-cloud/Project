@@ -18,5 +18,6 @@ export function formatSar(
     style: "currency",
     currency: "SAR",
     maximumFractionDigits: 2,
+    numberingSystem: "latn",
   }).format(amount);
 }

@@ -33,6 +33,11 @@ export class AdminController {
     return this.admin.dashboard();
   }
 
+  @Get('customers')
+  customers(@Query('take') take?: string) {
+    return this.admin.listCustomers(take ? Number(take) : undefined);
+  }
+
   @Get('orders')
   orders(
     @Query('status') status?: OrderStatus,

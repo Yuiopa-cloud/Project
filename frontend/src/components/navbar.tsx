@@ -157,11 +157,11 @@ export function Navbar() {
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileOpen]);
 
-  const linkClass = (active: boolean) =>
-    `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+  const floatLink = (active: boolean) =>
+    `rounded-full px-3.5 py-2 text-sm font-semibold transition-colors duration-200 ${
       active
-        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
-        : "text-[var(--fg)] hover:bg-[var(--press-bg)] hover:text-[var(--fg)]"
+        ? "bg-[var(--accent)] text-white shadow-[0_6px_20px_-6px_color-mix(in_srgb,var(--accent)_55%,transparent)]"
+        : "text-[var(--fg)] hover:bg-[var(--press-bg)]"
     }`;
 
   return (
@@ -171,11 +171,11 @@ export function Navbar() {
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className={`nav-futuristic sticky top-[calc(env(safe-area-inset-top)+1.75rem)] z-50 sm:top-[calc(env(safe-area-inset-top)+2rem)] transition-shadow duration-200 ${scrolled ? "nav-scrolled" : ""}`}
     >
-      <div className="relative z-10 mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3 md:gap-8">
+      <div className="relative z-10 mx-auto grid h-14 max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-2 px-4 sm:h-16 sm:gap-3 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <motion.button
             type="button"
-            className="nav-icon-toggle flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--fg)] md:hidden"
+            className="nav-icon-toggle flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--fg)] lg:hidden"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav-drawer"
             aria-label={mobileOpen ? t("closeMenu") : t("openMenu")}
@@ -190,33 +190,36 @@ export function Navbar() {
             className="shrink-0 rounded-xl"
             onClick={() => setMobileOpen(false)}
           >
-            <span className="md:hidden">
+            <span className="lg:hidden">
               <AtlasLogo size={34} />
             </span>
-            <span className="hidden md:inline-flex">
+            <span className="hidden lg:inline-flex">
               <AtlasLogo size={38} />
             </span>
           </MotionLink>
+        </div>
 
-          <nav
-            className="hidden items-center gap-0.5 md:flex"
-            aria-label={t("drawerTitle")}
-          >
+        <nav
+          className="hidden justify-center justify-self-center lg:flex"
+          aria-label={t("drawerTitle")}
+        >
+          <div className="flex flex-wrap items-center justify-center gap-1 rounded-full border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_94%,transparent)] px-1.5 py-1 shadow-[0_10px_34px_-14px_rgba(76,29,18,0.22)] backdrop-blur-md">
             {desktopLinks.map((l) => (
               <MotionLink
                 key={l.href}
                 href={l.href}
-                className={linkClass(l.active())}
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.98 }}
+                className={floatLink(l.active())}
+                whileHover={{ y: -3 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 380, damping: 22 }}
               >
                 {l.label}
               </MotionLink>
             ))}
-          </nav>
-        </div>
+          </div>
+        </nav>
 
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
           <MotionLink
             href="/shop"
             className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-[var(--press-bg)] hover:text-[var(--accent)]"
@@ -268,7 +271,7 @@ export function Navbar() {
         {mobileOpen ? (
           <motion.nav
             id="mobile-nav-drawer"
-            className="fixed inset-0 z-50 flex h-dvh flex-col bg-[var(--bg)]/98 backdrop-blur-md md:hidden"
+            className="fixed inset-0 z-50 flex h-dvh flex-col bg-[var(--bg)]/98 backdrop-blur-md lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -296,7 +299,11 @@ export function Navbar() {
                   <li key={l.href}>
                     <MotionLink
                       href={l.href}
-                      className={`flex min-h-[48px] items-center rounded-xl px-4 ${linkClass(active)}`}
+                      className={`flex min-h-[48px] items-center rounded-xl px-4 text-sm font-semibold transition-colors ${
+                        active
+                          ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                          : "text-[var(--fg)] hover:bg-[var(--press-bg)]"
+                      }`}
                       onClick={() => setMobileOpen(false)}
                       whileTap={{ scale: 0.99 }}
                     >

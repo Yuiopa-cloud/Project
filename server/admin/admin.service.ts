@@ -142,4 +142,23 @@ export class AdminService {
   async createProduct(data: Prisma.ProductCreateInput) {
     return this.prisma.product.create({ data });
   }
+
+  async listCustomers(takeRaw?: number) {
+    const take = Math.min(Math.max(takeRaw ?? 200, 1), 500);
+    return this.prisma.user.findMany({
+      where: { role: UserRole.CUSTOMER },
+      orderBy: { createdAt: 'desc' },
+      take,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        email: true,
+        locale: true,
+        createdAt: true,
+        _count: { select: { orders: true } },
+      },
+    });
+  }
 }

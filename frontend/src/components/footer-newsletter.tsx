@@ -16,22 +16,25 @@ export function FooterNewsletter() {
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
       <p className="text-sm font-semibold text-[var(--fg)]">{t("newsletterTitle")}</p>
       <p className="mt-1 text-xs text-[var(--muted)]">{t("newsletterHint")}</p>
-      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-2 sm:flex-row">
+      <form
+        onSubmit={onSubmit}
+        className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-stretch"
+      >
         <input
           type="email"
           name="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder={t("newsletterPlaceholder")}
-          className="min-h-11 flex-1 rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 text-sm text-[var(--fg)] placeholder:text-[var(--muted)]"
+          className="min-h-11 min-w-0 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 text-sm text-[var(--fg)] placeholder:text-[var(--muted)]"
           autoComplete="email"
         />
         <button
           type="submit"
-          className="min-h-11 shrink-0 rounded-xl bg-[var(--accent)] px-5 text-sm font-semibold text-white transition hover:bg-[var(--primary-to)]"
+          className="min-h-11 w-full whitespace-nowrap rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--primary-to)] sm:w-auto sm:px-5"
         >
           {t("newsletterCta")}
         </button>

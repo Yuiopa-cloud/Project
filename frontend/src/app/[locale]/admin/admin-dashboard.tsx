@@ -40,6 +40,17 @@ type OrderRow = {
   fraudFlags?: { decision: string }[];
 };
 
+type CustomerRow = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string | null;
+  locale: string;
+  createdAt: string;
+  _count: { orders: number };
+};
+
 function friendlyNetworkError(err: unknown): string {
   if (!(err instanceof Error)) return "Erreur reseau.";
   const m = err.message.toLowerCase();
@@ -127,9 +138,10 @@ export function AdminDashboard() {
   const apiRoot = useMemo(() => clientApiRoot(), []);
   const [token, setToken] = useState<string | null>(null);
   const [password, setPassword] = useState("");
-  const [tab, setTab] = useState<"dash" | "orders">("dash");
+  const [tab, setTab] = useState<"dash" | "orders" | "members">("dash");
   const [dash, setDash] = useState<Dash | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [members, setMembers] = useState<CustomerRow[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [orderQuery, setOrderQuery] = useState("");
@@ -198,12 +210,37 @@ export function AdminDashboard() {
     }
   }, [apiRoot, token, authHeaders]);
 
+  const loadMembers = useCallback(async () => {
+    if (!token) return;
+    try {
+      const r = await fetch(`${apiRoot}/admin/customers?take=300`, {
+        headers: authHeaders(),
+      });
+      if (!r.ok) {
+        const txt = await r.text();
+        setMsg(
+          txt && !txt.startsWith("<")
+            ? txt
+            : process.env.NODE_ENV === "production"
+              ? "Erreur API (membres)."
+              : "API introuvable — lancez npm run dev.",
+        );
+        return;
+      }
+      setMembers(await r.json());
+    } catch (e) {
+      logApiFailure("admin customers", e);
+      setMsg(friendlyNetworkError(e));
+    }
+  }, [apiRoot, token, authHeaders]);
+
   useEffect(() => {
     if (!token) return;
     setMsg(null);
     if (tab === "dash") loadDash();
-    else loadOrders();
-  }, [token, tab, loadDash, loadOrders]);
+    else if (tab === "orders") loadOrders();
+    else loadMembers();
+  }, [token, tab, loadDash, loadOrders, loadMembers]);
 
   async function login(e: React.FormEvent) {
     e.preventDefault();
@@ -262,6 +299,7 @@ export function AdminDashboard() {
     setToken(null);
     setDash(null);
     setOrders([]);
+    setMembers([]);
   }
 
   async function fraudDecision(orderId: string, decision: "APPROVED" | "REJECTED") {
@@ -405,7 +443,11 @@ export function AdminDashboard() {
           <div className="flex flex-wrap items-center gap-2">
             <motion.button
               type="button"
-              onClick={() => (tab === "dash" ? loadDash() : loadOrders())}
+              onClick={() => {
+                if (tab === "dash") loadDash();
+                else if (tab === "orders") loadOrders();
+                else loadMembers();
+              }}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
               className="btn-secondary rounded-lg px-3 py-2 text-xs"
@@ -424,8 +466,8 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        <div className="relative mt-5 flex gap-2">
-          {(["dash", "orders"] as const).map((x) => (
+        <div className="relative mt-5 flex flex-wrap gap-2">
+          {(["dash", "orders", "members"] as const).map((x) => (
             <motion.button
               key={x}
               type="button"
@@ -439,7 +481,11 @@ export function AdminDashboard() {
                   : "text-[var(--muted)] hover:bg-[var(--press-bg)]"
               }`}
             >
-              {x === "dash" ? "Dashboard" : "Orders"}
+              {x === "dash"
+                ? "Dashboard"
+                : x === "orders"
+                  ? "Orders"
+                  : "Members"}
             </motion.button>
           ))}
         </div>
@@ -632,6 +678,63 @@ export function AdminDashboard() {
             {filteredOrders.length === 0 ? (
               <p className="p-6 text-center text-sm text-[var(--muted)]">
                 No orders match your filters.
+              </p>
+            ) : null}
+          </div>
+        </motion.section>
+      ) : null}
+
+      {tab === "members" ? (
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-7"
+        >
+          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-black/15">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="sticky top-0 border-b border-[var(--border)] bg-black/45 text-xs uppercase tracking-wider text-[var(--muted)] backdrop-blur">
+                <tr>
+                  <th className="p-3">Member</th>
+                  <th className="p-3">Phone</th>
+                  <th className="p-3">Email</th>
+                  <th className="p-3">Orders</th>
+                  <th className="p-3">Joined</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((m) => (
+                  <tr
+                    key={m.id}
+                    className="border-b border-[var(--border)]/60 transition hover:bg-white/[0.03]"
+                  >
+                    <td className="p-3 font-medium text-[var(--fg)]">
+                      {m.firstName} {m.lastName}
+                    </td>
+                    <td className="p-3 font-mono text-xs text-[var(--fg)]">
+                      {m.phone}
+                    </td>
+                    <td className="p-3 text-xs text-[var(--muted)]">
+                      {m.email ?? "—"}
+                    </td>
+                    <td className="p-3 tabular-nums text-[var(--fg)]">
+                      {new Intl.NumberFormat("en-SA-u-nu-latn", {
+                        maximumFractionDigits: 0,
+                      }).format(m._count.orders)}
+                    </td>
+                    <td className="p-3 text-xs text-[var(--muted)]">
+                      {new Intl.DateTimeFormat("en-GB", {
+                        numberingSystem: "latn",
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      }).format(new Date(m.createdAt))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {members.length === 0 ? (
+              <p className="p-6 text-center text-sm text-[var(--muted)]">
+                No customer accounts yet.
               </p>
             ) : null}
           </div>
