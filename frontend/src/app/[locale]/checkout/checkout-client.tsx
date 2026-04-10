@@ -10,6 +10,8 @@ import { clearBuyNow, getBuyNow, type BuyNowPayload } from "@/lib/buy-now";
 import type { CartLine } from "@/contexts/cart-context";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { MotionLink } from "@/components/motion-link";
+import { ProductImage } from "@/components/product-image";
+import { parseAmount } from "@/lib/price";
 import { trackEvent } from "@/lib/analytics";
 import { useRouter } from "@/i18n/navigation";
 type Zone = {
@@ -426,21 +428,42 @@ export function CheckoutClient() {
                   {t("linesOrdered", { count: shippableItems.length })}
                 </motion.span>
               </div>
-              <ul className="relative mt-3 max-h-44 space-y-2 overflow-y-auto text-sm">
-                {shippableItems.map((l, i) => (
-                  <motion.li
-                    key={l.id}
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.08 + i * 0.04, ...spring }}
-                    className="flex justify-between gap-3 border-b border-[var(--border)]/50 py-2 last:border-0"
-                  >
-                    <span className="truncate text-[var(--fg)]">
-                      {productLabel(l.product.nameFr, l.product.nameAr)} ×{" "}
-                      {l.quantity}
-                    </span>
-                  </motion.li>
-                ))}
+              <ul className="relative mt-3 max-h-52 space-y-2 overflow-y-auto text-sm">
+                {shippableItems.map((l, i) => {
+                  const label = productLabel(
+                    l.product.nameFr,
+                    l.product.nameAr,
+                  );
+                  const lineMad = parseAmount(l.product.priceMad) * l.quantity;
+                  return (
+                    <motion.li
+                      key={l.id}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.08 + i * 0.04, ...spring }}
+                      className="flex items-center gap-3 border-b border-[var(--border)]/50 py-2 last:border-0"
+                    >
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-[var(--border)] bg-black/20">
+                        <ProductImage
+                          src={l.product.images[0]}
+                          alt={label}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium leading-snug text-[var(--fg)]">
+                          {label}
+                        </p>
+                        <p className="text-xs text-[var(--muted)]">
+                          × {l.quantity}
+                        </p>
+                      </div>
+                      <span className="shrink-0 tabular-nums text-xs text-[var(--muted)]">
+                        {lineMad.toFixed(2)} MAD
+                      </span>
+                    </motion.li>
+                  );
+                })}
               </ul>
             </motion.div>
 

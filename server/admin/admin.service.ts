@@ -287,6 +287,26 @@ export class AdminService {
     return this.mapAdminProduct(p);
   }
 
+  async deleteProduct(id: string) {
+    const exists = await this.prisma.product.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!exists) throw new NotFoundException('Product not found');
+
+    const onOrders = await this.prisma.orderItem.count({
+      where: { productId: id },
+    });
+    if (onOrders > 0) {
+      throw new ConflictException(
+        'This product is on existing customer orders and cannot be deleted. Set it to Draft (inactive) to hide it from the shop, or archive it after a data migration.',
+      );
+    }
+
+    await this.prisma.product.delete({ where: { id } });
+    return { ok: true };
+  }
+
   async listProducts(params: {
     skip?: number;
     take?: number;

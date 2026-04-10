@@ -331,6 +331,34 @@ export function AdminDashboard() {
     [apiRoot, authHeaders, loadProducts],
   );
 
+  const removeProduct = useCallback(
+    async (id: string, displayName: string) => {
+      const ok = window.confirm(
+        `Delete “${displayName}”? This cannot be undone.\n\nIf this product was ever ordered, deletion will be blocked — use Draft (inactive) to hide it instead.`,
+      );
+      if (!ok) return;
+      setMsg(null);
+      try {
+        const r = await fetch(`${apiRoot}/admin/products/${id}`, {
+          method: "DELETE",
+          headers: authHeaders(),
+        });
+        const txt = await r.text();
+        if (!r.ok) {
+          const parsed = nestErrorMessage(txt) ?? txt.slice(0, 500);
+          setMsg(parsed);
+          return;
+        }
+        setMsg("Product deleted.");
+        await loadProducts();
+      } catch (e) {
+        logApiFailure("admin delete product", e);
+        setMsg(friendlyNetworkError(e));
+      }
+    },
+    [apiRoot, authHeaders, loadProducts],
+  );
+
   async function login(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -835,7 +863,7 @@ export function AdminDashboard() {
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-black/15">
-            <table className="w-full min-w-[960px] text-left text-sm">
+            <table className="w-full min-w-[1040px] text-left text-sm">
               <thead className="sticky top-0 z-[1] border-b border-[var(--border)] bg-black/55 text-xs uppercase tracking-wider text-[var(--muted)] backdrop-blur">
                 <tr>
                   <th className="p-3 pl-4">Product</th>
@@ -846,6 +874,7 @@ export function AdminDashboard() {
                   <th className="p-3">Sales</th>
                   <th className="p-3">Updated</th>
                   <th className="p-3">Edit</th>
+                  <th className="p-3">Delete</th>
                   <th className="p-3 pr-4">Store</th>
                 </tr>
               </thead>
@@ -962,6 +991,17 @@ export function AdminDashboard() {
                         >
                           Edit
                         </Link>
+                      </td>
+                      <td className="p-3 align-middle">
+                        <motion.button
+                          type="button"
+                          onClick={() => removeProduct(p.id, p.nameFr)}
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          className="rounded-md border border-rose-500/45 bg-rose-500/15 px-2 py-1 text-xs font-medium text-rose-200"
+                        >
+                          Delete
+                        </motion.button>
                       </td>
                       <td className="p-3 pr-4 align-middle">
                         <Link

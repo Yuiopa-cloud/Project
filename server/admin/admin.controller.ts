@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -103,5 +104,10 @@ export class AdminController {
   @Post('products')
   createProduct(@Body() dto: CreateProductDto) {
     return this.admin.createManagedProduct(dto);
+  }
+
+  @Delete('products/:id')
+  deleteProduct(@Param('id') id: string) {
+    return this.admin.deleteProduct(id);
   }
 }

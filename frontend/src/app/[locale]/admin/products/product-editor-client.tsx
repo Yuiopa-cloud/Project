@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Link, useRouter } from "@/i18n/navigation";
 import { AtlasLogo } from "@/components/atlas-logo";
 import { clientApiRoot, logApiFailure } from "@/lib/api-config";
+import { parseNestErrorMessage } from "@/lib/parse-nest-error";
 import { compressImageFile } from "@/lib/admin-image-compress";
 
 const TOKEN_KEY = "atlas-admin-jwt";
@@ -59,6 +60,7 @@ export function ProductEditorClient({
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [loading, setLoading] = useState(mode === "edit");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const [nameFr, setNameFr] = useState("");
@@ -262,6 +264,33 @@ export function ProductEditorClient({
       setMsg(friendlyNetworkError(err));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!token || !productId) return;
+    const ok = window.confirm(
+      `Delete this product? This cannot be undone.\n\nIf it was ever ordered, deletion will be blocked — use Draft (inactive) to hide it from the shop.`,
+    );
+    if (!ok) return;
+    setDeleting(true);
+    setMsg(null);
+    try {
+      const r = await fetch(`${apiRoot}/admin/products/${productId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const raw = await r.text();
+      if (!r.ok) {
+        setMsg(parseNestErrorMessage(raw) ?? raw.slice(0, 500));
+        return;
+      }
+      router.push("/admin?tab=products");
+    } catch (err) {
+      logApiFailure("admin delete product", err);
+      setMsg(friendlyNetworkError(err));
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -562,8 +591,8 @@ export function ProductEditorClient({
         <div className="flex flex-wrap gap-2 pt-2">
           <motion.button
             type="submit"
-            disabled={saving}
-            whileHover={{ y: saving ? 0 : -1 }}
+            disabled={saving || deleting}
+            whileHover={{ y: saving || deleting ? 0 : -1 }}
             whileTap={{ scale: 0.98 }}
             className="rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-5 py-2.5 text-sm font-semibold text-slate-900"
           >
@@ -576,6 +605,26 @@ export function ProductEditorClient({
             Cancel
           </Link>
         </div>
+
+        {mode === "edit" && productId ? (
+          <div className="mt-8 border-t border-[var(--border)] pt-6">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              Danger zone
+            </p>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Products that appear on past orders cannot be deleted — set{" "}
+              <strong className="text-[var(--fg)]">Active</strong> off instead.
+            </p>
+            <button
+              type="button"
+              disabled={saving || deleting}
+              onClick={() => void handleDelete()}
+              className="mt-3 rounded-xl border border-rose-500/50 bg-rose-500/15 px-4 py-2 text-sm font-medium text-rose-200 transition hover:bg-rose-500/25 disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete product"}
+            </button>
+          </div>
+        ) : null}
       </motion.form>
     </div>
   );
