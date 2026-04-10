@@ -58,9 +58,7 @@ export default async function HomePage({
         imageAlt={t("storeHeroImageAlt")}
       />
 
-      <HomeCategoryShortcuts title={t("categoryShortcutsTitle")} items={categories} />
-
-      <section className="mt-14 sm:mt-16" aria-labelledby="featured-heading">
+      <section className="mt-8 sm:mt-10" aria-labelledby="featured-heading">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2
@@ -78,6 +76,10 @@ export default async function HomePage({
           ))}
         </div>
       </section>
+
+      <div className="mt-12 sm:mt-14">
+        <HomeCategoryShortcuts title={t("categoryShortcutsTitle")} items={categories} />
+      </div>
 
       <HomeWhyUs title={t("whyUsSectionTitle")} items={whyItems} trustAlt={tFooter("trustBadgesAlt")} />
 

@@ -129,138 +129,145 @@ export default async function ShopPage({
         </div>
       </div>
 
-      <div className="flex flex-col gap-10 lg:flex-row lg:gap-12">
-        <aside className="shrink-0 lg:w-56">
-          <div className="space-y-8 lg:sticky lg:top-28">
-            <form
-              className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm"
-              action={locale ? `/${locale}/shop` : "/fr/shop"}
-              method="get"
-            >
-              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                {t("search")}
-              </label>
-              <input
-                name="q"
-                placeholder={t("search")}
-                defaultValue={sp.q}
-                className="checkout-input mt-2 min-h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)] placeholder:text-[var(--muted)]"
-              />
-              {sp.sort ? (
-                <input type="hidden" name="sort" value={sp.sort} />
-              ) : null}
-              {sp.category ? (
-                <input type="hidden" name="category" value={sp.category} />
-              ) : null}
-              <button
-                type="submit"
-                className="btn-primary mt-3 w-full rounded-xl py-2.5 text-sm font-semibold"
-              >
-                {t("filters")}
-              </button>
-            </form>
-
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                {t("sidebarCategories")}
-              </h2>
-              <ul className="mt-3 space-y-1">
-                <li>
-                  <Link
-                    href="/shop"
-                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
-                      !sp.category ? "bg-[var(--accent-dim)] text-[var(--accent)]" : "text-[var(--fg)]"
-                    }`}
-                  >
-                    {t("allProducts")}
-                  </Link>
-                </li>
-                {CATEGORY_SLUGS.map((slug) => (
-                  <li key={slug}>
-                    <Link
-                      href={categoryHref(slug)}
-                      className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
-                        sp.category === slug
-                          ? "bg-[var(--accent-dim)] text-[var(--accent)]"
-                          : "text-[var(--fg)]"
-                      }`}
-                    >
-                      {catLabel(slug)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                {t("sidebarSort")}
-              </h2>
-              <ul className="mt-3 space-y-1">
-                <li>
-                  <Link
-                    href={sortHref("popular")}
-                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
-                      (sp.sort ?? "popular") === "popular"
-                        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
-                        : "text-[var(--fg)]"
-                    }`}
-                  >
-                    {t("sortPopular")}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href={sortHref("new")}
-                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
-                      sp.sort === "new"
-                        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
-                        : "text-[var(--fg)]"
-                    }`}
-                  >
-                    {t("sortNew")}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href={sortHref("price_asc")}
-                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
-                      sp.sort === "price_asc"
-                        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
-                        : "text-[var(--fg)]"
-                    }`}
-                  >
-                    {t("sortPriceAsc")}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href={sortHref("price_desc")}
-                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
-                      sp.sort === "price_desc"
-                        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
-                        : "text-[var(--fg)]"
-                    }`}
-                  >
-                    {t("sortPriceDesc")}
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </aside>
-
-        <div className="min-w-0 flex-1">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-            {items.map((p, i) => (
-              <ShopProductCard key={p.id} product={p} locale={locale} index={i} />
-            ))}
-          </div>
-          {items.length === 0 ? (
-            <p className="py-20 text-center text-[var(--muted)]">{t("empty")}</p>
-          ) : null}
+      <div className="min-w-0">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+          {items.map((p, i) => (
+            <ShopProductCard key={p.id} product={p} locale={locale} index={i} />
+          ))}
         </div>
+        {items.length === 0 ? (
+          <p className="py-20 text-center text-[var(--muted)]">{t("empty")}</p>
+        ) : null}
       </div>
+
+      <section
+        className="mt-12 border-t border-[var(--border)] pt-10 sm:mt-14 sm:pt-12"
+        aria-labelledby="shop-search-filters"
+      >
+        <h2
+          id="shop-search-filters"
+          className="section-headline text-xl text-[var(--fg)] sm:text-2xl"
+        >
+          {t("filters")}
+        </h2>
+        <div className="mt-8 grid gap-8 lg:grid-cols-3">
+          <form
+            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm"
+            action={locale ? `/${locale}/shop` : "/fr/shop"}
+            method="get"
+          >
+            <label className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              {t("search")}
+            </label>
+            <input
+              name="q"
+              placeholder={t("search")}
+              defaultValue={sp.q}
+              className="checkout-input mt-2 min-h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)] placeholder:text-[var(--muted)]"
+            />
+            {sp.sort ? (
+              <input type="hidden" name="sort" value={sp.sort} />
+            ) : null}
+            {sp.category ? (
+              <input type="hidden" name="category" value={sp.category} />
+            ) : null}
+            <button
+              type="submit"
+              className="btn-primary mt-3 w-full rounded-xl py-2.5 text-sm font-semibold"
+            >
+              {t("filters")}
+            </button>
+          </form>
+
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              {t("sidebarCategories")}
+            </h3>
+            <ul className="mt-3 space-y-1">
+              <li>
+                <Link
+                  href="/shop"
+                  className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                    !sp.category ? "bg-[var(--accent-dim)] text-[var(--accent)]" : "text-[var(--fg)]"
+                  }`}
+                >
+                  {t("allProducts")}
+                </Link>
+              </li>
+              {CATEGORY_SLUGS.map((slug) => (
+                <li key={slug}>
+                  <Link
+                    href={categoryHref(slug)}
+                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                      sp.category === slug
+                        ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                        : "text-[var(--fg)]"
+                    }`}
+                  >
+                    {catLabel(slug)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              {t("sidebarSort")}
+            </h3>
+            <ul className="mt-3 space-y-1">
+              <li>
+                <Link
+                  href={sortHref("popular")}
+                  className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                    (sp.sort ?? "popular") === "popular"
+                      ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                      : "text-[var(--fg)]"
+                  }`}
+                >
+                  {t("sortPopular")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={sortHref("new")}
+                  className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                    sp.sort === "new"
+                      ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                      : "text-[var(--fg)]"
+                  }`}
+                >
+                  {t("sortNew")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={sortHref("price_asc")}
+                  className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                    sp.sort === "price_asc"
+                      ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                      : "text-[var(--fg)]"
+                  }`}
+                >
+                  {t("sortPriceAsc")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={sortHref("price_desc")}
+                  className={`block rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-[var(--press-bg)] ${
+                    sp.sort === "price_desc"
+                      ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                      : "text-[var(--fg)]"
+                  }`}
+                >
+                  {t("sortPriceDesc")}
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
