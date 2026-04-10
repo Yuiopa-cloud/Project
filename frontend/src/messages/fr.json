@@ -163,7 +163,8 @@
     "benefit3": "Support client sur WhatsApp",
     "inStock": "En stock — expédition rapide",
     "outOfStock": "Actuellement indisponible",
-    "secureCheckout": "Paiement & livraison"
+    "secureCheckout": "Paiement & livraison",
+    "descriptionSpotlight": "À retenir"
   },
   "cart": {
     "title": "Panier",

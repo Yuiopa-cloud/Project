@@ -177,6 +177,21 @@ export function ProductClient({
                 : labels.inStock}
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">{labels.boughtBy}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.08 }}
+            className="product-description-spotlight mt-5"
+            dir={locale === "ar" ? "rtl" : "ltr"}
+          >
+            <p className="product-description-spotlight__title">
+              <span aria-hidden>✨</span>
+              {labels.descriptionSpotlight}
+            </p>
+            <p className="product-description-text whitespace-pre-line">
+              {description}
+            </p>
+          </motion.div>
           <ul className="mt-6 space-y-2 border-t border-[var(--border)] pt-6 text-sm text-[var(--fg)]">
             <li className="flex gap-2">
               <span className="text-[var(--accent)]" aria-hidden>
@@ -213,9 +228,6 @@ export function ProductClient({
               </span>
             </div>
           </div>
-          <p className="mt-6 whitespace-pre-line text-sm leading-relaxed text-[var(--muted)]">
-            {description}
-          </p>
           {err ? (
             <p className="mt-4 text-sm text-rose-400 whitespace-pre-wrap">
               {err}

@@ -163,7 +163,8 @@
     "benefit3": "دعم عبر واتساب",
     "inStock": "متوفر — شحن سريع",
     "outOfStock": "غير متوفر حالياً",
-    "secureCheckout": "الدفع والتوصيل"
+    "secureCheckout": "الدفع والتوصيل",
+    "descriptionSpotlight": "الأهم"
   },
   "cart": {
     "title": "السلة",

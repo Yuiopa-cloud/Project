@@ -1043,3 +1043,142 @@ html[data-theme="light"] .checkout-input:focus-visible {
     text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 28%, transparent);
   }
 }
+
+/* Product page — description block: bold copy + soft border + slow shine sweep */
+@keyframes product-desc-shine {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+
+@keyframes product-desc-sparkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.15);
+  }
+}
+
+.product-description-spotlight {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1rem;
+  padding: 1rem 1.125rem 1.125rem;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+        color-mix(in srgb, var(--card) 92%, var(--accent-dim)),
+        color-mix(in srgb, var(--card) 88%, var(--accent-dim))
+      )
+      padding-box,
+    linear-gradient(
+        125deg,
+        color-mix(in srgb, var(--accent) 55%, transparent),
+        color-mix(in srgb, var(--accent-hot) 45%, transparent),
+        color-mix(in srgb, var(--primary-mid) 50%, transparent),
+        color-mix(in srgb, var(--accent) 40%, transparent)
+      )
+      border-box;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent) inset,
+    0 10px 36px -14px color-mix(in srgb, var(--accent) 25%, transparent),
+    0 0 48px -20px color-mix(in srgb, var(--accent-hot) 18%, transparent);
+}
+
+.product-description-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 42%,
+    color-mix(in srgb, #fff 55%, transparent) 50%,
+    transparent 58%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: product-desc-shine 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.product-description-spotlight::after {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  top: 0.7rem;
+  inset-inline-end: 0.75rem;
+  border-radius: 9999px;
+  z-index: 0;
+  background: radial-gradient(
+    circle,
+    #fef3c7 0%,
+    #fbbf24 40%,
+    transparent 72%
+  );
+  box-shadow: 0 0 8px 2px color-mix(in srgb, #fbbf24 28%, transparent);
+  animation: product-desc-sparkle 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.product-description-spotlight__title {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: linear-gradient(
+    92deg,
+    var(--primary-from),
+    var(--accent),
+    var(--accent-hot),
+    var(--primary-mid)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--accent) 20%, transparent));
+}
+
+.product-description-text {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(0.95rem, 2.6vw, 1.08rem);
+  line-height: 1.72;
+  letter-spacing: -0.015em;
+  color: var(--fg);
+  text-shadow:
+    0 1px 0 color-mix(in srgb, #fff 55%, transparent),
+    0 0 24px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-description-spotlight::before {
+    animation: none;
+    background: none;
+    opacity: 0;
+  }
+
+  .product-description-spotlight::after {
+    animation: none;
+    opacity: 0.55;
+  }
+}

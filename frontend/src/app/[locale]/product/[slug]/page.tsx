@@ -97,6 +97,7 @@ export default async function ProductPage({
           inStock: t("inStock"),
           outOfStock: t("outOfStock"),
           secureCheckout: t("secureCheckout"),
+          descriptionSpotlight: t("descriptionSpotlight"),
         }}
       />
     </div>
