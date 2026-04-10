@@ -14,6 +14,7 @@ import { ProductImage } from "@/components/product-image";
 import { parseAmount } from "@/lib/price";
 import { trackEvent } from "@/lib/analytics";
 import { useRouter } from "@/i18n/navigation";
+import { CheckoutUpsellRail } from "./checkout-upsell-rail";
 type Zone = {
   cityCode: string;
   cityNameFr: string;
@@ -145,6 +146,13 @@ export function CheckoutClient() {
     (buyNowPayload
       ? isOfflineProductId(buyNowPayload.snapshot.id)
       : items.length > 0 && shippableItems.length === 0);
+
+  const showCheckoutUpsell =
+    shippableItems.length > 0 && !hasOnlyOfflineItems;
+
+  const upsellExcludeKey = [...new Set(shippableItems.map((l) => l.product.id))]
+    .sort()
+    .join(",");
 
   const canSubmit =
     shippableItems.length > 0 &&
@@ -304,7 +312,7 @@ export function CheckoutClient() {
   }
 
   return (
-    <div className="relative mx-auto max-w-xl px-4 py-8 md:max-w-2xl md:py-12">
+    <div className="relative mx-auto max-w-xl px-4 py-10 md:max-w-2xl md:py-14">
       <div
         className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full opacity-30 blur-3xl"
         style={{
@@ -466,6 +474,16 @@ export function CheckoutClient() {
                 })}
               </ul>
             </motion.div>
+
+            {showCheckoutUpsell ? (
+              <CheckoutUpsellRail
+                apiRoot={apiRoot}
+                excludeProductKey={upsellExcludeKey}
+                buyNowActive={Boolean(buyNowPayload)}
+                buyNowMerge={buyNowPayload}
+                onExitBuyNow={() => setBuyNowPayload(null)}
+              />
+            ) : null}
 
             <motion.div variants={stagger} initial="hidden" animate="show">
               <motion.section variants={fadeUp} className="card-chrome rounded-2xl p-4 md:p-5">
