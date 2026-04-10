@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -31,6 +32,8 @@ function normalizePhone(raw: string): string {
 
 @Injectable()
 export class OrdersService {
+  private readonly log = new Logger(OrdersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly fraud: FraudService,
@@ -299,7 +302,9 @@ export class OrdersService {
     };
 
     const guestEmailNorm = dto.guestEmail?.trim();
-    const [customerSent, merchantSent] = await Promise.all([
+
+    // Never await SMTP here — slow or blocked mail servers would keep the client on "Validation…"
+    void Promise.all([
       this.notify.sendOrderConfirmationEmail({
         to: guestEmailNorm,
         orderNumber: order.orderNumber,
@@ -334,7 +339,18 @@ export class OrdersService {
         lines: linesForEmail,
         couponCode: dto.couponCode?.trim() || null,
       }),
-    ]);
+    ])
+      .then(([cust, merch]) => {
+        this.log.log(
+          `Post-checkout emails order=${order.orderNumber} customer=${cust} merchant=${merch}`,
+        );
+      })
+      .catch((err: unknown) => {
+        this.log.error(
+          `Post-checkout emails failed order=${order.orderNumber}`,
+          err instanceof Error ? err.stack : String(err),
+        );
+      });
 
     void this.notify
       .sendWhatsAppTemplate({
@@ -362,10 +378,10 @@ export class OrdersService {
       stripeClientSecret,
       whatsappConfirmUrl: whatsappAdminLink,
       emailStatus: {
-        customerConfirmationSent: guestEmailNorm ? customerSent : null,
-        merchantNotificationSent: merchantSent,
+        customerConfirmationSent: null,
+        merchantNotificationSent: null,
         customerSkippedNoEmail: !guestEmailNorm,
-        queuedAsync: false,
+        queuedAsync: true,
       },
     };
   }

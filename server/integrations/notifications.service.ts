@@ -94,6 +94,9 @@ export class NotificationsService {
         port: smtp.port,
         secure: smtp.secure,
         auth: { user: smtp.user, pass: smtp.pass },
+        connectionTimeout: 15_000,
+        greetingTimeout: 15_000,
+        socketTimeout: 20_000,
         ...(smtp.port === 587 ? { requireTLS: true } : {}),
       });
       const info = await transporter.sendMail({

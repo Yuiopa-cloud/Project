@@ -1,0 +1,64 @@
+# Order emails — exact checklist (Railway / production)
+
+If checkout works but you get **no mail**, or you only fixed “stuck on Validation…”, configure the following on the **API service** (Nest backend), not on Vercel alone.
+
+## 1. Required for any email to send
+
+Set **all three** on the backend environment:
+
+| Variable | Example | Notes |
+|----------|---------|--------|
+| `SMTP_HOST` | `smtp.gmail.com` | Gmail uses this host for app passwords. |
+| `SMTP_USER` | `yourstore@gmail.com` | The Google account that owns the app password. |
+| `SMTP_PASS` | `xxxx xxxx xxxx xxxx` | Gmail **App password** (16 chars, spaces optional). **Not** your normal Gmail password. |
+
+**Aliases (same meaning):** you may use `EMAIL_USER` + `EMAIL_PASS` or `EMAIL_API_KEY` instead of `SMTP_USER` / `SMTP_PASS` if you prefer.
+
+If any of `SMTP_HOST`, `SMTP_USER`, or `SMTP_PASS` is missing, the app **skips sending** and logs: `Email disabled: set SMTP_HOST, SMTP_USER, SMTP_PASS`.
+
+## 2. Gmail app password (step by step)
+
+1. Google Account → **Security** → enable **2-Step Verification** if needed.  
+2. Security → **App passwords** → create an app password for “Mail” / “Other”.  
+3. Copy the 16-character password into **`SMTP_PASS`** on Railway.  
+4. **`SMTP_USER`** must be that **same** Gmail address.
+
+## 3. Where merchant (shop) notifications go
+
+| Variable | Purpose |
+|----------|---------|
+| `ORDER_NOTIFICATION_EMAIL` | Inbox that receives **“new order”** HTML alerts. |
+
+- If **set**: that address receives merchant notifications.  
+- If **empty**: merchant mail goes to **`SMTP_USER`** (same as the sending account).
+
+Use **`ORDER_NOTIFICATION_EMAIL=youssefstat20@gmail.com`** if you want orders in that inbox while sending from another mailbox (only if your provider allows that “From” — Gmail usually wants `From` = authenticated user).
+
+## 4. Optional: From header
+
+| Variable | Purpose |
+|----------|---------|
+| `SMTP_FROM` | Full `From` header, e.g. `"Easy Handles" <yourstore@gmail.com>`. |
+
+If unset, the API uses `"Easy Handles" <SMTP_USER>`. For Gmail, **`From` should match the authenticated account** unless you’ve set up “Send mail as” in Google.
+
+## 5. Customer confirmation email
+
+- Sent only if the customer **enters an email** on checkout.  
+- No extra env key — uses the same SMTP as above.
+
+## 6. After changing variables
+
+Redeploy or restart the **API** on Railway so the new env is loaded.
+
+## 7. How to verify
+
+1. Place a test order **with** an email in the form.  
+2. Check Railway **logs** for either:  
+   - `Email sent: messageId=...` (success), or  
+   - `Email sending failed` / `SMTP response` (misconfigured auth or network).  
+3. If logs say `Email disabled`, one of **§1** is still missing.
+
+## 8. Checkout “Validation…” stuck (fixed in code)
+
+The API **must not wait** for SMTP before responding — otherwise a slow mail server blocks the browser. Emails are sent **after** the order is saved; success on the site means the order exists even if mail fails (check logs for mail errors).
