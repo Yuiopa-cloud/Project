@@ -16,6 +16,7 @@ import { UserRole, OrderStatus } from '@prisma/client';
 import { FraudDecideDto } from './dto/fraud-decide.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { JwtPayloadUser } from '../common/decorators/current-user.decorator';
 import { Prisma } from '@prisma/client';
@@ -71,6 +72,28 @@ export class AdminController {
     @CurrentUser() u: JwtPayloadUser,
   ) {
     return this.admin.fraudDecide(orderId, u.sub, dto.decision);
+  }
+
+  @Get('products')
+  listProducts(
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+    @Query('q') q?: string,
+    @Query('status') status?: string,
+  ) {
+    const st =
+      status === 'active' || status === 'draft' ? status : 'all';
+    return this.admin.listProducts({
+      skip: skip ? Number(skip) : undefined,
+      take: take ? Number(take) : undefined,
+      q,
+      status: st,
+    });
+  }
+
+  @Patch('products/:id')
+  patchProduct(@Param('id') id: string, @Body() dto: UpdateProductDto) {
+    return this.admin.updateProduct(id, dto);
   }
 
   @Post('products')

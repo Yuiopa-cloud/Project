@@ -143,6 +143,93 @@ export class AdminService {
     return this.prisma.product.create({ data });
   }
 
+  async listProducts(params: {
+    skip?: number;
+    take?: number;
+    q?: string;
+    status?: 'active' | 'draft' | 'all';
+  }) {
+    const take = Math.min(params.take ?? 50, 200);
+    const skip = params.skip ?? 0;
+    const where: Prisma.ProductWhereInput = {};
+    const st = params.status ?? 'all';
+    if (st === 'active') where.isActive = true;
+    if (st === 'draft') where.isActive = false;
+    const q = params.q?.trim();
+    if (q) {
+      where.OR = [
+        { sku: { contains: q, mode: 'insensitive' } },
+        { nameFr: { contains: q, mode: 'insensitive' } },
+        { nameAr: { contains: q, mode: 'insensitive' } },
+        { slug: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+    const rows = await this.prisma.product.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      skip,
+      take,
+      select: {
+        id: true,
+        slug: true,
+        sku: true,
+        nameFr: true,
+        nameAr: true,
+        priceMad: true,
+        compareAtMad: true,
+        stock: true,
+        lowStockThreshold: true,
+        purchaseCount: true,
+        images: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        category: { select: { id: true, nameFr: true, slug: true } },
+      },
+    });
+    return rows.map((p) => ({
+      ...p,
+      priceMad: p.priceMad.toString(),
+      compareAtMad: p.compareAtMad?.toString() ?? null,
+    }));
+  }
+
+  async updateProduct(
+    id: string,
+    data: { stock?: number; isActive?: boolean; priceMad?: string },
+  ) {
+    const update: Prisma.ProductUpdateInput = {};
+    if (typeof data.stock === 'number') update.stock = data.stock;
+    if (typeof data.isActive === 'boolean') update.isActive = data.isActive;
+    if (data.priceMad !== undefined && data.priceMad !== '')
+      update.priceMad = data.priceMad;
+    const p = await this.prisma.product.update({
+      where: { id },
+      data: update,
+      select: {
+        id: true,
+        slug: true,
+        sku: true,
+        nameFr: true,
+        nameAr: true,
+        priceMad: true,
+        compareAtMad: true,
+        stock: true,
+        lowStockThreshold: true,
+        purchaseCount: true,
+        images: true,
+        isActive: true,
+        updatedAt: true,
+        category: { select: { id: true, nameFr: true, slug: true } },
+      },
+    });
+    return {
+      ...p,
+      priceMad: p.priceMad.toString(),
+      compareAtMad: p.compareAtMad?.toString() ?? null,
+    };
+  }
+
   async listCustomers(takeRaw?: number) {
     const take = Math.min(Math.max(takeRaw ?? 200, 1), 500);
     return this.prisma.user.findMany({

@@ -51,6 +51,24 @@ type CustomerRow = {
   _count: { orders: number };
 };
 
+type ProductRow = {
+  id: string;
+  slug: string;
+  sku: string;
+  nameFr: string;
+  nameAr: string;
+  priceMad: string;
+  compareAtMad: string | null;
+  stock: number;
+  lowStockThreshold: number;
+  purchaseCount: number;
+  images: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  category: { id: string; nameFr: string; slug: string };
+};
+
 function friendlyNetworkError(err: unknown): string {
   if (!(err instanceof Error)) return "Erreur reseau.";
   const m = err.message.toLowerCase();
@@ -138,10 +156,17 @@ export function AdminDashboard() {
   const apiRoot = useMemo(() => clientApiRoot(), []);
   const [token, setToken] = useState<string | null>(null);
   const [password, setPassword] = useState("");
-  const [tab, setTab] = useState<"dash" | "orders" | "members">("dash");
+  const [tab, setTab] = useState<"dash" | "orders" | "members" | "products">(
+    "dash",
+  );
   const [dash, setDash] = useState<Dash | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [members, setMembers] = useState<CustomerRow[]>([]);
+  const [productRows, setProductRows] = useState<ProductRow[]>([]);
+  const [productQuery, setProductQuery] = useState("");
+  const [productStatus, setProductStatus] = useState<"all" | "active" | "draft">(
+    "all",
+  );
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [orderQuery, setOrderQuery] = useState("");
@@ -234,13 +259,71 @@ export function AdminDashboard() {
     }
   }, [apiRoot, token, authHeaders]);
 
+  const loadProducts = useCallback(async () => {
+    if (!token) return;
+    try {
+      const params = new URLSearchParams();
+      params.set("take", "200");
+      const q = productQuery.trim();
+      if (q) params.set("q", q);
+      if (productStatus !== "all") params.set("status", productStatus);
+      const r = await fetch(`${apiRoot}/admin/products?${params}`, {
+        headers: authHeaders(),
+      });
+      if (!r.ok) {
+        const txt = await r.text();
+        setMsg(
+          txt && !txt.startsWith("<")
+            ? txt
+            : process.env.NODE_ENV === "production"
+              ? "Erreur API (produits)."
+              : "API introuvable — lancez npm run dev.",
+        );
+        return;
+      }
+      setProductRows(await r.json());
+    } catch (e) {
+      logApiFailure("admin products", e);
+      setMsg(friendlyNetworkError(e));
+    }
+  }, [apiRoot, token, authHeaders, productQuery, productStatus]);
+
   useEffect(() => {
     if (!token) return;
     setMsg(null);
     if (tab === "dash") loadDash();
     else if (tab === "orders") loadOrders();
-    else loadMembers();
+    else if (tab === "members") loadMembers();
   }, [token, tab, loadDash, loadOrders, loadMembers]);
+
+  useEffect(() => {
+    if (!token || tab !== "products") return;
+    setMsg(null);
+    const delay = productQuery.trim() ? 360 : 0;
+    const id = setTimeout(() => {
+      void loadProducts();
+    }, delay);
+    return () => clearTimeout(id);
+  }, [token, tab, productQuery, productStatus, loadProducts]);
+
+  const patchProduct = useCallback(
+    async (id: string, body: Record<string, unknown>) => {
+      setMsg(null);
+      try {
+        const r = await fetch(`${apiRoot}/admin/products/${id}`, {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) setMsg(await r.text());
+        else await loadProducts();
+      } catch (e) {
+        logApiFailure("admin patch product", e);
+        setMsg(friendlyNetworkError(e));
+      }
+    },
+    [apiRoot, authHeaders, loadProducts],
+  );
 
   async function login(e: React.FormEvent) {
     e.preventDefault();
@@ -300,6 +383,7 @@ export function AdminDashboard() {
     setDash(null);
     setOrders([]);
     setMembers([]);
+    setProductRows([]);
   }
 
   async function fraudDecision(orderId: string, decision: "APPROVED" | "REJECTED") {
@@ -436,7 +520,8 @@ export function AdminDashboard() {
             <div>
               <h1 className="text-xl font-semibold text-[var(--fg)] md:text-2xl">{tAdmin("title")}</h1>
               <p className="text-xs text-[var(--muted)] md:text-sm">
-                Live monitoring - orders, fraud checks, fulfillment status.
+                Catalog, orders, and customers in one console — similar to a
+                Shopify admin workflow.
               </p>
             </div>
           </div>
@@ -446,7 +531,8 @@ export function AdminDashboard() {
               onClick={() => {
                 if (tab === "dash") loadDash();
                 else if (tab === "orders") loadOrders();
-                else loadMembers();
+                else if (tab === "members") loadMembers();
+                else void loadProducts();
               }}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -467,7 +553,7 @@ export function AdminDashboard() {
         </div>
 
         <div className="relative mt-5 flex flex-wrap gap-2">
-          {(["dash", "orders", "members"] as const).map((x) => (
+          {(["dash", "orders", "products", "members"] as const).map((x) => (
             <motion.button
               key={x}
               type="button"
@@ -485,7 +571,9 @@ export function AdminDashboard() {
                 ? "Dashboard"
                 : x === "orders"
                   ? "Orders"
-                  : "Members"}
+                  : x === "products"
+                    ? "Products"
+                    : "Members"}
             </motion.button>
           ))}
         </div>
@@ -678,6 +766,200 @@ export function AdminDashboard() {
             {filteredOrders.length === 0 ? (
               <p className="p-6 text-center text-sm text-[var(--muted)]">
                 No orders match your filters.
+              </p>
+            ) : null}
+          </div>
+        </motion.section>
+      ) : null}
+
+      {tab === "products" ? (
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-7 space-y-4"
+        >
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--fg)]">
+                All products
+              </h2>
+              <p className="text-xs text-[var(--muted)]">
+                {productRows.length} shown · search by title, SKU, or handle
+              </p>
+            </div>
+          </div>
+
+          <div className="card-chrome flex flex-wrap items-center gap-2 rounded-2xl p-3 md:p-4">
+            <input
+              value={productQuery}
+              onChange={(e) => setProductQuery(e.target.value)}
+              placeholder="Filter products…"
+              className="checkout-input min-h-11 min-w-[14rem] flex-1 rounded-xl border border-[var(--border)] bg-black/25 px-3 text-sm"
+              aria-label="Filter products"
+            />
+            <select
+              value={productStatus}
+              onChange={(e) =>
+                setProductStatus(e.target.value as "all" | "active" | "draft")
+              }
+              className="checkout-input min-h-11 rounded-xl border border-[var(--border)] bg-black/25 px-3 text-sm"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="draft">Draft (inactive)</option>
+            </select>
+            <motion.button
+              type="button"
+              onClick={() => {
+                setProductQuery("");
+                setProductStatus("all");
+              }}
+              className="btn-secondary min-h-11 rounded-xl px-3 text-sm"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.96 }}
+            >
+              Reset
+            </motion.button>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-black/15">
+            <table className="w-full min-w-[960px] text-left text-sm">
+              <thead className="sticky top-0 z-[1] border-b border-[var(--border)] bg-black/55 text-xs uppercase tracking-wider text-[var(--muted)] backdrop-blur">
+                <tr>
+                  <th className="p-3 pl-4">Product</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3">Inventory</th>
+                  <th className="p-3">SKU</th>
+                  <th className="p-3">Price</th>
+                  <th className="p-3">Sales</th>
+                  <th className="p-3">Updated</th>
+                  <th className="p-3 pr-4">Store</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productRows.map((p) => {
+                  const thumb = p.images[0];
+                  const low =
+                    p.stock <= p.lowStockThreshold && p.isActive;
+                  return (
+                    <tr
+                      key={p.id}
+                      className="border-b border-[var(--border)]/60 transition hover:bg-white/[0.03]"
+                    >
+                      <td className="p-3 pl-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[var(--border)] bg-black/30">
+                            {thumb ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={thumb}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-[10px] text-[var(--muted)]">
+                                —
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-[var(--fg)]">
+                              {p.nameFr}
+                            </p>
+                            <p className="truncate text-xs text-[var(--muted)]">
+                              {p.category.nameFr} ·{" "}
+                              <span className="font-mono">{p.slug}</span>
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3 align-middle">
+                        <select
+                          className="rounded-lg border border-[var(--border)] bg-black/45 px-2 py-1.5 text-xs"
+                          value={p.isActive ? "active" : "draft"}
+                          onChange={(e) => {
+                            const active = e.target.value === "active";
+                            if (active !== p.isActive) {
+                              void patchProduct(p.id, { isActive: active });
+                            }
+                          }}
+                        >
+                          <option value="active">Active</option>
+                          <option value="draft">Draft</option>
+                        </select>
+                      </td>
+                      <td className="p-3 align-middle">
+                        <div className="flex flex-col gap-1">
+                          <input
+                            type="number"
+                            min={0}
+                            defaultValue={p.stock}
+                            key={`${p.id}-stock-${p.stock}`}
+                            className="w-24 rounded-lg border border-[var(--border)] bg-black/45 px-2 py-1.5 text-xs tabular-nums text-[var(--fg)]"
+                            onBlur={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              if (Number.isNaN(v) || v < 0) return;
+                              if (v !== p.stock)
+                                void patchProduct(p.id, { stock: v });
+                            }}
+                          />
+                          {low ? (
+                            <span className="text-[10px] font-medium uppercase tracking-wide text-amber-300/90">
+                              Low stock
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="p-3 align-middle font-mono text-xs text-[var(--fg)]">
+                        {p.sku}
+                      </td>
+                      <td className="p-3 align-middle">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          defaultValue={p.priceMad}
+                          key={`${p.id}-price-${p.priceMad}`}
+                          className="w-[6.5rem] rounded-lg border border-[var(--border)] bg-black/45 px-2 py-1.5 text-xs tabular-nums text-[var(--fg)]"
+                          onBlur={(e) => {
+                            const raw = e.target.value.trim().replace(",", ".");
+                            if (raw === p.priceMad) return;
+                            if (!/^\d+(\.\d{1,2})?$/.test(raw)) return;
+                            void patchProduct(p.id, { priceMad: raw });
+                          }}
+                        />
+                        <span className="ml-1 text-xs text-[var(--muted)]">
+                          MAD
+                        </span>
+                      </td>
+                      <td className="p-3 align-middle tabular-nums text-[var(--fg)]">
+                        {new Intl.NumberFormat("en-SA-u-nu-latn", {
+                          maximumFractionDigits: 0,
+                        }).format(p.purchaseCount)}
+                      </td>
+                      <td className="p-3 align-middle text-xs text-[var(--muted)]">
+                        {new Intl.DateTimeFormat("en-GB", {
+                          numberingSystem: "latn",
+                          dateStyle: "medium",
+                        }).format(new Date(p.updatedAt))}
+                      </td>
+                      <td className="p-3 pr-4 align-middle">
+                        <Link
+                          href={`/product/${p.slug}`}
+                          className="inline-flex rounded-md border border-[var(--border)] bg-white/5 px-2 py-1 text-xs font-medium text-[var(--fg)] transition hover:bg-white/10"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {productRows.length === 0 ? (
+              <p className="p-6 text-center text-sm text-[var(--muted)]">
+                No products match your filters.
               </p>
             ) : null}
           </div>
