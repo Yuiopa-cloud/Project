@@ -17,14 +17,15 @@ import { FraudService } from './fraud.service';
 import { NotificationsService } from '../integrations/notifications.service';
 import { StripeService } from '../integrations/stripe.service';
 
-function normalizeMaPhone(raw: string): string {
+/** Keeps international +E.164; applies Morocco heuristics only when no country prefix. */
+function normalizePhone(raw: string): string {
   let p = raw.replace(/\s/g, '');
+  if (!p) return p;
   if (p.startsWith('00')) p = '+' + p.slice(2);
-  if (p.startsWith('0') && p.length === 10) p = '+212' + p.slice(1);
-  if (!p.startsWith('+')) {
-    if (p.startsWith('212')) p = '+' + p;
-    else if (/^[567]/.test(p) && p.length === 9) p = '+212' + p;
-  }
+  if (p.startsWith('+')) return p;
+  if (p.startsWith('0') && p.length === 10) return '+212' + p.slice(1);
+  if (p.startsWith('212')) return '+' + p;
+  if (/^[567]\d{8}$/.test(p)) return '+212' + p;
   return p;
 }
 
@@ -112,7 +113,7 @@ export class OrdersService {
     }
 
     const total = afterDiscount.add(shipping);
-    const guestPhone = normalizeMaPhone(dto.shipping.phone);
+    const guestPhone = normalizePhone(dto.shipping.phone);
 
     let priorCount = 0;
     if (userId) {
@@ -156,6 +157,9 @@ export class OrdersService {
 
     const shippingSnapshot = {
       ...dto.shipping,
+      line1: dto.shipping.line1.trim(),
+      quarter: dto.shipping.quarter?.trim() || '—',
+      cityLabel: dto.shipping.cityLabel.trim(),
       phone: guestPhone,
       firstName: dto.firstName.trim(),
       lastName: dto.lastName.trim(),
@@ -273,11 +277,6 @@ export class OrdersService {
       return created;
     });
 
-    console.log(
-      '[orders.checkout] Order persisted successfully; will trigger emails',
-      { orderId: order.id, orderNumber: order.orderNumber },
-    );
-
     const paymentLabel =
       dto.paymentMethod === PaymentMethod.STRIPE
         ? 'Carte bancaire (Stripe)'
@@ -290,13 +289,19 @@ export class OrdersService {
       lineTotal: l.unit.mul(l.qty).toFixed(2),
     }));
 
-    console.log(
-      '[orders.checkout] Queueing post-checkout notifications (non-blocking)',
-      { orderNumber: order.orderNumber },
-    );
-    void this.notify
-      .sendOrderConfirmationEmail({
-        to: dto.guestEmail,
+    const addrForEmail = {
+      line1: shippingSnapshot.line1,
+      quarter: shippingSnapshot.quarter,
+      cityCode: dto.shipping.cityCode,
+      cityName: zone.cityNameFr,
+      cityLabel: shippingSnapshot.cityLabel,
+      postal: dto.shipping.postalCode ?? null,
+    };
+
+    const guestEmailNorm = dto.guestEmail?.trim();
+    const [customerSent, merchantSent] = await Promise.all([
+      this.notify.sendOrderConfirmationEmail({
+        to: guestEmailNorm,
         orderNumber: order.orderNumber,
         totalMad: total.toFixed(2),
         subtotalMad: subtotal.toFixed(2),
@@ -309,30 +314,10 @@ export class OrdersService {
           qty,
           lineTotal,
         })),
-        address: {
-          line1: dto.shipping.line1,
-          quarter: dto.shipping.quarter,
-          cityCode: dto.shipping.cityCode,
-          cityName: zone.cityNameFr,
-          postal: dto.shipping.postalCode,
-        },
+        address: addrForEmail,
         shippingPhone: guestPhone,
-      })
-      .then((sent) => {
-        console.log('[orders.checkout] sendOrderConfirmationEmail result', {
-          orderNumber: order.orderNumber,
-          sent,
-        });
-      })
-      .catch((error) => {
-        console.error('[orders.checkout] sendOrderConfirmationEmail failed', {
-          orderNumber: order.orderNumber,
-          error,
-        });
-      });
-
-    void this.notify
-      .sendMerchantNewOrderEmail({
+      }),
+      this.notify.sendMerchantNewOrderEmail({
         orderNumber: order.orderNumber,
         totalMad: total.toFixed(2),
         subtotalMad: subtotal.toFixed(2),
@@ -342,31 +327,14 @@ export class OrdersService {
         customer: {
           firstName: dto.firstName.trim(),
           lastName: dto.lastName.trim(),
-          email: dto.guestEmail,
+          email: guestEmailNorm ?? null,
           phone: guestPhone,
         },
-        address: {
-          line1: dto.shipping.line1,
-          quarter: dto.shipping.quarter,
-          cityCode: dto.shipping.cityCode,
-          cityName: zone.cityNameFr,
-          postal: dto.shipping.postalCode ?? null,
-        },
+        address: addrForEmail,
         lines: linesForEmail,
         couponCode: dto.couponCode?.trim() || null,
-      })
-      .then((sent) => {
-        console.log('[orders.checkout] sendMerchantNewOrderEmail result', {
-          orderNumber: order.orderNumber,
-          sent,
-        });
-      })
-      .catch((error) => {
-        console.error('[orders.checkout] sendMerchantNewOrderEmail failed', {
-          orderNumber: order.orderNumber,
-          error,
-        });
-      });
+      }),
+    ]);
 
     void this.notify
       .sendWhatsAppTemplate({
@@ -394,10 +362,10 @@ export class OrdersService {
       stripeClientSecret,
       whatsappConfirmUrl: whatsappAdminLink,
       emailStatus: {
-        customerConfirmationSent: null,
-        merchantNotificationSent: null,
-        customerSkippedNoEmail: !dto.guestEmail?.trim(),
-        queuedAsync: true,
+        customerConfirmationSent: guestEmailNorm ? customerSent : null,
+        merchantNotificationSent: merchantSent,
+        customerSkippedNoEmail: !guestEmailNorm,
+        queuedAsync: false,
       },
     };
   }

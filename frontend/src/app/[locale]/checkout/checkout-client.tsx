@@ -75,13 +75,13 @@ export function CheckoutClient() {
     trackEvent("begin_checkout", {});
   }, []);
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [line1, setLine1] = useState("");
   const [quarter, setQuarter] = useState("");
   const [cityCode, setCityCode] = useState("CASA");
+  const [cityLabel, setCityLabel] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [phoneConfirmed, setPhoneConfirmed] = useState(true);
   const [payment, setPayment] = useState<"CASH_ON_DELIVERY" | "STRIPE">(
@@ -89,11 +89,11 @@ export function CheckoutClient() {
   );
 
   const formRef = useRef<HTMLFormElement>(null);
-  const firstNameRef = useRef<HTMLInputElement>(null);
-  const lastNameRef = useRef<HTMLInputElement>(null);
+  const fullNameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
-  const cityRef = useRef<HTMLSelectElement>(null);
+  const cityLabelRef = useRef<HTMLInputElement>(null);
+  const zoneSelectRef = useRef<HTMLSelectElement>(null);
   const line1Ref = useRef<HTMLInputElement>(null);
   const quarterRef = useRef<HTMLInputElement>(null);
   const postalRef = useRef<HTMLInputElement>(null);
@@ -126,6 +126,28 @@ export function CheckoutClient() {
       });
   }, [apiRoot]);
 
+  const sortedZones = useMemo(() => {
+    const other = zones.filter((z) => z.cityCode === "OTHER");
+    const rest = zones.filter((z) => z.cityCode !== "OTHER");
+    const label = (z: Zone) => (locale === "ar" ? z.cityNameAr : z.cityNameFr);
+    rest.sort((a, b) => label(a).localeCompare(label(b), locale === "ar" ? "ar" : "fr"));
+    return [...rest, ...other];
+  }, [zones, locale]);
+
+  const zoneDefaultCityLabel = (code: string, list: Zone[]) => {
+    if (code === "OTHER") return "";
+    const z = list.find((x) => x.cityCode === code);
+    if (!z) return "";
+    return locale === "ar" ? z.cityNameAr : z.cityNameFr;
+  };
+
+  useEffect(() => {
+    if (sortedZones.length === 0) return;
+    setCityLabel((prev) =>
+      prev.trim() === "" ? zoneDefaultCityLabel(cityCode, sortedZones) : prev,
+    );
+  }, [sortedZones]); // eslint-disable-line react-hooks/exhaustive-deps -- prefill once zones load
+
   const items = cart?.items ?? [];
 
   const shippableItems = useMemo((): CartLine[] => {
@@ -154,12 +176,12 @@ export function CheckoutClient() {
     .sort()
     .join(",");
 
+  const nameTokens = fullName.trim().split(/\s+/).filter(Boolean);
   const canSubmit =
     shippableItems.length > 0 &&
-    firstName.trim().length >= 2 &&
-    lastName.trim().length >= 2 &&
+    (nameTokens[0]?.length ?? 0) >= 2 &&
     line1.trim().length >= 3 &&
-    quarter.trim().length >= 2 &&
+    cityLabel.trim().length >= 2 &&
     phone.replace(/\s/g, "").length >= 8;
 
   const productLabel = (nameFr: string, nameAr: string) =>
@@ -174,26 +196,29 @@ export function CheckoutClient() {
     }
     setBusy(true);
     try {
+      const parts = fullName.trim().split(/\s+/).filter(Boolean);
+      const firstName = parts[0] ?? "";
+      const lastName = parts.length > 1 ? parts.slice(1).join(" ") : "—";
       const body: Record<string, unknown> = {
         items: shippableItems.map((l) => ({
           productId: l.product.id,
           quantity: l.quantity,
         })),
         paymentMethod: payment,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        firstName,
+        lastName,
         guestEmail: guestEmail.trim() || undefined,
         phoneConfirmed,
         shipping: {
           line1: line1.trim(),
-          quarter: quarter.trim(),
+          quarter: quarter.trim() || undefined,
           cityCode,
+          cityLabel: cityLabel.trim(),
           postalCode: postalCode.trim() || undefined,
           phone: phone.trim(),
         },
       };
       const checkoutUrl = `${apiRoot}/orders/checkout`;
-      console.log("[checkout] Before request", { url: checkoutUrl, body });
       const res = await fetch(checkoutUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -209,7 +234,6 @@ export function CheckoutClient() {
         throw new Error(parsed || res.statusText);
       }
       const data = await res.json();
-      console.log("[checkout] Order response:", data);
       if (!data?.success) {
         throw new Error("Order failed");
       }
@@ -243,7 +267,7 @@ export function CheckoutClient() {
           JSON.stringify({
             whatsappUrl: data.whatsappConfirmUrl ?? null,
             emailNotice,
-            firstName: firstName.trim() || undefined,
+            firstName: firstName || undefined,
           }),
         );
       } catch {
@@ -259,7 +283,6 @@ export function CheckoutClient() {
       void refresh();
     } catch (e: unknown) {
       logApiFailure("checkout submit", e);
-      console.error("[checkout] submit error", e);
       const raw = e instanceof Error ? e.message : "";
       const lower = raw.toLowerCase();
       let friendly = t("orderError");
@@ -349,28 +372,23 @@ export function CheckoutClient() {
           {t("phoneNote")}
         </p>
         <nav
-          className="mt-6 flex items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--press-bg)]/80 px-3 py-3 text-[11px] font-medium text-[var(--muted)] sm:text-xs"
+          className="mt-6 flex items-center justify-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--press-bg)]/80 px-3 py-3 text-[11px] font-medium text-[var(--muted)] sm:text-xs"
           aria-label={t("progressAria")}
         >
-          <span className="flex flex-1 items-center gap-1.5 text-[var(--accent)]">
+          <span className="flex items-center gap-1.5 text-[var(--accent)]">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-dim)] text-[var(--fg)]">
               1
             </span>
             {t("progressRecap")}
           </span>
-          <span className="text-[var(--border)]">→</span>
-          <span className="flex flex-1 justify-center gap-1.5">
+          <span className="text-[var(--border)]" aria-hidden>
+            →
+          </span>
+          <span className="flex items-center gap-1.5">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--press-bg)]">
               2
             </span>
-            {t("progressYou")}
-          </span>
-          <span className="text-[var(--border)]">→</span>
-          <span className="flex flex-1 justify-end gap-1.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--press-bg)]">
-              3
-            </span>
-            {t("progressPay")}
+            {t("progressDetailsPay")}
           </span>
         </nav>
       </motion.header>
@@ -491,36 +509,66 @@ export function CheckoutClient() {
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-dim)] text-[11px] font-bold text-[var(--fg)]">
                     1
                   </span>
-                  {t("stepContact")}
+                  {t("stepYourDetails")}
                 </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="block text-xs text-[var(--muted)]">
-                    {t("firstName")}
+                <label className="block text-xs text-[var(--muted)]">
+                  {t("fullName")}
+                  <motion.input
+                    ref={fullNameRef}
+                    required
+                    name="fullName"
+                    enterKeyHint="next"
+                    autoComplete="name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    onKeyDown={focusNextOnEnter(emailRef)}
+                    placeholder={locale === "ar" ? "مثال: أحمد بن علي" : "ex. Youssef Chafiki"}
+                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
+                    whileFocus={{ scale: 1.005 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                </label>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="block text-xs text-[var(--muted)] sm:col-span-2">
+                    <span className="flex flex-wrap items-baseline gap-x-2">
+                      <span>{t("email")}</span>
+                      <span className="font-normal text-[var(--muted)] opacity-90">
+                        ({t("emailOptionalHint")})
+                      </span>
+                    </span>
                     <motion.input
-                      ref={firstNameRef}
-                      required
-                      name="firstName"
+                      ref={emailRef}
+                      type="email"
+                      name="email"
                       enterKeyHint="next"
-                      autoComplete="given-name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      onKeyDown={focusNextOnEnter(lastNameRef)}
+                      inputMode="email"
+                      autoComplete="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      onKeyDown={focusNextOnEnter(phoneRef)}
                       className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                       whileFocus={{ scale: 1.005 }}
                       transition={{ duration: 0.2 }}
                     />
                   </label>
-                  <label className="block text-xs text-[var(--muted)]">
-                    {t("lastName")}
+                  <label className="block text-xs text-[var(--muted)] sm:col-span-2">
+                    {t("phone")}
                     <motion.input
-                      ref={lastNameRef}
+                      ref={phoneRef}
+                      type="tel"
+                      name="phone"
                       required
-                      name="lastName"
                       enterKeyHint="next"
-                      autoComplete="family-name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      onKeyDown={focusNextOnEnter(emailRef)}
+                      inputMode="tel"
+                      autoComplete="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      onKeyDown={focusNextOnEnter(cityLabelRef)}
+                      placeholder={
+                        locale === "ar"
+                          ? "+966… أو +212…"
+                          : "+212… ou +966…"
+                      }
                       className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                       whileFocus={{ scale: 1.005 }}
                       transition={{ duration: 0.2 }}
@@ -528,72 +576,49 @@ export function CheckoutClient() {
                   </label>
                 </div>
                 <label className="mt-3 block text-xs text-[var(--muted)]">
-                  {t("email")}
+                  {t("cityLabel")}
                   <motion.input
-                    ref={emailRef}
-                    type="email"
-                    name="email"
+                    ref={cityLabelRef}
+                    name="cityLabel"
+                    required
                     enterKeyHint="next"
-                    inputMode="email"
-                    autoComplete="email"
-                    value={guestEmail}
-                    onChange={(e) => setGuestEmail(e.target.value)}
-                    onKeyDown={focusNextOnEnter(phoneRef)}
+                    autoComplete="address-level2"
+                    value={cityLabel}
+                    onChange={(e) => setCityLabel(e.target.value)}
+                    onKeyDown={focusNextOnEnter(zoneSelectRef)}
+                    placeholder={
+                      locale === "ar"
+                        ? "الرياض، دبي، الدار البيضاء…"
+                        : "Riyadh, Dubai, Casablanca…"
+                    }
                     className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                     whileFocus={{ scale: 1.005 }}
                     transition={{ duration: 0.2 }}
                   />
                 </label>
                 <label className="mt-3 block text-xs text-[var(--muted)]">
-                  {t("phone")}
-                  <motion.input
-                    ref={phoneRef}
-                    type="tel"
-                    name="phone"
-                    required
-                    enterKeyHint="next"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    onKeyDown={focusNextOnEnter(cityRef)}
-                    placeholder="0612345678"
-                    className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
-                    whileFocus={{ scale: 1.005 }}
-                    transition={{ duration: 0.2 }}
-                  />
-                </label>
-              </motion.section>
-
-              <motion.section
-                variants={fadeUp}
-                className="card-chrome mt-4 rounded-2xl p-4 md:p-5"
-              >
-                <p className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-dim)] text-[11px] font-bold text-[var(--fg)]">
-                    2
-                  </span>
-                  {t("stepAddress")}
-                </p>
-                <label className="block text-xs text-[var(--muted)]">
-                  {t("address.city")}
+                  {t("zoneRate")}
                   <motion.select
-                    ref={cityRef}
+                    ref={zoneSelectRef}
                     name="cityCode"
                     enterKeyHint="next"
                     value={cityCode}
-                    onChange={(e) => setCityCode(e.target.value)}
+                    onChange={(e) => {
+                      const code = e.target.value;
+                      setCityCode(code);
+                      setCityLabel(zoneDefaultCityLabel(code, sortedZones));
+                    }}
                     onKeyDown={focusNextOnEnter(line1Ref)}
                     className="checkout-input mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--press-bg)] px-3 py-2.5 text-sm text-[var(--fg)]"
                   >
-                    {zones.length === 0 ? (
+                    {sortedZones.length === 0 ? (
                       <option value="CASA">Casablanca (CASA)</option>
                     ) : (
-                      zones.map((z) => (
+                      sortedZones.map((z) => (
                         <option key={z.cityCode} value={z.cityCode}>
                           {locale === "ar"
-                            ? `${z.cityNameAr} (${z.cityCode})`
-                            : `${z.cityNameFr} (${z.cityCode})`}
+                            ? `${z.cityNameAr} (${z.cityCode}) — ${Number(z.shippingCostMad).toFixed(0)} MAD`
+                            : `${z.cityNameFr} (${z.cityCode}) — ${Number(z.shippingCostMad).toFixed(0)} MAD`}
                         </option>
                       ))
                     )}
@@ -620,9 +645,8 @@ export function CheckoutClient() {
                   <motion.input
                     ref={quarterRef}
                     name="quarter"
-                    required
                     enterKeyHint="next"
-                    autoComplete="address-level2"
+                    autoComplete="address-level3"
                     value={quarter}
                     onChange={(e) => setQuarter(e.target.value)}
                     onKeyDown={focusNextOnEnter(postalRef)}
@@ -637,7 +661,7 @@ export function CheckoutClient() {
                     ref={postalRef}
                     name="postalCode"
                     enterKeyHint="done"
-                    inputMode="numeric"
+                    inputMode="text"
                     autoComplete="postal-code"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
@@ -655,7 +679,7 @@ export function CheckoutClient() {
               >
                 <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-dim)] text-[11px] font-bold text-[var(--fg)]">
-                    3
+                    2
                   </span>
                   {t("stepPayment")}
                 </p>

@@ -12,7 +12,7 @@ import {
   IsInt,
   Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { PaymentMethod } from '@prisma/client';
 
 export class CheckoutLineDto {
@@ -26,7 +26,7 @@ export class CheckoutLineDto {
   quantity!: number;
 }
 
-class MoroccanAddressDto {
+class ShippingAddressDto {
   @ApiProperty({ example: 'Angle rue X' })
   @IsString()
   @MinLength(3)
@@ -37,14 +37,28 @@ class MoroccanAddressDto {
   @IsString()
   line2?: string;
 
-  @ApiProperty({ example: 'Hay Riad' })
+  /** Neighbourhood / district — optional for faster checkout */
+  @ApiPropertyOptional({ example: 'Hay Riad' })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value == null) return undefined;
+    if (typeof value !== 'string') return value;
+    const t = value.trim();
+    return t === '' ? undefined : t;
+  })
   @IsString()
-  @MinLength(2)
-  quarter!: string;
+  quarter?: string;
 
+  /** Tariff bucket (Moroccan city or OTHER for international / rest of world) */
   @ApiProperty({ example: 'CASA' })
   @IsString()
   cityCode!: string;
+
+  /** Customer’s city or locality as typed (shown on emails & admin) */
+  @ApiProperty({ example: 'Casablanca' })
+  @IsString()
+  @MinLength(2)
+  cityLabel!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -76,21 +90,26 @@ export class CheckoutDto {
 
   @ApiProperty()
   @ValidateNested()
-  @Type(() => MoroccanAddressDto)
-  shipping!: MoroccanAddressDto;
+  @Type(() => ShippingAddressDto)
+  shipping!: ShippingAddressDto;
 
   @ApiProperty({ example: 'Youssef' })
   @IsString()
-  @MinLength(2)
+  @MinLength(1)
   firstName!: string;
 
   @ApiProperty({ example: 'Chafiki' })
   @IsString()
-  @MinLength(2)
+  @MinLength(1)
   lastName!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value == null || typeof value !== 'string') return undefined;
+    const t = value.trim();
+    return t === '' ? undefined : t;
+  })
   @IsEmail()
   guestEmail?: string;
 

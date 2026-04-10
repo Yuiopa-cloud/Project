@@ -6,7 +6,28 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+async function ensureOtherZone() {
+  await prisma.deliveryZone.upsert({
+    where: { cityCode: 'OTHER' },
+    update: {
+      cityNameFr: 'Autre région / international',
+      cityNameAr: 'منطقة أخرى / دولي',
+      isActive: true,
+    },
+    create: {
+      cityCode: 'OTHER',
+      cityNameFr: 'Autre région / international',
+      cityNameAr: 'منطقة أخرى / دولي',
+      shippingCostMad: 79,
+      freeShippingThresholdMad: null,
+      isActive: true,
+    },
+  });
+}
+
 async function main() {
+  await ensureOtherZone();
+
   const productCount = await prisma.product.count({ where: { isActive: true } });
   // eslint-disable-next-line no-console
   console.log('[ensure-catalog] active products:', productCount);

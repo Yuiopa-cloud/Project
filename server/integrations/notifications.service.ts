@@ -77,35 +77,23 @@ export class NotificationsService {
   }): Promise<boolean> {
     const smtp = this.resolveSmtp();
     if (!smtp) {
-      console.log('SMTP config:', process.env.SMTP_HOST, process.env.SMTP_USER);
-      console.log('Attempting to send email...', {
-        to: opts.to,
-        subject: opts.subject,
-        skipped: 'SMTP not fully configured (need SMTP_HOST, SMTP_USER, SMTP_PASS)',
-      });
       return false;
     }
-    console.log('SMTP config:', process.env.SMTP_HOST, process.env.SMTP_USER);
-    const host = process.env.SMTP_HOST?.trim() || smtp.host;
-    const authUser = process.env.SMTP_USER?.trim() || smtp.user;
-    const authPass = process.env.SMTP_PASS?.trim() || smtp.pass;
-    const fromHeader = `"Auto Store" <${authUser}>`;
+    const fromRaw = this.config.get<string>('SMTP_FROM')?.trim();
+    const fromHeader =
+      fromRaw && fromRaw.includes('@')
+        ? fromRaw.includes('<')
+          ? fromRaw
+          : `"Easy Handles" <${fromRaw}>`
+        : `"Easy Handles" <${smtp.user}>`;
 
-    console.log('Attempting to send email...', {
-      to: opts.to,
-      subject: opts.subject,
-      from: fromHeader,
-      host,
-      port: smtp.port,
-      secure: smtp.secure,
-    });
     try {
       const nodemailer = await import('nodemailer');
       const transporter = nodemailer.createTransport({
-        host,
+        host: smtp.host,
         port: smtp.port,
         secure: smtp.secure,
-        auth: { user: authUser, pass: authPass },
+        auth: { user: smtp.user, pass: smtp.pass },
         ...(smtp.port === 587 ? { requireTLS: true } : {}),
       });
       const info = await transporter.sendMail({
@@ -118,7 +106,6 @@ export class NotificationsService {
       this.log.log(
         `Email sent: messageId=${info.messageId} → ${opts.to} subject="${opts.subject}"`,
       );
-      console.log('Email sent successfully:', info);
       return true;
     } catch (error) {
       const err = error as Error & { response?: string; responseCode?: number };
@@ -126,12 +113,11 @@ export class NotificationsService {
         `Email sending failed → ${opts.to}: ${err?.message}`,
         err?.stack,
       );
-      console.error('Email sending failed:', error);
       if (err?.response !== undefined) {
-        console.error('SMTP response:', err.response);
+        this.log.error(`SMTP response: ${err.response}`);
       }
       if (err?.responseCode !== undefined) {
-        console.error('SMTP responseCode:', err.responseCode);
+        this.log.error(`SMTP responseCode: ${err.responseCode}`);
       }
       return false;
     }
@@ -152,6 +138,7 @@ export class NotificationsService {
       quarter: string;
       cityCode: string;
       cityName: string;
+      cityLabel: string;
       postal?: string | null;
     };
     /** Livraison — shown in email */
@@ -159,17 +146,12 @@ export class NotificationsService {
     locale?: string;
   }): Promise<boolean> {
     if (!payload.to?.trim()) {
-      console.log('Attempting to send email...', {
-        kind: 'customer_order_confirmation',
-        orderNumber: payload.orderNumber,
-        skipped: 'no guest email',
-      });
-      this.log.warn(
-        `Customer confirmation email skipped (no guestEmail): order ${payload.orderNumber}`,
+      this.log.debug(
+        `Customer confirmation skipped (no email): ${payload.orderNumber}`,
       );
       return false;
     }
-    const to = payload.to.trim();
+    const to = payload.to.trim().toLowerCase();
     const linesRows = payload.lines
       .map(
         (l) =>
@@ -196,7 +178,7 @@ ${moneyRow('Livraison', `${payload.shippingMad} MAD`)}
 </td></tr>
 <tr><td style="padding:16px 28px 28px;">
 <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Livraison</p>
-<p style="margin:0;font-size:14px;color:#0f172a;">${escapeHtml(payload.address.line1)}, ${escapeHtml(payload.address.quarter)} — ${escapeHtml(payload.address.cityName)} (${escapeHtml(payload.address.cityCode)})</p>
+<p style="margin:0;font-size:14px;color:#0f172a;">${escapeHtml(payload.address.line1)}, ${escapeHtml(payload.address.quarter)} — <strong>${escapeHtml(payload.address.cityLabel)}</strong> (${escapeHtml(payload.address.cityName)} · ${escapeHtml(payload.address.cityCode)})</p>
 ${payload.shippingPhone ? `<p style="margin:8px 0 0;font-size:14px;color:#0f172a;">Tél. livraison : <strong>${escapeHtml(payload.shippingPhone)}</strong></p>` : ''}
 <p style="margin:12px 0 0;font-size:13px;color:#64748b;">Paiement : ${escapeHtml(payload.paymentLabel)}</p>
 </td></tr>
@@ -232,6 +214,7 @@ ${payload.shippingPhone ? `<p style="margin:8px 0 0;font-size:14px;color:#0f172a
       quarter: string;
       cityCode: string;
       cityName: string;
+      cityLabel: string;
       postal?: string | null;
     };
     lines: {
@@ -247,11 +230,6 @@ ${payload.shippingPhone ? `<p style="margin:8px 0 0;font-size:14px;color:#0f172a
       this.log.warn(
         `Merchant new-order email skipped (set ORDER_NOTIFICATION_EMAIL or SMTP_USER): order ${payload.orderNumber}`,
       );
-      console.log('Attempting to send email...', {
-        kind: 'merchant_new_order',
-        orderNumber: payload.orderNumber,
-        skipped: 'no ORDER_NOTIFICATION_EMAIL and no SMTP_USER',
-      });
       return false;
     }
     const lineRows = payload.lines
@@ -285,7 +263,7 @@ ${payload.customer.email ? `Email : ${escapeHtml(payload.customer.email)}` : '�
 <h2 style="margin:0 0 12px;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#64748b;">Adresse de livraison</h2>
 <p style="margin:0;font-size:15px;color:#0f172a;line-height:1.6;">
 ${escapeHtml(payload.address.line1)}<br/>
-${escapeHtml(payload.address.quarter)} — ${escapeHtml(payload.address.cityName)} (${escapeHtml(payload.address.cityCode)})
+${escapeHtml(payload.address.quarter)} — <strong>${escapeHtml(payload.address.cityLabel)}</strong> (${escapeHtml(payload.address.cityName)} · ${escapeHtml(payload.address.cityCode)})
 ${payload.address.postal ? `<br/>CP ${escapeHtml(String(payload.address.postal))}` : ''}
 </p>
 </td></tr>

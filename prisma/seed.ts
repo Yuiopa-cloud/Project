@@ -131,6 +131,21 @@ async function main() {
         freeShippingThresholdMad: 599,
       },
     }),
+    prisma.deliveryZone.upsert({
+      where: { cityCode: 'OTHER' },
+      update: {
+        cityNameFr: 'Autre région / international',
+        cityNameAr: 'منطقة أخرى / دولي',
+        isActive: true,
+      },
+      create: {
+        cityCode: 'OTHER',
+        cityNameFr: 'Autre région / international',
+        cityNameAr: 'منطقة أخرى / دولي',
+        shippingCostMad: 79,
+        freeShippingThresholdMad: null,
+      },
+    }),
   ]);
 
   await prisma.coupon.upsert({
