@@ -168,6 +168,9 @@
   },
   "cart": {
     "title": "Panier",
+    "drawerTitle": "Votre panier",
+    "drawerHint": "Aperçu rapide — modifiez les quantités ici.",
+    "viewFullCart": "Voir le panier complet",
     "empty": "Votre panier est vide.",
     "subtotal": "Sous-total",
     "shippingNote": "Frais calculés à la commande (par zone)",

@@ -88,7 +88,7 @@ export function Navbar() {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { itemCount, addBumpSeq } = useCart();
+  const { itemCount, addBumpSeq, openDrawer } = useCart();
   const { registerCartAnchor } = useCartFly();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -124,11 +124,10 @@ export function Navbar() {
       },
     ];
 
-  const mobileLinks = [
-    ...desktopLinks.map((l) => ({ href: l.href, label: l.label })),
-    { href: "/cart", label: t("cart") },
-    { href: "/dashboard", label: t("account") },
-  ];
+  const mobileLinks = desktopLinks.map((l) => ({
+    href: l.href,
+    label: l.label,
+  }));
 
   useEffect(() => {
     queueMicrotask(() => setMobileOpen(false));
@@ -247,11 +246,13 @@ export function Navbar() {
             className="inline-flex rounded-lg"
             data-cart-anchor
           >
-            <MotionLink
-              href="/cart"
+            <motion.button
+              type="button"
               className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--press-bg)] text-lg transition hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
               aria-label={t("cart")}
+              aria-haspopup="dialog"
               whileTap={{ scale: 0.95 }}
+              onClick={() => openDrawer()}
             >
               <motion.span
                 key={addBumpSeq}
@@ -270,7 +271,7 @@ export function Navbar() {
                   {itemCount > 9 ? "9+" : itemCount}
                 </span>
               ) : null}
-            </MotionLink>
+            </motion.button>
           </span>
         </div>
       </div>
@@ -316,15 +317,28 @@ export function Navbar() {
                       whileTap={{ scale: 0.99 }}
                     >
                       <span className="flex-1">{l.label}</span>
-                      {l.href === "/cart" && itemCount > 0 ? (
-                        <span className="ms-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-xs font-bold text-white">
-                          {itemCount > 9 ? "9+" : itemCount}
-                        </span>
-                      ) : null}
                     </MotionLink>
                   </li>
                 );
               })}
+              <li>
+                <motion.button
+                  type="button"
+                  className="flex min-h-[48px] w-full items-center rounded-xl px-4 text-start text-sm font-semibold text-[var(--fg)] hover:bg-[var(--press-bg)]"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    openDrawer();
+                  }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <span className="flex-1">{t("cart")}</span>
+                  {itemCount > 0 ? (
+                    <span className="ms-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-xs font-bold text-white">
+                      {itemCount > 9 ? "9+" : itemCount}
+                    </span>
+                  ) : null}
+                </motion.button>
+              </li>
               <li className="pt-2">
                 <MotionLink
                   href="/dashboard"

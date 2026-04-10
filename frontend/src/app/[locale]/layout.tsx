@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleHtmlAttributes } from "@/components/locale-html";
 import { CartProvider } from "@/contexts/cart-context";
 import { CartFlyProvider } from "@/contexts/cart-fly-context";
+import { CartDrawer } from "@/components/cart-drawer";
 import { CustomerAuthProvider } from "@/contexts/customer-auth-context";
 import { SiteFooter } from "@/components/site-footer";
 import { GoogleAnalytics } from "@/components/google-analytics";
@@ -58,6 +59,7 @@ export default async function LocaleLayout({
           <CartProvider>
             <CartFlyProvider>
             <GoogleAnalytics />
+            <CartDrawer />
             <div className="flex min-h-dvh min-h-full flex-col">
               <TopAnnouncementMarquee />
               <Suspense

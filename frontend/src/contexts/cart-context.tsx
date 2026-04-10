@@ -54,6 +54,10 @@ type CartContextValue = {
   setQty: (productId: string, quantity: number) => Promise<void>;
   /** Nest `/api` root (env, direct URL, or `/api-proxy`). */
   apiRoot: string;
+  drawerOpen: boolean;
+  openDrawer: () => void;
+  closeDrawer: () => void;
+  toggleDrawer: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -86,6 +90,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [localLines, setLocalLines] = useState<CartLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [addBumpSeq, setAddBumpSeq] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const toggleDrawer = useCallback(() => setDrawerOpen((v) => !v), []);
 
   const bumpCart = useCallback(() => {
     setAddBumpSeq((n) => n + 1);
@@ -255,6 +264,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     addItem,
     setQty,
     apiRoot,
+    drawerOpen,
+    openDrawer,
+    closeDrawer,
+    toggleDrawer,
   };
 
   return (
