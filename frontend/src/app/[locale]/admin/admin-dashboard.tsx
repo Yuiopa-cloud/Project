@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { AtlasLogo } from "@/components/atlas-logo";
@@ -153,6 +154,7 @@ function nestErrorMessage(raw: string): string | undefined {
 
 export function AdminDashboard() {
   const tAdmin = useTranslations("admin");
+  const searchParams = useSearchParams();
   const apiRoot = useMemo(() => clientApiRoot(), []);
   const [token, setToken] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -178,6 +180,10 @@ export function AdminDashboard() {
     const t = sessionStorage.getItem(TOKEN_KEY);
     if (t) setToken(t);
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("tab") === "products") setTab("products");
+  }, [searchParams]);
 
   const authHeaders = useCallback(
     (): HeadersInit => ({
@@ -787,6 +793,12 @@ export function AdminDashboard() {
                 {productRows.length} shown · search by title, SKU, or handle
               </p>
             </div>
+            <Link
+              href="/admin/products/new"
+              className="rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_10px_26px_-14px_var(--accent-glow)]"
+            >
+              Add product
+            </Link>
           </div>
 
           <div className="card-chrome flex flex-wrap items-center gap-2 rounded-2xl p-3 md:p-4">
@@ -833,6 +845,7 @@ export function AdminDashboard() {
                   <th className="p-3">Price</th>
                   <th className="p-3">Sales</th>
                   <th className="p-3">Updated</th>
+                  <th className="p-3">Edit</th>
                   <th className="p-3 pr-4">Store</th>
                 </tr>
               </thead>
@@ -941,6 +954,14 @@ export function AdminDashboard() {
                           numberingSystem: "latn",
                           dateStyle: "medium",
                         }).format(new Date(p.updatedAt))}
+                      </td>
+                      <td className="p-3 align-middle">
+                        <Link
+                          href={`/admin/products/${p.id}`}
+                          className="inline-flex rounded-md border border-[var(--border)] bg-white/5 px-2 py-1 text-xs font-medium text-[var(--fg)] transition hover:bg-white/10"
+                        >
+                          Edit
+                        </Link>
                       </td>
                       <td className="p-3 pr-4 align-middle">
                         <Link

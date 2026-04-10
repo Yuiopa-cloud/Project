@@ -1,11 +1,34 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   FraudDecision,
   OrderStatus,
   Prisma,
   UserRole,
 } from '@prisma/client';
+import { customAlphabet } from 'nanoid';
 import { PrismaService } from '../prisma/prisma.service';
+import type { CreateProductDto } from './dto/create-product.dto';
+import type { UpdateProductDto } from './dto/update-product.dto';
+
+const genSkuSuffix = customAlphabet(
+  '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ',
+  10,
+);
+
+function slugifyTitle(input: string): string {
+  const s = input
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+  return s || 'product';
+}
 
 @Injectable()
 export class AdminService {
@@ -139,8 +162,129 @@ export class AdminService {
     return { ok: true };
   }
 
-  async createProduct(data: Prisma.ProductCreateInput) {
-    return this.prisma.product.create({ data });
+  private async ensureUniqueSlug(base: string, excludeProductId?: string) {
+    let slug = base;
+    let n = 0;
+    for (;;) {
+      const clash = await this.prisma.product.findFirst({
+        where: {
+          slug,
+          ...(excludeProductId ? { NOT: { id: excludeProductId } } : {}),
+        },
+        select: { id: true },
+      });
+      if (!clash) return slug;
+      n += 1;
+      slug = `${base}-${n}`;
+    }
+  }
+
+  private async generateUniqueSku(): Promise<string> {
+    for (let i = 0; i < 12; i += 1) {
+      const sku = `ATL-${genSkuSuffix()}`;
+      const clash = await this.prisma.product.findUnique({
+        where: { sku },
+        select: { id: true },
+      });
+      if (!clash) return sku;
+    }
+    throw new ConflictException('Could not allocate a unique SKU');
+  }
+
+  private adminProductSelect() {
+    return {
+      id: true,
+      slug: true,
+      sku: true,
+      nameFr: true,
+      nameAr: true,
+      descriptionFr: true,
+      descriptionAr: true,
+      priceMad: true,
+      compareAtMad: true,
+      stock: true,
+      lowStockThreshold: true,
+      purchaseCount: true,
+      images: true,
+      isActive: true,
+      categoryId: true,
+      createdAt: true,
+      updatedAt: true,
+      category: { select: { id: true, nameFr: true, slug: true } },
+    } as const;
+  }
+
+  private mapAdminProduct(
+    p: {
+      priceMad: Prisma.Decimal;
+      compareAtMad: Prisma.Decimal | null;
+    } & Record<string, unknown>,
+  ) {
+    const { priceMad, compareAtMad, ...rest } = p;
+    return {
+      ...rest,
+      priceMad: priceMad.toString(),
+      compareAtMad: compareAtMad?.toString() ?? null,
+    };
+  }
+
+  async createManagedProduct(dto: CreateProductDto) {
+    const nameFr = dto.nameFr.trim();
+    const descriptionFr = dto.descriptionFr.trim();
+    const nameAr = (dto.nameAr?.trim() || nameFr).trim();
+    const descriptionAr = (dto.descriptionAr?.trim() || descriptionFr).trim();
+    const baseSlug = slugifyTitle(dto.slug?.trim() || nameFr);
+    const slug = await this.ensureUniqueSlug(baseSlug);
+
+    let sku: string;
+    if (dto.sku?.trim()) {
+      sku = dto.sku.trim().toUpperCase();
+      const taken = await this.prisma.product.findUnique({
+        where: { sku },
+        select: { id: true },
+      });
+      if (taken) throw new ConflictException('SKU already in use');
+    } else {
+      sku = await this.generateUniqueSku();
+    }
+
+    const cat = await this.prisma.category.findUnique({
+      where: { id: dto.categoryId },
+      select: { id: true },
+    });
+    if (!cat) throw new NotFoundException('Category not found');
+
+    const images = dto.images?.length ? dto.images : [];
+
+    const created = await this.prisma.product.create({
+      data: {
+        slug,
+        sku,
+        nameFr,
+        nameAr,
+        descriptionFr,
+        descriptionAr,
+        priceMad: dto.priceMad,
+        ...(dto.compareAtMad?.trim()
+          ? { compareAtMad: dto.compareAtMad.trim() }
+          : {}),
+        stock: dto.stock ?? 0,
+        images,
+        isActive: dto.isActive ?? true,
+        category: { connect: { id: dto.categoryId } },
+      },
+      select: this.adminProductSelect(),
+    });
+    return this.mapAdminProduct(created);
+  }
+
+  async productByIdForAdmin(id: string) {
+    const p = await this.prisma.product.findUnique({
+      where: { id },
+      select: this.adminProductSelect(),
+    });
+    if (!p) throw new NotFoundException('Product not found');
+    return this.mapAdminProduct(p);
   }
 
   async listProducts(params: {
@@ -194,40 +338,58 @@ export class AdminService {
     }));
   }
 
-  async updateProduct(
-    id: string,
-    data: { stock?: number; isActive?: boolean; priceMad?: string },
-  ) {
-    const update: Prisma.ProductUpdateInput = {};
-    if (typeof data.stock === 'number') update.stock = data.stock;
-    if (typeof data.isActive === 'boolean') update.isActive = data.isActive;
-    if (data.priceMad !== undefined && data.priceMad !== '')
-      update.priceMad = data.priceMad;
+  async updateProduct(id: string, dto: UpdateProductDto) {
+    const existing = await this.prisma.product.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Product not found');
+
+    const data: Prisma.ProductUpdateInput = {};
+
+    if (dto.nameFr !== undefined) data.nameFr = dto.nameFr.trim();
+    if (dto.nameAr !== undefined) data.nameAr = dto.nameAr.trim();
+    if (dto.descriptionFr !== undefined)
+      data.descriptionFr = dto.descriptionFr.trim();
+    if (dto.descriptionAr !== undefined)
+      data.descriptionAr = dto.descriptionAr.trim();
+
+    if (dto.slug !== undefined) {
+      const base = slugifyTitle(dto.slug.trim());
+      data.slug = await this.ensureUniqueSlug(base, id);
+    }
+
+    if (dto.categoryId !== undefined) {
+      const cat = await this.prisma.category.findUnique({
+        where: { id: dto.categoryId },
+        select: { id: true },
+      });
+      if (!cat) throw new NotFoundException('Category not found');
+      data.category = { connect: { id: dto.categoryId } };
+    }
+
+    if (dto.priceMad !== undefined && dto.priceMad.trim() !== '')
+      data.priceMad = dto.priceMad.trim();
+
+    if (dto.compareAtMad !== undefined) {
+      const t = dto.compareAtMad.trim();
+      data.compareAtMad = t === '' ? null : t;
+    }
+
+    if (typeof dto.stock === 'number') data.stock = dto.stock;
+    if (typeof dto.isActive === 'boolean') data.isActive = dto.isActive;
+    if (dto.images !== undefined) data.images = dto.images;
+
+    if (Object.keys(data).length === 0) {
+      return this.productByIdForAdmin(id);
+    }
+
     const p = await this.prisma.product.update({
       where: { id },
-      data: update,
-      select: {
-        id: true,
-        slug: true,
-        sku: true,
-        nameFr: true,
-        nameAr: true,
-        priceMad: true,
-        compareAtMad: true,
-        stock: true,
-        lowStockThreshold: true,
-        purchaseCount: true,
-        images: true,
-        isActive: true,
-        updatedAt: true,
-        category: { select: { id: true, nameFr: true, slug: true } },
-      },
+      data,
+      select: this.adminProductSelect(),
     });
-    return {
-      ...p,
-      priceMad: p.priceMad.toString(),
-      compareAtMad: p.compareAtMad?.toString() ?? null,
-    };
+    return this.mapAdminProduct(p);
   }
 
   async listCustomers(takeRaw?: number) {

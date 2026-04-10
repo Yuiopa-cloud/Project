@@ -9,41 +9,55 @@ import {
   MinLength,
 } from 'class-validator';
 
+/** Manager-friendly create: SKU and slug are optional (auto-generated). Arabic mirrors French when omitted. */
 export class CreateProductDto {
-  @ApiProperty()
+  @ApiProperty({ example: 'Tapis premium SUV' })
   @IsString()
   @MinLength(2)
-  slug!: string;
-
-  @ApiProperty()
-  @IsString()
-  sku!: string;
-
-  @ApiProperty()
-  @IsString()
   nameFr!: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: 'Finition premium, résistant eau & boue. Compatible SUV et berlines.',
+  })
   @IsString()
-  nameAr!: string;
-
-  @ApiProperty()
-  @IsString()
-  @MinLength(10)
+  @MinLength(3)
   descriptionFr!: string;
-
-  @ApiProperty()
-  @IsString()
-  @MinLength(10)
-  descriptionAr!: string;
 
   @ApiProperty()
   @IsString()
   categoryId!: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: '449.00' })
   @IsString()
   priceMad!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  nameAr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  descriptionAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'URL handle; generated from French title if omitted',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  slug?: string;
+
+  @ApiPropertyOptional({
+    description: 'Stock keeping unit; generated if omitted',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  sku?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

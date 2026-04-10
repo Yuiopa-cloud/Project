@@ -19,7 +19,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { JwtPayloadUser } from '../common/decorators/current-user.decorator';
-import { Prisma } from '@prisma/client';
 
 @ApiTags('admin')
 @ApiBearerAuth()
@@ -91,6 +90,11 @@ export class AdminController {
     });
   }
 
+  @Get('products/:id')
+  productById(@Param('id') id: string) {
+    return this.admin.productByIdForAdmin(id);
+  }
+
   @Patch('products/:id')
   patchProduct(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.admin.updateProduct(id, dto);
@@ -98,20 +102,6 @@ export class AdminController {
 
   @Post('products')
   createProduct(@Body() dto: CreateProductDto) {
-    const data: Prisma.ProductCreateInput = {
-      slug: dto.slug,
-      sku: dto.sku,
-      nameFr: dto.nameFr,
-      nameAr: dto.nameAr,
-      descriptionFr: dto.descriptionFr,
-      descriptionAr: dto.descriptionAr,
-      priceMad: dto.priceMad,
-      ...(dto.compareAtMad ? { compareAtMad: dto.compareAtMad } : {}),
-      stock: dto.stock ?? 0,
-      images: dto.images ?? [],
-      isActive: dto.isActive ?? true,
-      category: { connect: { id: dto.categoryId } },
-    };
-    return this.admin.createProduct(data);
+    return this.admin.createManagedProduct(dto);
   }
 }
