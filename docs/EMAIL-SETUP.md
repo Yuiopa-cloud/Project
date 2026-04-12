@@ -14,7 +14,9 @@ On the **API** environment:
 | `RESEND_FROM` | Strongly recommended | `orders@yourdomain.com` or `"Atlas Auto" <orders@yourdomain.com>` after you **verify your domain** in Resend. |
 | `ORDER_NOTIFICATION_EMAIL` | Recommended | Inbox for **new order** alerts (e.g. your Gmail). Without it, merchant mail uses `SMTP_USER` or `EMAIL_USER` if set. |
 
-If `RESEND_FROM` is unset, the API uses `onboarding@resend.dev` (Resend’s test sender — **very limited**; add a verified domain for real use).
+If `RESEND_FROM` is unset, the API uses `onboarding@resend.dev`. In that mode Resend **only allows sending to the email address of your Resend account** (e.g. your Gmail). Any other customer address returns **HTTP 403** with *“verify a domain”*. **To email real customers, you must:** [add & verify a domain](https://resend.com/domains) in Resend, then set `RESEND_FROM` to an address on that domain (e.g. `noreply@yourdomain.com`).
+
+Set **`ORDER_NOTIFICATION_EMAIL`** to your own inbox (e.g. `youssefstat20@gmail.com`) so **you** still receive the detailed “new order” email for every checkout; the **customer** only gets the short confirmation (no line items in that message — full detail stays in the merchant mail).
 
 **Do not set** `RESEND_API_KEY` if you want to use SMTP only (e.g. local dev or Railway Pro).
 

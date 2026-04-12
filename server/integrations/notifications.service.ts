@@ -225,39 +225,37 @@ export class NotificationsService implements OnModuleInit {
       return false;
     }
     const to = payload.to.trim().toLowerCase();
-    const linesRows = payload.lines
-      .map(
-        (l) =>
-          `<tr><td style="padding:10px 8px;border-bottom:1px solid #eee;">${escapeHtml(l.title)} × ${l.qty}</td><td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:right;">${escapeHtml(l.lineTotal)} MAD</td></tr>`,
-      )
-      .join('');
-    const html = `
+    const isAr = payload.locale === 'ar';
+    const html = isAr
+      ? `
+<!DOCTYPE html>
+<html dir="rtl"><body style="font-family:system-ui,sans-serif;background:#f4f7fb;padding:24px;margin:0;">
+<table role="presentation" width="100%" style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.08);">
+<tr><td style="padding:28px;">
+<p style="margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#0d9488;">Atlas Auto</p>
+<h1 style="margin:12px 0 16px;font-size:22px;color:#0f172a;">تم استلام طلبك</h1>
+<p style="margin:0 0 12px;font-size:15px;color:#0f172a;line-height:1.6;">مرحبًا ${escapeHtml(payload.customerName)}،</p>
+<p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6;">شكرًا لك — تم تسجيل طلبك تحت المرجع <strong>${escapeHtml(payload.orderNumber)}</strong>. سنتواصل معك قريبًا بخصوص التسليم.</p>
+<p style="margin:16px 0 0;font-size:14px;color:#64748b;">فريق Atlas Auto</p>
+</td></tr>
+</table>
+</body></html>`
+      : `
 <!DOCTYPE html>
 <html><body style="font-family:system-ui,sans-serif;background:#f4f7fb;padding:24px;margin:0;">
-<table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.08);">
-<tr><td style="padding:28px 28px 8px;">
+<table role="presentation" width="100%" style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.08);">
+<tr><td style="padding:28px;">
 <p style="margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#0d9488;">Atlas Auto</p>
-<h1 style="margin:12px 0 8px;font-size:22px;color:#0f172a;">${payload.locale === 'ar' ? 'تأكيد الطلب' : 'Commande confirmée'}</h1>
-<p style="margin:0;color:#64748b;font-size:15px;">${escapeHtml(payload.customerName)} — <strong>${escapeHtml(payload.orderNumber)}</strong></p>
-</td></tr>
-<tr><td style="padding:0 28px;">
-<table width="100%" style="border-collapse:collapse;font-size:14px;">${linesRows}</table>
-<table width="100%" style="border-collapse:collapse;font-size:14px;margin-top:8px;">
-${moneyRow('Sous-total', `${payload.subtotalMad} MAD`)}
-${parseFloat(payload.discountMad) > 0 ? moneyRow('Réduction', `− ${payload.discountMad} MAD`) : ''}
-${moneyRow('Livraison', `${payload.shippingMad} MAD`)}
-<tr><td style="padding:12px 0 0;font-size:15px;font-weight:700;color:#0f172a;">Total</td><td style="padding:12px 0 0;text-align:right;font-size:18px;font-weight:800;color:#0d9488;">${escapeHtml(payload.totalMad)} MAD</td></tr>
-</table>
-</td></tr>
-<tr><td style="padding:16px 28px 28px;">
-<p style="margin:0 0 8px;font-size:13px;color:#64748b;">Livraison</p>
-<p style="margin:0;font-size:14px;color:#0f172a;">${escapeHtml(payload.address.line1)}, ${escapeHtml(payload.address.quarter)} — <strong>${escapeHtml(payload.address.cityLabel)}</strong> (${escapeHtml(payload.address.cityName)} · ${escapeHtml(payload.address.cityCode)})</p>
-${payload.shippingPhone ? `<p style="margin:8px 0 0;font-size:14px;color:#0f172a;">Tél. livraison : <strong>${escapeHtml(payload.shippingPhone)}</strong></p>` : ''}
-<p style="margin:12px 0 0;font-size:13px;color:#64748b;">Paiement : ${escapeHtml(payload.paymentLabel)}</p>
+<h1 style="margin:12px 0 16px;font-size:22px;color:#0f172a;">Commande bien reçue</h1>
+<p style="margin:0 0 12px;font-size:15px;color:#0f172a;line-height:1.6;">Bonjour ${escapeHtml(payload.customerName)},</p>
+<p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6;">Merci — votre commande est enregistrée sous la référence <strong>${escapeHtml(payload.orderNumber)}</strong>. Nous vous recontacterons bientôt pour la livraison.</p>
+<p style="margin:16px 0 0;font-size:14px;color:#64748b;">L’équipe Atlas Auto</p>
 </td></tr>
 </table>
 </body></html>`;
-    const text = `Commande ${payload.orderNumber}\nTotal: ${payload.totalMad} MAD\nMerci pour votre achat, ${payload.customerName}.`;
+    const text = isAr
+      ? `Atlas Auto — طلبك مسجل تحت ${payload.orderNumber}. شكرًا ${payload.customerName}.`
+      : `Atlas Auto — Commande enregistrée (${payload.orderNumber}). Merci ${payload.customerName}.`;
     return this.sendMail({
       to,
       subject:
