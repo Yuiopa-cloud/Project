@@ -13,6 +13,21 @@ function moneyRow(label: string, value: string): string {
   return `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;color:#444;">${label}</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;font-weight:600;color:#111;">${escapeHtml(value)}</td></tr>`;
 }
 
+/** Railway / .env often wrap values in quotes; some users paste "a@gmail.com, b@gmail.com". */
+function normalizeInboxEmail(raw: string | undefined): string | null {
+  if (!raw) return null;
+  let s = raw.trim();
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1).trim();
+  }
+  const first = s.split(/[,;\s]+/)[0]?.trim() ?? '';
+  if (!first.includes('@')) return null;
+  return first.toLowerCase();
+}
+
 type SmtpResolved = {
   host: string;
   port: number;
@@ -49,14 +64,18 @@ export class NotificationsService implements OnModuleInit {
    * Prefer ORDER_NOTIFICATION_EMAIL; else SMTP_USER / EMAIL_USER (for Resend-only setups).
    */
   private merchantInbox(): string | null {
-    const orderNotif =
-      this.config.get<string>('ORDER_NOTIFICATION_EMAIL')?.trim() ||
-      this.config.get<string>('MERCHANT_NOTIFICATION_EMAIL')?.trim();
-    if (orderNotif) return orderNotif;
+    const fromEnv =
+      normalizeInboxEmail(process.env.ORDER_NOTIFICATION_EMAIL) ||
+      normalizeInboxEmail(process.env.MERCHANT_NOTIFICATION_EMAIL);
+    if (fromEnv) return fromEnv;
+    const fromConfig =
+      normalizeInboxEmail(this.config.get<string>('ORDER_NOTIFICATION_EMAIL')) ||
+      normalizeInboxEmail(this.config.get<string>('MERCHANT_NOTIFICATION_EMAIL'));
+    if (fromConfig) return fromConfig;
     const smtpUser =
       this.config.get<string>('SMTP_USER')?.trim() ||
       this.config.get<string>('EMAIL_USER')?.trim();
-    if (smtpUser) return smtpUser;
+    if (smtpUser?.includes('@')) return smtpUser.trim().toLowerCase();
     return null;
   }
 
@@ -310,6 +329,9 @@ export class NotificationsService implements OnModuleInit {
       );
       return false;
     }
+    this.log.log(
+      `Merchant new-order email sending → ${to} order=${payload.orderNumber}`,
+    );
     const lineRows = payload.lines
       .map(
         (l) =>
@@ -384,7 +406,7 @@ ${payload.couponCode ? `<br/>Coupon : <strong>${escapeHtml(payload.couponCode)}<
 
     return this.sendMail({
       to,
-      subject: `🛒 Nouvelle commande ${payload.orderNumber} — ${payload.totalMad} MAD`,
+      subject: `Nouvelle commande ${payload.orderNumber} — ${payload.totalMad} MAD`,
       text,
       html,
     });
