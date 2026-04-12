@@ -29,14 +29,67 @@ export class NotificationsService {
 
   /**
    * Merchant notification recipient — env only (no hardcoded inbox).
-   * Prefer ORDER_NOTIFICATION_EMAIL; else same mailbox as SMTP_USER.
+   * Prefer ORDER_NOTIFICATION_EMAIL; else SMTP_USER / EMAIL_USER (for Resend-only setups).
    */
   private merchantInbox(): string | null {
     const orderNotif = this.config.get<string>('ORDER_NOTIFICATION_EMAIL')?.trim();
     if (orderNotif) return orderNotif;
-    const smtpUser = this.config.get<string>('SMTP_USER')?.trim();
+    const smtpUser =
+      this.config.get<string>('SMTP_USER')?.trim() ||
+      this.config.get<string>('EMAIL_USER')?.trim();
     if (smtpUser) return smtpUser;
     return null;
+  }
+
+  /** Resend `from` — verified domain in production; `onboarding@resend.dev` only for quick tests. */
+  private buildResendFrom(): string {
+    const fromRaw = this.config.get<string>('RESEND_FROM')?.trim();
+    if (fromRaw && fromRaw.includes('@')) {
+      return fromRaw.includes('<') ? fromRaw : `"Easy Handles" <${fromRaw}>`;
+    }
+    return '"Easy Handles" <onboarding@resend.dev>';
+  }
+
+  private async sendViaResend(
+    apiKey: string,
+    opts: { to: string; subject: string; text: string; html: string },
+  ): Promise<boolean> {
+    const from = this.buildResendFrom();
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from,
+          to: [opts.to],
+          subject: opts.subject,
+          html: opts.html,
+          text: opts.text,
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        id?: string;
+        message?: string;
+        name?: string;
+      };
+      if (!res.ok) {
+        this.log.error(
+          `Resend API failed → ${opts.to}: HTTP ${res.status} ${JSON.stringify(body)}`,
+        );
+        return false;
+      }
+      this.log.log(
+        `Email sent (Resend): id=${body.id ?? '?'} → ${opts.to} subject="${opts.subject}"`,
+      );
+      return true;
+    } catch (error) {
+      const err = error as Error;
+      this.log.error(`Resend request failed → ${opts.to}: ${err?.message}`, err?.stack);
+      return false;
+    }
   }
 
   /**
@@ -75,6 +128,11 @@ export class NotificationsService {
     text: string;
     html: string;
   }): Promise<boolean> {
+    const resendKey = this.config.get<string>('RESEND_API_KEY')?.trim();
+    if (resendKey) {
+      return this.sendViaResend(resendKey, opts);
+    }
+
     const smtp = this.resolveSmtp();
     if (!smtp) {
       return false;
@@ -231,7 +289,7 @@ ${payload.shippingPhone ? `<p style="margin:8px 0 0;font-size:14px;color:#0f172a
     const to = this.merchantInbox();
     if (!to) {
       this.log.warn(
-        `Merchant new-order email skipped (set ORDER_NOTIFICATION_EMAIL or SMTP_USER): order ${payload.orderNumber}`,
+        `Merchant new-order email skipped (set ORDER_NOTIFICATION_EMAIL or SMTP_USER / EMAIL_USER): order ${payload.orderNumber}`,
       );
       return false;
     }

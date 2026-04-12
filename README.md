@@ -105,7 +105,7 @@ Puis redémarrez `npm run dev` dans `frontend/`. Voir `frontend/.env.example`.
 
 ## Variables d’environnement (extraits)
 
-**Backend** : `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_SEC`, `JWT_REFRESH_EXPIRES_DAYS`, `FRONTEND_URL`, `SMTP_*`, `WHATSAPP_*`, `STRIPE_SECRET_KEY`, `LOYALTY_POINTS_PER_10_MAD`.
+**Backend** : `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_SEC`, `JWT_REFRESH_EXPIRES_DAYS`, `FRONTEND_URL`, `RESEND_API_KEY` + `RESEND_FROM` (email on Railway Hobby) or `SMTP_*`, `ORDER_NOTIFICATION_EMAIL`, `WHATSAPP_*`, `STRIPE_SECRET_KEY`, `LOYALTY_POINTS_PER_10_MAD`.
 
 **Frontend** : `NEXT_PUBLIC_API_URL` / `BACKEND_PROXY_URL` (rewrites `/api-proxy` vers l’API). En local, optionnel si l’API est sur `127.0.0.1:4000`.
 

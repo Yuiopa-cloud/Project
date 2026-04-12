@@ -2,7 +2,25 @@
 
 If checkout works but you get **no mail**, or you only fixed “stuck on Validation…”, configure the following on the **API service** (Nest backend), not on Vercel alone.
 
-## 1. Required for any email to send
+## 0. Resend (HTTPS) — use this on Railway Free / Hobby
+
+Railway **blocks outbound SMTP** on Free, Trial, and Hobby. Nodemailer then shows **Connection timeout**. Use [Resend](https://resend.com) over **HTTPS** instead (works on every plan).
+
+On the **API** environment:
+
+| Variable | Required | Example / notes |
+|----------|----------|------------------|
+| `RESEND_API_KEY` | Yes | `re_...` from Resend dashboard → API Keys. |
+| `RESEND_FROM` | Strongly recommended | `orders@yourdomain.com` or `"Atlas Auto" <orders@yourdomain.com>` after you **verify your domain** in Resend. |
+| `ORDER_NOTIFICATION_EMAIL` | Recommended | Inbox for **new order** alerts (e.g. your Gmail). Without it, merchant mail uses `SMTP_USER` or `EMAIL_USER` if set. |
+
+If `RESEND_FROM` is unset, the API uses `onboarding@resend.dev` (Resend’s test sender — **very limited**; add a verified domain for real use).
+
+**Do not set** `RESEND_API_KEY` if you want to use SMTP only (e.g. local dev or Railway Pro).
+
+Redeploy the API after changing variables. Logs show `Email sent (Resend): id=...` on success.
+
+## 1. Required for any email to send (SMTP path)
 
 Set **all three** on the backend environment:
 
