@@ -103,6 +103,12 @@ Puis redémarrez `npm run dev` dans `frontend/`. Voir `frontend/.env.example`.
 | Admin    | +212600000001  | `Admin123!`    |
 | Client   | +212612345678  | `Customer123!` |
 
+### Passage en production — réinitialiser l’admin
+
+1. **Panneau `/admin`** : sur Railway (service API), définissez un mot de passe fort dans **`ADMIN_PANEL_PASSWORD`** — c’est celui que vous saisissez sur le formulaire admin (pas le hash en base).
+2. **Compte ADMIN en base** (téléphone `+212600000001`, utile si login API téléphone/mot de passe) : ajoutez **`ADMIN_RESEED_PASSWORD`** avec un mot de passe fort, **déployez une fois** (le script `prisma/ensure-admin.cjs` met à jour le hash et **supprime les refresh tokens** admin), puis **supprimez `ADMIN_RESEED_PASSWORD`** des variables pour ne pas le garder en clair.
+3. Tant que `ADMIN_RESEED_PASSWORD` est absent, les déploiements suivants ne changent plus le mot de passe admin (seul le rôle `ADMIN` est ré-appliqué).
+
 ## Variables d’environnement (extraits)
 
 **Backend** : `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_SEC`, `JWT_REFRESH_EXPIRES_DAYS`, `FRONTEND_URL`, `RESEND_API_KEY` + `RESEND_FROM` (email on Railway Hobby) or `SMTP_*`, `ORDER_NOTIFICATION_EMAIL`, `WHATSAPP_*`, `STRIPE_SECRET_KEY`, `LOYALTY_POINTS_PER_10_MAD`.
