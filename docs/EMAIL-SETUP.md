@@ -12,7 +12,7 @@ On the **API** environment:
 |----------|----------|------------------|
 | `RESEND_API_KEY` | Yes | `re_...` from Resend dashboard → API Keys. |
 | `RESEND_FROM` | Strongly recommended | `orders@yourdomain.com` or `"Atlas Auto" <orders@yourdomain.com>` after you **verify your domain** in Resend. |
-| `ORDER_NOTIFICATION_EMAIL` | Recommended | Inbox for **new order** alerts (e.g. your Gmail). Without it, merchant mail uses `SMTP_USER` or `EMAIL_USER` if set. |
+| `ORDER_NOTIFICATION_EMAIL` | **Required** for shop alerts if you use Resend only (no `SMTP_USER`) | Your inbox for **new order** HTML (e.g. `youssefstat20@gmail.com`). Alias: `MERCHANT_NOTIFICATION_EMAIL`. If unset and no `SMTP_USER` / `EMAIL_USER`, merchant mail is **skipped** (customer confirmation can still work). |
 
 If `RESEND_FROM` is unset, the API uses `onboarding@resend.dev`. In that mode Resend **only allows sending to the email address of your Resend account** (e.g. your Gmail). Any other customer address returns **HTTP 403** with *“verify a domain”*. **To email real customers, you must:** [add & verify a domain](https://resend.com/domains) in Resend, then set `RESEND_FROM` to an address on that domain (e.g. `noreply@yourdomain.com`).
 

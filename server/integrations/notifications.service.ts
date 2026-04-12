@@ -31,6 +31,11 @@ export class NotificationsService implements OnModuleInit {
   onModuleInit(): void {
     if (this.config.get<string>('RESEND_API_KEY')?.trim()) {
       this.log.log('Email transport: Resend (HTTPS API)');
+      if (!this.merchantInbox()) {
+        this.log.warn(
+          'Set ORDER_NOTIFICATION_EMAIL to your inbox — merchant “new order” mail is skipped without it when SMTP_USER is unset (typical Resend-only setup).',
+        );
+      }
       return;
     }
     const smtp = this.resolveSmtp();
@@ -44,7 +49,9 @@ export class NotificationsService implements OnModuleInit {
    * Prefer ORDER_NOTIFICATION_EMAIL; else SMTP_USER / EMAIL_USER (for Resend-only setups).
    */
   private merchantInbox(): string | null {
-    const orderNotif = this.config.get<string>('ORDER_NOTIFICATION_EMAIL')?.trim();
+    const orderNotif =
+      this.config.get<string>('ORDER_NOTIFICATION_EMAIL')?.trim() ||
+      this.config.get<string>('MERCHANT_NOTIFICATION_EMAIL')?.trim();
     if (orderNotif) return orderNotif;
     const smtpUser =
       this.config.get<string>('SMTP_USER')?.trim() ||
@@ -299,7 +306,7 @@ export class NotificationsService implements OnModuleInit {
     const to = this.merchantInbox();
     if (!to) {
       this.log.warn(
-        `Merchant new-order email skipped (set ORDER_NOTIFICATION_EMAIL or SMTP_USER / EMAIL_USER): order ${payload.orderNumber}`,
+        `Merchant new-order email skipped (set ORDER_NOTIFICATION_EMAIL / MERCHANT_NOTIFICATION_EMAIL or SMTP_USER / EMAIL_USER): order ${payload.orderNumber}`,
       );
       return false;
     }
