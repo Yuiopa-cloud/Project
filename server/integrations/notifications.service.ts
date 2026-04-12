@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 function escapeHtml(s: string): string {
@@ -22,10 +22,22 @@ type SmtpResolved = {
 };
 
 @Injectable()
-export class NotificationsService {
+export class NotificationsService implements OnModuleInit {
   private readonly log = new Logger(NotificationsService.name);
 
   constructor(private readonly config: ConfigService) {}
+
+  /** One-line hint at boot: Resend vs SMTP vs disabled (debugs missing env on Railway). */
+  onModuleInit(): void {
+    if (this.config.get<string>('RESEND_API_KEY')?.trim()) {
+      this.log.log('Email transport: Resend (HTTPS API)');
+      return;
+    }
+    const smtp = this.resolveSmtp();
+    if (smtp) {
+      this.log.log(`Email transport: SMTP ${smtp.host}:${smtp.port}`);
+    }
+  }
 
   /**
    * Merchant notification recipient — env only (no hardcoded inbox).
