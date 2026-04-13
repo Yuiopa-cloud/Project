@@ -295,8 +295,9 @@ model CartItem {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   variantId String?
   variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  /// Stable key: variantId or `base:${productId}` when the product has no variants
-  lineKey   String
+  /// Stable key: variantId or `base:${productId}` when the product has no variants.
+  /// DB default supports `prisma db push` on tables that already had rows before this column existed.
+  lineKey   String @default(uuid())
   quantity  Int    @default(1)
 
   @@unique([cartId, lineKey])
