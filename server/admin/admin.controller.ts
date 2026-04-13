@@ -30,8 +30,8 @@ export class AdminController {
   constructor(private readonly admin: AdminService) {}
 
   @Get('dashboard')
-  dashboard() {
-    return this.admin.dashboard();
+  dashboard(@Query('days') days?: string) {
+    return this.admin.dashboard(days ? Number(days) : undefined);
   }
 
   @Get('customers')

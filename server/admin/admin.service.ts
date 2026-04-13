@@ -34,9 +34,13 @@ function slugifyTitle(input: string): string {
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async dashboard() {
+  async dashboard(periodDaysRaw?: number) {
+    const periodDays = Math.min(
+      Math.max(Math.floor(Number(periodDaysRaw) || 30), 1),
+      366,
+    );
     const since = new Date();
-    since.setDate(since.getDate() - 30);
+    since.setDate(since.getDate() - periodDays);
     const [revenueAgg, ordersCount, usersCount, pendingFraud] =
       await this.prisma.$transaction([
         this.prisma.order.aggregate({
@@ -60,7 +64,7 @@ export class AdminService {
       visitorsEstimate > 0 ? ordersCount / visitorsEstimate : 0;
 
     return {
-      periodDays: 30,
+      periodDays,
       revenueMad: revenueAgg._sum.totalMad?.toString() ?? '0',
       orders: ordersCount,
       customers: usersCount,

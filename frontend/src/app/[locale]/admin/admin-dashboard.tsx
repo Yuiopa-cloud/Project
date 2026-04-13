@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -152,6 +158,178 @@ function nestErrorMessage(raw: string): string | undefined {
   return undefined;
 }
 
+const ADMIN_NAV: {
+  id: "dash" | "orders" | "products" | "members";
+  label: string;
+  icon: (props: { className?: string }) => ReactElement;
+}[] = [
+  {
+    id: "dash",
+    label: "Tableau de bord",
+    icon: ({ className }) => (
+      <svg
+        className={className}
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        aria-hidden
+      >
+        <rect x="3" y="3" width="7" height="9" rx="1" />
+        <rect x="14" y="3" width="7" height="5" rx="1" />
+        <rect x="14" y="12" width="7" height="9" rx="1" />
+        <rect x="3" y="16" width="7" height="5" rx="1" />
+      </svg>
+    ),
+  },
+  {
+    id: "orders",
+    label: "Commandes",
+    icon: ({ className }) => (
+      <svg
+        className={className}
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        aria-hidden
+      >
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+        <path d="M3 6h18" />
+        <path d="M16 10a4 4 0 0 1-8 0" />
+      </svg>
+    ),
+  },
+  {
+    id: "products",
+    label: "Produits",
+    icon: ({ className }) => (
+      <svg
+        className={className}
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        aria-hidden
+      >
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" />
+        <path d="M12 22.08V12" />
+      </svg>
+    ),
+  },
+  {
+    id: "members",
+    label: "Clients",
+    icon: ({ className }) => (
+      <svg
+        className={className}
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        aria-hidden
+      >
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+];
+
+function AdminOverviewSpark({
+  orders,
+  revenueMad,
+}: {
+  orders: number;
+  revenueMad: number;
+}) {
+  const w = 400;
+  const h = 180;
+  const pad = 28;
+  const gw = w - pad * 2;
+  const gh = h - pad * 2;
+  const rev = Number.isFinite(revenueMad) ? revenueMad : 0;
+  const oBoost = orders > 0 ? Math.min(1, 0.35 + orders / Math.max(orders + 8, 1) * 0.55) : 0.08;
+  const rBoost = rev > 0 ? Math.min(1, 0.3 + Math.log10(rev + 10) / 5) : 0.06;
+  const ptsO = [0, 1, 2, 3, 4].map((i) => {
+    const x = pad + (gw * i) / 4;
+    const t = i / 4;
+    const y = pad + gh * (1 - 0.12 - t * 0.78 * oBoost);
+    return `${x},${y}`;
+  });
+  const ptsR = [0, 1, 2, 3, 4].map((i) => {
+    const x = pad + (gw * i) / 4;
+    const t = i / 4;
+    const y = pad + gh * (1 - 0.18 - (1 - t) * 0.72 * rBoost);
+    return `${x},${y}`;
+  });
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      className="h-44 w-full max-h-52 text-[var(--fg)]"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <linearGradient id="adminSparkO" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="adminSparkR" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--accent-hot)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="var(--accent-hot)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {[0, 0.33, 0.66, 1].map((t) => (
+        <line
+          key={t}
+          x1={pad}
+          y1={pad + gh * t}
+          x2={w - pad}
+          y2={pad + gh * t}
+          stroke="var(--border)"
+          strokeWidth="1"
+        />
+      ))}
+      <polyline
+        fill="none"
+        stroke="var(--accent)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={ptsO.join(" ")}
+      />
+      <polygon
+        fill="url(#adminSparkO)"
+        points={`${pad},${pad + gh} ${ptsO.join(" ")} ${w - pad},${pad + gh}`}
+      />
+      <polyline
+        fill="none"
+        stroke="var(--accent-hot)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray="4 4"
+        points={ptsR.join(" ")}
+      />
+      <polygon
+        fill="url(#adminSparkR)"
+        points={`${pad},${pad + gh} ${ptsR.join(" ")} ${w - pad},${pad + gh}`}
+        opacity={rev > 0 ? 0.85 : 0.35}
+      />
+    </svg>
+  );
+}
+
 export function AdminDashboard() {
   const tAdmin = useTranslations("admin");
   const searchParams = useSearchParams();
@@ -171,6 +349,8 @@ export function AdminDashboard() {
   );
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dashPeriodDays, setDashPeriodDays] = useState<1 | 7 | 30 | 365>(30);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [orderQuery, setOrderQuery] = useState("");
   const [confirmationFilter, setConfirmationFilter] = useState<
     "ALL" | "red" | "green" | "blue"
@@ -182,7 +362,9 @@ export function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get("tab") === "products") setTab("products");
+    const t = searchParams.get("tab");
+    if (t === "products") setTab("products");
+    if (t === "orders") setTab("orders");
   }, [searchParams]);
 
   const authHeaders = useCallback(
@@ -196,9 +378,12 @@ export function AdminDashboard() {
   const loadDash = useCallback(async () => {
     if (!token) return;
     try {
-      const r = await fetch(`${apiRoot}/admin/dashboard`, {
+      const r = await fetch(
+        `${apiRoot}/admin/dashboard?days=${dashPeriodDays}`,
+        {
         headers: authHeaders(),
-      });
+        },
+      );
       if (!r.ok) {
         const txt = await r.text();
         setMsg(
@@ -215,7 +400,7 @@ export function AdminDashboard() {
       logApiFailure("admin dashboard", e);
       setMsg(friendlyNetworkError(e));
     }
-  }, [apiRoot, token, authHeaders]);
+  }, [apiRoot, token, authHeaders, dashPeriodDays]);
 
   const loadOrders = useCallback(async () => {
     if (!token) return;
@@ -538,25 +723,134 @@ export function AdminDashboard() {
     );
   }
 
-  return (
-    <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
-      <motion.section
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="card-chrome relative overflow-hidden rounded-3xl p-5 md:p-6"
-      >
-        <div className="pointer-events-none absolute -right-20 -top-20 h-52 w-52 rounded-full bg-[var(--accent)]/12 blur-3xl" />
-        <div className="pointer-events-none absolute left-1/3 top-0 h-44 w-44 rounded-full bg-[var(--accent-hot)]/10 blur-3xl" />
+  const tabTitle =
+    tab === "dash"
+      ? "Vue d’ensemble"
+      : tab === "orders"
+        ? "Commandes"
+        : tab === "products"
+          ? "Produits"
+          : "Clients";
 
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <AtlasLogo size={42} />
-            <div>
-              <h1 className="text-xl font-semibold text-[var(--fg)] md:text-2xl">{tAdmin("title")}</h1>
-              <p className="text-xs text-[var(--muted)] md:text-sm">
-                Catalog, orders, and customers in one console — similar to a
-                Shopify admin workflow.
+  const NavButtons = ({ onPick }: { onPick?: () => void }) => (
+    <nav className="space-y-1 px-2 py-3">
+      {ADMIN_NAV.map(({ id, label, icon: Icon }) => {
+        const active = tab === id;
+        return (
+          <motion.button
+            key={id}
+            type="button"
+            onClick={() => {
+              setTab(id);
+              onPick?.();
+            }}
+            whileTap={{ scale: 0.98 }}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              active
+                ? "border-l-2 border-[var(--accent)] bg-white/10 text-[#fffdf9] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
+                : "border-l-2 border-transparent text-[#e8ddd4]/85 hover:bg-white/5 hover:text-[#fffdf9]"
+            }`}
+          >
+            <Icon
+              className={
+                active ? "text-[var(--accent)]" : "text-[#c4a990]/90"
+              }
+            />
+            {label}
+          </motion.button>
+        );
+      })}
+    </nav>
+  );
+
+  return (
+    <div className="flex min-h-[calc(100dvh-5rem)] flex-col gap-3 md:flex-row md:gap-0">
+      {mobileNavOpen ? (
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          aria-label="Fermer le menu"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      ) : null}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(17rem,88vw)] -translate-x-full flex-col border-r border-[#3d2a22] bg-gradient-to-b from-[#2a1810] via-[#1f120c] to-[#140c08] text-[#f5ebe3] shadow-2xl transition-transform duration-200 md:static md:z-0 md:w-56 md:translate-x-0 md:rounded-2xl md:border md:shadow-md lg:w-60 ${
+          mobileNavOpen ? "translate-x-0" : ""
+        }`}
+      >
+        <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fffdf9]/95 shadow-sm">
+              <AtlasLogo size={24} />
+            </div>
+            <div className="min-w-0">
+              <p className="font-display truncate text-base font-semibold tracking-tight text-[#fffdf9]">
+                Easy Handles
               </p>
+              <p className="truncate text-[10px] uppercase tracking-[0.14em] text-[#c4a990]">
+                Admin
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="rounded-lg p-2 text-[#c4a990] hover:bg-white/10 md:hidden"
+            aria-label="Fermer"
+            onClick={() => setMobileNavOpen(false)}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <NavButtons onPick={() => setMobileNavOpen(false)} />
+        <div className="mt-auto space-y-1 border-t border-white/10 p-3">
+          <Link
+            href="/"
+            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-[#e8ddd4]/90 hover:bg-white/5"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            Voir la boutique
+          </Link>
+          <button
+            type="button"
+            onClick={logout}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-200/90 hover:bg-rose-500/15"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Déconnexion
+          </button>
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[0_12px_40px_-24px_rgba(60,30,15,0.35)] md:ml-3 md:rounded-3xl">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_92%,var(--accent-dim))] px-4 py-3 md:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-2 text-[var(--fg)] shadow-sm md:hidden"
+              aria-label="Menu"
+              onClick={() => setMobileNavOpen(true)}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="4" x2="20" y1="6" y2="6" />
+                <line x1="4" x2="20" y1="12" y2="12" />
+                <line x1="4" x2="20" y1="18" y2="18" />
+              </svg>
+            </button>
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-lg font-semibold text-[var(--fg)] md:text-xl">
+                {tabTitle}
+              </h1>
+              <p className="truncate text-xs text-[var(--muted)]">{tAdmin("title")}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -568,51 +862,25 @@ export function AdminDashboard() {
                 else if (tab === "members") loadMembers();
                 else void loadProducts();
               }}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn-secondary rounded-lg px-3 py-2 text-xs"
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs font-semibold text-[var(--fg)] shadow-sm hover:bg-[var(--accent-dim)]"
             >
-              Refresh
+              Actualiser
             </motion.button>
             <motion.button
               type="button"
               onClick={logout}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn-ghost rounded-lg px-3 py-2 text-xs"
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              className="hidden rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-3 py-2 text-xs font-semibold text-slate-900 shadow-sm sm:inline-flex"
             >
-              Deconnexion
+              Déconnexion
             </motion.button>
           </div>
-        </div>
+        </header>
 
-        <div className="relative mt-5 flex flex-wrap gap-2">
-          {(["dash", "orders", "products", "members"] as const).map((x) => (
-            <motion.button
-              key={x}
-              type="button"
-              onClick={() => setTab(x)}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 450, damping: 28 }}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                tab === x
-                  ? "bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] text-slate-900 shadow-[0_10px_26px_-14px_var(--accent-glow)]"
-                  : "text-[var(--muted)] hover:bg-[var(--press-bg)]"
-              }`}
-            >
-              {x === "dash"
-                ? "Dashboard"
-                : x === "orders"
-                  ? "Orders"
-                  : x === "products"
-                    ? "Products"
-                    : "Members"}
-            </motion.button>
-          ))}
-        </div>
-      </motion.section>
-
+        <div className="flex-1 overflow-auto px-4 py-5 md:px-6">
       <AnimatePresence mode="wait">
         {msg ? (
           <motion.p
@@ -627,31 +895,219 @@ export function AdminDashboard() {
         ) : null}
       </AnimatePresence>
 
-      {tab === "dash" && dash ? (
+      {tab === "dash" ? (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
         >
-          {[
-            { k: `Revenue (${dash.periodDays}j)`, v: `${dash.revenueMad} MAD`, tone: "text-[var(--accent)]" },
-            { k: "Orders", v: String(dash.orders), tone: "text-[var(--fg)]" },
-            { k: "Customers", v: String(dash.customers), tone: "text-[var(--fg)]" },
-            { k: "Fraud Pending", v: String(dash.pendingFraudFlags), tone: "text-amber-200" },
-            { k: "Low Stock", v: String(dash.inventoryLow), tone: "text-rose-200" },
-            { k: "Conversion", v: `${(dash.conversionRateApprox * 100).toFixed(1)}%`, tone: "text-[var(--accent-hot)]" },
-          ].map((item, i) => (
-            <motion.div
-              key={item.k}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="card-chrome rounded-2xl p-4"
-            >
-              <p className="text-xs uppercase tracking-wider text-[var(--muted)]">{item.k}</p>
-              <p className={`mt-2 text-2xl font-semibold ${item.tone}`}>{item.v}</p>
-            </motion.div>
-          ))}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="font-display text-base font-semibold text-[var(--fg)]">
+              Aperçu
+            </h2>
+            <div className="flex flex-wrap gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--press-bg)] p-1">
+              {(
+                [
+                  [1, "Aujourd’hui"],
+                  [7, "7 jours"],
+                  [30, "30 jours"],
+                  [365, "12 mois"],
+                ] as const
+              ).map(([days, label]) => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => setDashPeriodDays(days)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    dashPeriodDays === days
+                      ? "bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] text-slate-900 shadow-sm"
+                      : "text-[var(--muted)] hover:text-[var(--fg)]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {!dash ? (
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-28 animate-pulse rounded-2xl bg-[var(--accent-dim)]"
+                />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {(
+                  [
+                    {
+                      k: "Commandes",
+                      v: String(dash.orders),
+                      sub: `sur ${dash.periodDays} jour(s)`,
+                    },
+                    {
+                      k: "Panier moyen",
+                      v:
+                        dash.orders > 0
+                          ? `${(parseFloat(dash.revenueMad || "0") / dash.orders).toFixed(2)} MAD`
+                          : "0.00 MAD",
+                      sub: "CA ÷ commandes",
+                    },
+                    {
+                      k: "Comptes clients",
+                      v: String(dash.customers),
+                      sub: "Inscrits (total)",
+                    },
+                  ] as const
+                ).map((item, i) => (
+                  <motion.div
+                    key={item.k}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm"
+                  >
+                    <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
+                      {item.k}
+                    </p>
+                    <p className="mt-2 font-display text-3xl font-semibold tabular-nums text-[var(--fg)]">
+                      {item.v}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--muted)]">{item.sub}</p>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm lg:col-span-2">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-[var(--fg)]">
+                      Activité
+                    </p>
+                    <div className="flex gap-4 text-xs">
+                      <span className="inline-flex items-center gap-1.5 text-[var(--muted)]">
+                        <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+                        Commandes
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-[var(--muted)]">
+                        <span className="h-2 w-2 rounded-full bg-[var(--accent-hot)]" />
+                        Tendance CA
+                      </span>
+                    </div>
+                  </div>
+                  <AdminOverviewSpark
+                    orders={dash.orders}
+                    revenueMad={parseFloat(dash.revenueMad || "0")}
+                  />
+                  <p className="mt-2 text-center text-[11px] text-[var(--muted)]">
+                    Courbe indicative sur la période — pas un historique jour par jour.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
+                  <p className="text-sm font-semibold text-[var(--fg)]">
+                    Top produits
+                  </p>
+                  <div className="mt-10 flex flex-col items-center justify-center gap-3 text-center">
+                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent)]">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                        <line x1="7" y1="7" x2="7.01" y2="7" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-[var(--fg)]">
+                      Pas encore de classement
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">
+                      Les ventes par produit apparaîtront ici.
+                    </p>
+                    <Link
+                      href="/admin?tab=products"
+                      className="mt-1 text-xs font-semibold text-[var(--accent)] hover:underline"
+                    >
+                      Gérer les produits
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {(
+                  [
+                    ["Stock bas", String(dash.inventoryLow), "Produits actifs ≤ seuil"],
+                    ["Fraude en attente", String(dash.pendingFraudFlags), "À traiter"],
+                    [
+                      "CA (période)",
+                      `${dash.revenueMad} MAD`,
+                      "Hors annulé / refusé",
+                    ],
+                    [
+                      "Conversion (approx.)",
+                      `${(dash.conversionRateApprox * 100).toFixed(1)}%`,
+                      "Commandes / clients",
+                    ],
+                  ] as const
+                ).map(([title, val, hint]) => (
+                  <div
+                    key={title}
+                    className="rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_94%,var(--accent-dim))] px-4 py-3"
+                  >
+                    <p className="text-xs font-medium text-[var(--muted)]">{title}</p>
+                    <p className="mt-1 font-display text-lg font-semibold text-[var(--fg)]">
+                      {val}
+                    </p>
+                    <p className="text-[11px] text-[var(--muted)]">{hint}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p className="mb-3 text-sm font-semibold text-[var(--fg)]">
+                  Ressources
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <Link
+                    href="/"
+                    className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm shadow-sm transition hover:border-[var(--accent)]/40 hover:shadow-md"
+                  >
+                    <p className="font-semibold text-[var(--fg)]">Boutique</p>
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">
+                      Voir le site public
+                    </p>
+                  </Link>
+                  <Link
+                    href="/admin?tab=products"
+                    className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm shadow-sm transition hover:border-[var(--accent)]/40 hover:shadow-md"
+                  >
+                    <p className="font-semibold text-[var(--fg)]">Produits</p>
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">Catalogue</p>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setTab("orders")}
+                    className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-left text-sm shadow-sm transition hover:border-[var(--accent)]/40 hover:shadow-md"
+                  >
+                    <p className="font-semibold text-[var(--fg)]">Commandes</p>
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">
+                      Liste & statuts
+                    </p>
+                  </button>
+                  <Link
+                    href="/"
+                    className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm shadow-sm transition hover:border-[var(--accent)]/40 hover:shadow-md"
+                  >
+                    <p className="font-semibold text-[var(--fg)]">Aide</p>
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">
+                      Page d’accueil & contact
+                    </p>
+                  </Link>
+                </div>
+              </div>
+            </>
+          )}
         </motion.div>
       ) : null}
 
@@ -659,14 +1115,14 @@ export function AdminDashboard() {
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-7 space-y-4"
+          className="space-y-4"
         >
           <div className="card-chrome flex flex-wrap items-center gap-2 rounded-2xl p-3 md:p-4">
             <input
               value={orderQuery}
               onChange={(e) => setOrderQuery(e.target.value)}
               placeholder="Search order number, phone or status..."
-              className="checkout-input min-h-11 min-w-[15rem] flex-1 rounded-xl border border-[var(--border)] bg-black/25 px-3 text-sm"
+              className="checkout-input min-h-11 min-w-[15rem] flex-1 rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_96%,var(--accent-dim))] px-3 text-sm"
             />
             <select
               value={confirmationFilter}
@@ -675,7 +1131,7 @@ export function AdminDashboard() {
                   e.target.value as "ALL" | "red" | "green" | "blue",
                 )
               }
-              className="checkout-input min-h-11 rounded-xl border border-[var(--border)] bg-black/25 px-3 text-sm"
+              className="checkout-input min-h-11 rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_96%,var(--accent-dim))] px-3 text-sm"
             >
               <option value="ALL">All lights</option>
               <option value="green">Green only</option>
@@ -712,9 +1168,9 @@ export function AdminDashboard() {
             ))}
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-black/15">
+          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--card)]">
             <table className="w-full min-w-[900px] text-left text-sm">
-              <thead className="sticky top-0 border-b border-[var(--border)] bg-black/45 text-xs uppercase tracking-wider text-[var(--muted)] backdrop-blur">
+              <thead className="sticky top-0 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_88%,var(--muted)_12%)] text-xs uppercase tracking-wider text-[var(--muted)] backdrop-blur">
                 <tr>
                   <th className="p-3">Order #</th>
                   <th className="p-3">Status</th>
@@ -730,11 +1186,11 @@ export function AdminDashboard() {
                   return (
                     <tr
                       key={o.id}
-                      className="border-b border-[var(--border)]/60 transition hover:bg-white/[0.03]"
+                      className="border-b border-[var(--border)]/60 transition hover:bg-[var(--accent-dim)]"
                     >
                       <td className="p-3 font-mono text-xs text-[var(--fg)]">{o.orderNumber}</td>
                       <td className="p-3">
-                        <span className="rounded-lg border border-[var(--border)] bg-black/20 px-2 py-1 text-xs text-[var(--fg)]">
+                        <span className="rounded-lg border border-[var(--border)] bg-[var(--press-bg)] px-2 py-1 text-xs text-[var(--fg)]">
                           {statusLabel(o.status)}
                         </span>
                       </td>
@@ -774,7 +1230,7 @@ export function AdminDashboard() {
                             </>
                           ) : null}
                           <select
-                            className="rounded-lg border border-[var(--border)] bg-black/45 px-2 py-1 text-xs"
+                            className="rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_88%,var(--muted)_12%)] px-2 py-1 text-xs"
                             value={o.status}
                             onChange={(e) => setStatus(o.id, e.target.value)}
                           >
@@ -810,7 +1266,7 @@ export function AdminDashboard() {
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-7 space-y-4"
+          className="space-y-4"
         >
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -834,7 +1290,7 @@ export function AdminDashboard() {
               value={productQuery}
               onChange={(e) => setProductQuery(e.target.value)}
               placeholder="Filter products…"
-              className="checkout-input min-h-11 min-w-[14rem] flex-1 rounded-xl border border-[var(--border)] bg-black/25 px-3 text-sm"
+              className="checkout-input min-h-11 min-w-[14rem] flex-1 rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_96%,var(--accent-dim))] px-3 text-sm"
               aria-label="Filter products"
             />
             <select
@@ -842,7 +1298,7 @@ export function AdminDashboard() {
               onChange={(e) =>
                 setProductStatus(e.target.value as "all" | "active" | "draft")
               }
-              className="checkout-input min-h-11 rounded-xl border border-[var(--border)] bg-black/25 px-3 text-sm"
+              className="checkout-input min-h-11 rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_96%,var(--accent-dim))] px-3 text-sm"
             >
               <option value="all">All statuses</option>
               <option value="active">Active</option>
@@ -862,9 +1318,9 @@ export function AdminDashboard() {
             </motion.button>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-black/15">
+          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--card)]">
             <table className="w-full min-w-[1040px] text-left text-sm">
-              <thead className="sticky top-0 z-[1] border-b border-[var(--border)] bg-black/55 text-xs uppercase tracking-wider text-[var(--muted)] backdrop-blur">
+              <thead className="sticky top-0 z-[1] border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_85%,var(--muted)_15%)] text-xs uppercase tracking-wider text-[var(--muted)] backdrop-blur">
                 <tr>
                   <th className="p-3 pl-4">Product</th>
                   <th className="p-3">Status</th>
@@ -886,11 +1342,11 @@ export function AdminDashboard() {
                   return (
                     <tr
                       key={p.id}
-                      className="border-b border-[var(--border)]/60 transition hover:bg-white/[0.03]"
+                      className="border-b border-[var(--border)]/60 transition hover:bg-[var(--accent-dim)]"
                     >
                       <td className="p-3 pl-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[var(--border)] bg-black/30">
+                          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--press-bg)]">
                             {thumb ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -917,7 +1373,7 @@ export function AdminDashboard() {
                       </td>
                       <td className="p-3 align-middle">
                         <select
-                          className="rounded-lg border border-[var(--border)] bg-black/45 px-2 py-1.5 text-xs"
+                          className="rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_88%,var(--muted)_12%)] px-2 py-1.5 text-xs"
                           value={p.isActive ? "active" : "draft"}
                           onChange={(e) => {
                             const active = e.target.value === "active";
@@ -937,7 +1393,7 @@ export function AdminDashboard() {
                             min={0}
                             defaultValue={p.stock}
                             key={`${p.id}-stock-${p.stock}`}
-                            className="w-24 rounded-lg border border-[var(--border)] bg-black/45 px-2 py-1.5 text-xs tabular-nums text-[var(--fg)]"
+                            className="w-24 rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_88%,var(--muted)_12%)] px-2 py-1.5 text-xs tabular-nums text-[var(--fg)]"
                             onBlur={(e) => {
                               const v = parseInt(e.target.value, 10);
                               if (Number.isNaN(v) || v < 0) return;
@@ -961,7 +1417,7 @@ export function AdminDashboard() {
                           inputMode="decimal"
                           defaultValue={p.priceMad}
                           key={`${p.id}-price-${p.priceMad}`}
-                          className="w-[6.5rem] rounded-lg border border-[var(--border)] bg-black/45 px-2 py-1.5 text-xs tabular-nums text-[var(--fg)]"
+                          className="w-[6.5rem] rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_88%,var(--muted)_12%)] px-2 py-1.5 text-xs tabular-nums text-[var(--fg)]"
                           onBlur={(e) => {
                             const raw = e.target.value.trim().replace(",", ".");
                             if (raw === p.priceMad) return;
@@ -1031,11 +1487,11 @@ export function AdminDashboard() {
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-7"
+          className="space-y-4"
         >
-          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-black/15">
+          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--card)]">
             <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="sticky top-0 border-b border-[var(--border)] bg-black/45 text-xs uppercase tracking-wider text-[var(--muted)] backdrop-blur">
+              <thead className="sticky top-0 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_88%,var(--muted)_12%)] text-xs uppercase tracking-wider text-[var(--muted)] backdrop-blur">
                 <tr>
                   <th className="p-3">Member</th>
                   <th className="p-3">Phone</th>
@@ -1048,7 +1504,7 @@ export function AdminDashboard() {
                 {members.map((m) => (
                   <tr
                     key={m.id}
-                    className="border-b border-[var(--border)]/60 transition hover:bg-white/[0.03]"
+                    className="border-b border-[var(--border)]/60 transition hover:bg-[var(--accent-dim)]"
                   >
                     <td className="p-3 font-medium text-[var(--fg)]">
                       {m.firstName} {m.lastName}
@@ -1083,6 +1539,8 @@ export function AdminDashboard() {
           </div>
         </motion.section>
       ) : null}
+        </div>
+      </div>
     </div>
   );
 }
