@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MotionLink } from "@/components/motion-link";
 import { useRouter } from "@/i18n/navigation";
@@ -10,6 +10,36 @@ import { useCart, type CartLineProduct } from "@/contexts/cart-context";
 import { useCartFly } from "@/contexts/cart-fly-context";
 import { setBuyNow } from "@/lib/buy-now";
 import { formatSar } from "@/lib/price";
+
+type ProductOptionVal = {
+  id: string;
+  valueFr: string;
+  valueAr: string;
+  colorHex?: string | null;
+  imageUrl?: string | null;
+  sortOrder?: number;
+};
+
+type ProductOptionDef = {
+  id: string;
+  nameFr: string;
+  nameAr: string;
+  sortOrder?: number;
+  values: ProductOptionVal[];
+};
+
+type ProductVariantRow = {
+  id: string;
+  sku: string;
+  stock: number;
+  priceMad: string;
+  compareAtMad: string | null;
+  images: string[];
+  isDefault: boolean;
+  selection: Record<string, string>;
+  labelFr: string;
+  labelAr: string;
+};
 
 type Product = {
   id: string;
@@ -21,6 +51,9 @@ type Product = {
   stock: number;
   purchaseCount: number;
   lowStock?: boolean;
+  variantsEnabled?: boolean;
+  options?: ProductOptionDef[];
+  variants?: ProductVariantRow[];
   reviews: {
     id: string;
     rating: number;
@@ -68,17 +101,116 @@ export function ProductClient({
   const addToCartBtnRef = useRef<HTMLButtonElement>(null);
   const { addItem } = useCart();
   const { flyToCart } = useCartFly();
-  const main = product.images[img] ?? product.images[0];
 
-  function lineSnapshot(): CartLineProduct {
+  const variantsActive = Boolean(
+    product.variantsEnabled &&
+      product.options?.length &&
+      product.variants?.length,
+  );
+
+  const sortedOptions = useMemo(() => {
+    const o = product.options ?? [];
+    return [...o].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  }, [product.options]);
+
+  const [picked, setPicked] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!variantsActive || !product.variants?.length) return;
+    const def =
+      product.variants.find((v) => v.isDefault) ?? product.variants[0];
+    if (def?.selection) setPicked({ ...def.selection });
+  }, [product.id, variantsActive, product.variants]);
+
+  const isValueAvailable = (optionId: string, valueId: string) => {
+    const vars = product.variants ?? [];
+    if (!vars.length) return true;
+    return vars.some((v) => {
+      if (v.selection[optionId] !== valueId) return false;
+      return sortedOptions.every((o) => {
+        if (o.id === optionId) return true;
+        const p = picked[o.id];
+        if (!p) return true;
+        return v.selection[o.id] === p;
+      });
+    });
+  };
+
+  const compatibleVariants = useMemo(() => {
+    const vars = product.variants ?? [];
+    if (!variantsActive) return vars;
+    return vars.filter((v) =>
+      sortedOptions.every((o) => {
+        const p = picked[o.id];
+        if (!p) return true;
+        return v.selection[o.id] === p;
+      }),
+    );
+  }, [variantsActive, product.variants, picked, sortedOptions]);
+
+  const previewVariant = compatibleVariants[0] ?? product.variants?.[0];
+  const activeVariant = useMemo(() => {
+    if (!variantsActive || !product.variants?.length) return null;
+    if (!sortedOptions.length) return null;
+    const allPicked = sortedOptions.every((o) => picked[o.id]);
+    if (!allPicked) return null;
+    return (
+      product.variants.find((v) =>
+        sortedOptions.every((o) => v.selection[o.id] === picked[o.id]),
+      ) ?? null
+    );
+  }, [variantsActive, product.variants, picked, sortedOptions]);
+
+  const displayImages = useMemo(() => {
+    const src =
+      previewVariant?.images?.length && previewVariant.images.length > 0
+        ? previewVariant.images
+        : product.images;
+    return src?.length ? src : [];
+  }, [previewVariant, product.images]);
+
+  const displayPrice = previewVariant?.priceMad ?? product.priceMad;
+  const displayStock = previewVariant?.stock ?? product.stock;
+  const displayLowStock = variantsActive
+    ? displayStock > 0 && displayStock <= 5
+    : Boolean(product.lowStock);
+
+  useEffect(() => {
+    setImg(0);
+  }, [displayImages.join("|")]);
+
+  const main = displayImages[img] ?? displayImages[0];
+
+  function pickValue(optionId: string, valueId: string) {
+    setPicked((prev) => {
+      const next = { ...prev, [optionId]: valueId };
+      const oi = sortedOptions.findIndex((o) => o.id === optionId);
+      for (let j = oi + 1; j < sortedOptions.length; j += 1) {
+        delete next[sortedOptions[j].id];
+      }
+      return next;
+    });
+  }
+
+  function lineSnapshot(variantId: string | null): CartLineProduct {
+    const v = variantId
+      ? product.variants?.find((x) => x.id === variantId)
+      : null;
+    const price = v?.priceMad ?? product.priceMad;
+    const imgs =
+      v?.images?.length && v.images.length > 0 ? v.images : product.images;
+    const st = v?.stock ?? product.stock;
     return {
       id: product.id,
       slug: product.slug,
       nameFr: product.nameFr ?? title,
       nameAr: product.nameAr ?? title,
-      priceMad: product.priceMad,
-      images: product.images,
-      stock: product.stock,
+      priceMad: price,
+      images: imgs,
+      stock: st,
+      requiresVariant: variantsActive || undefined,
+      variantLabelFr: v?.labelFr,
+      variantLabelAr: v?.labelAr,
     };
   }
 
@@ -86,9 +218,26 @@ export function ProductClient({
     setErr(null);
     setAdding(true);
     try {
-      await addItem(product.id, 1, lineSnapshot());
+      if (variantsActive) {
+        if (!activeVariant) {
+          setErr(
+            locale === "ar"
+              ? "يرجى اختيار كل الخيارات (اللون، المقاس، …)."
+              : "Choisissez toutes les options (couleur, taille, …).",
+          );
+          return;
+        }
+        await addItem(
+          product.id,
+          1,
+          lineSnapshot(activeVariant.id),
+          activeVariant.id,
+        );
+      } else {
+        await addItem(product.id, 1, lineSnapshot(null), null);
+      }
       flyToCart({
-        imageSrc: main,
+        imageSrc: main ?? product.images[0],
         sourceEl:
           addToCartBtnRef.current ?? mainImageRef.current ?? undefined,
       });
@@ -103,12 +252,29 @@ export function ProductClient({
 
   function handleBuyNow() {
     setErr(null);
-    if (product.stock < 1) return;
-    setBuyNow({
-      productId: product.id,
-      quantity: 1,
-      snapshot: lineSnapshot(),
-    });
+    if (variantsActive) {
+      if (!activeVariant || activeVariant.stock < 1) {
+        setErr(
+          locale === "ar"
+            ? "اختر كل الخيارات وتأكد من التوفر."
+            : "Choisissez toutes les options et vérifiez la disponibilité.",
+        );
+        return;
+      }
+      setBuyNow({
+        productId: product.id,
+        quantity: 1,
+        variantId: activeVariant.id,
+        snapshot: lineSnapshot(activeVariant.id),
+      });
+    } else {
+      if (product.stock < 1) return;
+      setBuyNow({
+        productId: product.id,
+        quantity: 1,
+        snapshot: lineSnapshot(null),
+      });
+    }
     router.push("/checkout");
   }
 
@@ -145,9 +311,9 @@ export function ProductClient({
             />
           </motion.button>
           <div className="-mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1">
-            {product.images.map((url, i) => (
+            {displayImages.map((url, i) => (
               <motion.button
-                key={url}
+                key={`${url}-${i}`}
                 type="button"
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setImg(i)}
@@ -167,15 +333,65 @@ export function ProductClient({
             {title}
           </h1>
           <p className="mt-4 text-3xl font-bold tabular-nums text-[var(--fg)] sm:text-4xl">
-            {formatSar(product.priceMad, locale)}
+            {formatSar(displayPrice, locale)}
           </p>
           <p className="mt-2 text-sm font-medium text-[var(--accent)]">
-            {product.stock < 1
+            {displayStock < 1
               ? labels.outOfStock
-              : product.lowStock
+              : displayLowStock
                 ? labels.lowStock
                 : labels.inStock}
           </p>
+          {variantsActive ? (
+            <div className="mt-4 space-y-4">
+              {sortedOptions.map((opt) => (
+                <div key={opt.id}>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    {locale === "ar" ? opt.nameAr : opt.nameFr}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {opt.values.map((val) => {
+                      const available = isValueAvailable(opt.id, val.id);
+                      const selected = picked[opt.id] === val.id;
+                      const label =
+                        locale === "ar" ? val.valueAr : val.valueFr;
+                      return (
+                        <button
+                          key={val.id}
+                          type="button"
+                          disabled={!available}
+                          onClick={() => pickValue(opt.id, val.id)}
+                          className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-35 ${
+                            selected
+                              ? "border-[var(--accent)] bg-[var(--accent-dim)] text-[var(--fg)] shadow-[0_0_12px_var(--accent-glow)]"
+                              : "border-[var(--border)] bg-[var(--card)] text-[var(--fg)] hover:border-[var(--accent)]/40"
+                          }`}
+                        >
+                          {val.colorHex ? (
+                            <span
+                              className="h-5 w-5 shrink-0 rounded-full border border-[var(--border)] shadow-inner"
+                              style={{ backgroundColor: val.colorHex }}
+                              aria-hidden
+                            />
+                          ) : null}
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              <p className="text-sm text-[var(--muted)]">
+                {activeVariant
+                  ? locale === "ar"
+                    ? activeVariant.labelAr
+                    : activeVariant.labelFr
+                  : locale === "ar"
+                    ? "اختر كل الخيارات لإضافة المنتج."
+                    : "Sélectionnez toutes les options pour ajouter au panier."}
+              </p>
+            </div>
+          ) : null}
           <p className="mt-1 text-xs text-[var(--muted)]">{labels.boughtBy}</p>
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -242,7 +458,12 @@ export function ProductClient({
                 ref={addToCartBtnRef}
                 type="button"
                 onClick={() => void handleAdd()}
-                disabled={adding || product.stock < 1}
+                disabled={
+                  adding ||
+                  (variantsActive
+                    ? !activeVariant || activeVariant.stock < 1
+                    : product.stock < 1)
+                }
                 animate={
                   addedPulse
                     ? {
@@ -257,8 +478,20 @@ export function ProductClient({
                 }
                 transition={{ duration: 0.5 }}
                 whileHover={{
-                  scale: adding || product.stock < 1 ? 1 : 1.02,
-                  y: adding || product.stock < 1 ? 0 : -1,
+                  scale:
+                    adding ||
+                    (variantsActive
+                      ? !activeVariant || activeVariant.stock < 1
+                      : product.stock < 1)
+                      ? 1
+                      : 1.02,
+                  y:
+                    adding ||
+                    (variantsActive
+                      ? !activeVariant || activeVariant.stock < 1
+                      : product.stock < 1)
+                      ? 0
+                      : -1,
                 }}
                 whileTap={{ scale: 0.97 }}
                 className="min-h-[52px] flex-1 rounded-xl bg-[var(--accent)] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_32px_-12px_rgba(22,163,74,0.4)] disabled:opacity-40"
@@ -275,8 +508,21 @@ export function ProductClient({
               <motion.button
                 type="button"
                 onClick={handleBuyNow}
-                disabled={product.stock < 1}
-                whileHover={{ scale: product.stock < 1 ? 1 : 1.02 }}
+                disabled={
+                  variantsActive
+                    ? !activeVariant || activeVariant.stock < 1
+                    : product.stock < 1
+                }
+                whileHover={{
+                  scale:
+                    variantsActive
+                      ? !activeVariant || activeVariant.stock < 1
+                        ? 1
+                        : 1.02
+                      : product.stock < 1
+                        ? 1
+                        : 1.02,
+                }}
                 whileTap={{ scale: 0.97 }}
                 className="min-h-[52px] flex-1 rounded-xl border-2 border-[var(--accent)] bg-[var(--card)] px-6 py-3.5 text-sm font-semibold text-[var(--accent)] disabled:opacity-40"
               >

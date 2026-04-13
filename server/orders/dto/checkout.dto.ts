@@ -24,6 +24,13 @@ export class CheckoutLineDto {
   @IsInt()
   @Min(1)
   quantity!: number;
+
+  @ApiPropertyOptional({
+    description: 'Required when the product uses variants (size, color, …)',
+  })
+  @IsOptional()
+  @IsString()
+  variantId?: string;
 }
 
 class ShippingAddressDto {

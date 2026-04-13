@@ -81,6 +81,10 @@ export function CartPageClient() {
           {lines.map((line, i) => {
             const p = line.product;
             const title = locale === "ar" ? p.nameAr : p.nameFr;
+            const variantHint =
+              locale === "ar"
+                ? p.variantLabelAr ?? p.variantLabelFr
+                : p.variantLabelFr ?? p.variantLabelAr;
             const price =
               typeof p.priceMad === "string" ? p.priceMad : String(p.priceMad);
             return (
@@ -102,6 +106,11 @@ export function CartPageClient() {
                   >
                     {title}
                   </MotionLink>
+                  {variantHint ? (
+                    <p className="mt-1 text-xs text-[var(--muted)]">
+                      {variantHint}
+                    </p>
+                  ) : null}
                   <p className="mt-1 text-sm font-medium text-[var(--fg)]">
                     {formatSar(price, locale)}
                   </p>
@@ -111,7 +120,7 @@ export function CartPageClient() {
                       className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--press-bg)] text-lg"
                       whileTap={tap}
                       onClick={() =>
-                        setQty(p.id, Math.max(0, line.quantity - 1)).catch(
+                        setQty(line.id, Math.max(0, line.quantity - 1)).catch(
                           console.error,
                         )
                       }
@@ -126,7 +135,7 @@ export function CartPageClient() {
                       className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--press-bg)] text-lg"
                       whileTap={tap}
                       onClick={() =>
-                        setQty(p.id, line.quantity + 1).catch(console.error)
+                        setQty(line.id, line.quantity + 1).catch(console.error)
                       }
                     >
                       +

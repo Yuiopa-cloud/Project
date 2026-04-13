@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -12,6 +13,7 @@ import {
 import { customAlphabet } from 'nanoid';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateProductDto } from './dto/create-product.dto';
+import type { ReplaceProductVariantsDto } from './dto/replace-product-variants.dto';
 import type { UpdateProductDto } from './dto/update-product.dto';
 
 const genSkuSuffix = customAlphabet(
@@ -211,6 +213,7 @@ export class AdminService {
       purchaseCount: true,
       images: true,
       isActive: true,
+      variantsEnabled: true,
       metadata: true,
       categoryId: true,
       createdAt: true,
@@ -276,6 +279,9 @@ export class AdminService {
         stock: dto.stock ?? 0,
         images,
         isActive: dto.isActive ?? true,
+        ...(typeof dto.variantsEnabled === 'boolean'
+          ? { variantsEnabled: dto.variantsEnabled }
+          : {}),
         ...(typeof dto.lowStockThreshold === 'number'
           ? { lowStockThreshold: dto.lowStockThreshold }
           : {}),
@@ -292,10 +298,246 @@ export class AdminService {
   async productByIdForAdmin(id: string) {
     const p = await this.prisma.product.findUnique({
       where: { id },
-      select: this.adminProductSelect(),
+      select: {
+        ...this.adminProductSelect(),
+        options: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            values: { orderBy: { sortOrder: 'asc' } },
+          },
+        },
+        variants: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            selections: {
+              include: { option: true, optionValue: true },
+            },
+          },
+        },
+      },
     });
     if (!p) throw new NotFoundException('Product not found');
-    return this.mapAdminProduct(p);
+
+    const { options, variants, ...core } = p;
+    const mapped = this.mapAdminProduct(core);
+
+    return {
+      ...mapped,
+      options: options.map((o) => ({
+        id: o.id,
+        nameFr: o.nameFr,
+        nameAr: o.nameAr,
+        sortOrder: o.sortOrder,
+        values: o.values.map((v) => ({
+          id: v.id,
+          valueFr: v.valueFr,
+          valueAr: v.valueAr,
+          colorHex: v.colorHex,
+          imageUrl: v.imageUrl,
+          sortOrder: v.sortOrder,
+        })),
+      })),
+      variants: variants.map((v) => {
+        const valueIndexes = options.map((opt) => {
+          const sel = v.selections.find((s) => s.optionId === opt.id);
+          if (!sel) return 0;
+          const ix = opt.values.findIndex((val) => val.id === sel.optionValueId);
+          return ix >= 0 ? ix : 0;
+        });
+        return {
+          id: v.id,
+          sku: v.sku,
+          priceMad: v.priceMad?.toString() ?? null,
+          compareAtMad: v.compareAtMad?.toString() ?? null,
+          stock: v.stock,
+          images: [...v.images],
+          isDefault: v.isDefault,
+          valueIndexes,
+          selection: Object.fromEntries(
+            v.selections.map((s) => [s.optionId, s.optionValueId]),
+          ),
+        };
+      }),
+    };
+  }
+
+  async replaceProductVariants(productId: string, dto: ReplaceProductVariantsDto) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, sku: true },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+
+    if (!dto.variantsEnabled) {
+      await this.prisma.$transaction(async (tx) => {
+        const oldIds = await tx.productVariant.findMany({
+          where: { productId },
+          select: { id: true },
+        });
+        const ids = oldIds.map((x) => x.id);
+        if (ids.length) {
+          await tx.cartItem.deleteMany({ where: { variantId: { in: ids } } });
+        }
+        await tx.productVariant.deleteMany({ where: { productId } });
+        await tx.productOption.deleteMany({ where: { productId } });
+        await tx.product.update({
+          where: { id: productId },
+          data: { variantsEnabled: false },
+        });
+      });
+      return this.productByIdForAdmin(productId);
+    }
+
+    if (!dto.options.length) {
+      throw new BadRequestException(
+        'When variants are enabled, add at least one option (e.g. Color).',
+      );
+    }
+    if (!dto.variants.length) {
+      throw new BadRequestException(
+        'When variants are enabled, add at least one variant row (e.g. Green / M).',
+      );
+    }
+
+    for (const o of dto.options) {
+      if (!o.values?.length) {
+        throw new BadRequestException(`Option "${o.nameFr}" needs at least one value.`);
+      }
+    }
+
+    for (const v of dto.variants) {
+      if (v.valueIndexes.length !== dto.options.length) {
+        throw new BadRequestException(
+          'Each variant must select exactly one value for every option.',
+        );
+      }
+      for (let oi = 0; oi < dto.options.length; oi += 1) {
+        const ix = v.valueIndexes[oi];
+        if (ix < 0 || ix >= dto.options[oi].values.length) {
+          throw new BadRequestException('Invalid value index in a variant row.');
+        }
+      }
+    }
+
+    const skus = dto.variants.map((v) => v.sku.trim().toUpperCase());
+    const skuSet = new Set<string>();
+    for (const sku of skus) {
+      if (!sku.length) throw new BadRequestException('Variant SKU cannot be empty.');
+      if (skuSet.has(sku)) throw new BadRequestException(`Duplicate variant SKU: ${sku}`);
+      skuSet.add(sku);
+      if (sku === product.sku.toUpperCase()) {
+        throw new BadRequestException(
+          `Variant SKU must differ from the product SKU (${product.sku}).`,
+        );
+      }
+      const pClash = await this.prisma.product.findFirst({
+        where: { sku, NOT: { id: productId } },
+        select: { id: true },
+      });
+      if (pClash) {
+        throw new ConflictException(`SKU ${sku} is already used by another product.`);
+      }
+      const vClash = await this.prisma.productVariant.findFirst({
+        where: { sku, NOT: { productId } },
+        select: { id: true },
+      });
+      if (vClash) {
+        throw new ConflictException(`SKU ${sku} is already used by another variant.`);
+      }
+    }
+
+    const comboKeys = new Set<string>();
+    for (const v of dto.variants) {
+      const key = v.valueIndexes.join(':');
+      if (comboKeys.has(key)) {
+        throw new BadRequestException('Two variant rows use the same option combination.');
+      }
+      comboKeys.add(key);
+    }
+
+    const defaultRow = dto.variants.findIndex((v) => v.isDefault === true);
+    const defaultIdx = defaultRow >= 0 ? defaultRow : 0;
+
+    await this.prisma.$transaction(async (tx) => {
+      const oldIds = await tx.productVariant.findMany({
+        where: { productId },
+        select: { id: true },
+      });
+      const ids = oldIds.map((x) => x.id);
+      if (ids.length) {
+        await tx.cartItem.deleteMany({ where: { variantId: { in: ids } } });
+      }
+      await tx.productVariant.deleteMany({ where: { productId } });
+      await tx.productOption.deleteMany({ where: { productId } });
+
+      const createdOptions: { id: string; valueIds: string[] }[] = [];
+
+      for (let oi = 0; oi < dto.options.length; oi += 1) {
+        const o = dto.options[oi];
+        const opt = await tx.productOption.create({
+          data: {
+            productId,
+            nameFr: o.nameFr.trim(),
+            nameAr: (o.nameAr ?? o.nameFr).trim(),
+            sortOrder: oi,
+            values: {
+              create: o.values.map((val, vi) => ({
+                valueFr: val.valueFr.trim(),
+                valueAr: (val.valueAr ?? val.valueFr).trim(),
+                colorHex: val.colorHex?.trim() || null,
+                imageUrl: val.imageUrl?.trim() || null,
+                sortOrder: vi,
+              })),
+            },
+          },
+          include: { values: { orderBy: { sortOrder: 'asc' } } },
+        });
+        createdOptions.push({
+          id: opt.id,
+          valueIds: opt.values.map((x) => x.id),
+        });
+      }
+
+      for (let vi = 0; vi < dto.variants.length; vi += 1) {
+        const row = dto.variants[vi];
+        const sku = row.sku.trim().toUpperCase();
+        const variant = await tx.productVariant.create({
+          data: {
+            productId,
+            sku,
+            priceMad: row.priceMad?.trim()
+              ? row.priceMad.trim()
+              : null,
+            compareAtMad: row.compareAtMad?.trim()
+              ? row.compareAtMad.trim()
+              : null,
+            stock: row.stock,
+            images: row.images?.length ? row.images : [],
+            isDefault: vi === defaultIdx,
+            sortOrder: vi,
+          },
+        });
+
+        for (let oi = 0; oi < dto.options.length; oi += 1) {
+          const idx = row.valueIndexes[oi];
+          const optionValueId = createdOptions[oi].valueIds[idx]!;
+          await tx.productVariantSelection.create({
+            data: {
+              variantId: variant.id,
+              optionId: createdOptions[oi].id,
+              optionValueId,
+            },
+          });
+        }
+      }
+
+      await tx.product.update({
+        where: { id: productId },
+        data: { variantsEnabled: true },
+      });
+    });
+
+    return this.productByIdForAdmin(productId);
   }
 
   async deleteProduct(id: string) {
@@ -357,6 +599,7 @@ export class AdminService {
         purchaseCount: true,
         images: true,
         isActive: true,
+        variantsEnabled: true,
         createdAt: true,
         updatedAt: true,
         category: { select: { id: true, nameFr: true, slug: true } },
@@ -409,6 +652,8 @@ export class AdminService {
 
     if (typeof dto.stock === 'number') data.stock = dto.stock;
     if (typeof dto.isActive === 'boolean') data.isActive = dto.isActive;
+    if (typeof dto.variantsEnabled === 'boolean')
+      data.variantsEnabled = dto.variantsEnabled;
     if (dto.images !== undefined) data.images = dto.images;
 
     if (typeof dto.lowStockThreshold === 'number')

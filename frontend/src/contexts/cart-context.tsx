@@ -23,12 +23,17 @@ export type CartLineProduct = {
   priceMad: string | number;
   images: string[];
   stock: number;
+  /** When true, server requires variantId on add-to-cart / checkout. */
+  requiresVariant?: boolean;
+  variantLabelFr?: string;
+  variantLabelAr?: string;
 };
 
 export type CartLine = {
   id: string;
   quantity: number;
   product: CartLineProduct;
+  variantId: string | null;
 };
 
 export type CartModel = {
@@ -50,8 +55,9 @@ type CartContextValue = {
     productId: string,
     quantity: number,
     snapshot?: CartLineProduct,
+    variantId?: string | null,
   ) => Promise<void>;
-  setQty: (productId: string, quantity: number) => Promise<void>;
+  setQty: (cartItemId: string, quantity: number) => Promise<void>;
   /** Nest `/api` root (env, direct URL, or `/api-proxy`). */
   apiRoot: string;
   drawerOpen: boolean;
@@ -82,6 +88,89 @@ function readLocalLines(): CartLine[] {
 function persistLocalLines(lines: CartLine[]) {
   if (typeof window === "undefined") return;
   localStorage.setItem(LOCAL_LINES_KEY, JSON.stringify(lines));
+}
+
+function decimalStr(v: unknown): string {
+  if (v == null) return "0";
+  if (typeof v === "string" || typeof v === "number") return String(v);
+  if (
+    typeof v === "object" &&
+    v !== null &&
+    "toString" in v &&
+    typeof (v as { toString: () => string }).toString === "function"
+  ) {
+    return (v as { toString: () => string }).toString();
+  }
+  return String(v);
+}
+
+function normalizeCartItem(raw: Record<string, unknown>): CartLine {
+  const product = raw.product as Record<string, unknown>;
+  const variant = raw.variant as Record<string, unknown> | null | undefined;
+  const variantsEnabled = Boolean(product?.variantsEnabled);
+  const vSelections = variant?.selections as
+    | Array<{
+        option: { sortOrder?: number };
+        optionValue: { valueFr: string; valueAr: string };
+      }>
+    | undefined;
+  let variantLabelFr: string | undefined;
+  let variantLabelAr: string | undefined;
+  if (vSelections?.length) {
+    const sorted = [...vSelections].sort(
+      (a, b) => (a.option.sortOrder ?? 0) - (b.option.sortOrder ?? 0),
+    );
+    variantLabelFr = sorted.map((s) => s.optionValue.valueFr).join(" · ");
+    variantLabelAr = sorted.map((s) => s.optionValue.valueAr).join(" · ");
+  }
+  const useVariant = Boolean(variantsEnabled && variant && variant.id);
+  const vStock =
+    typeof variant?.stock === "number" ? (variant.stock as number) : 0;
+  const pStock =
+    typeof product?.stock === "number" ? Number(product.stock) : 0;
+  const stock = useVariant ? vStock : pStock;
+  const vImages = Array.isArray(variant?.images)
+    ? (variant.images as string[])
+    : [];
+  const pImages = Array.isArray(product?.images)
+    ? (product.images as string[])
+    : [];
+  const images =
+    useVariant && vImages.length > 0 ? [...vImages] : [...pImages];
+  const rawPrice =
+    useVariant && variant?.priceMad != null
+      ? variant.priceMad
+      : product?.priceMad;
+  const priceMad = decimalStr(rawPrice);
+
+  return {
+    id: String(raw.id),
+    quantity: Number(raw.quantity) || 0,
+    variantId: raw.variantId ? String(raw.variantId) : null,
+    product: {
+      id: String(product.id),
+      slug: String(product.slug),
+      nameFr: String(product.nameFr ?? ""),
+      nameAr: String(product.nameAr ?? ""),
+      priceMad,
+      images,
+      stock,
+      requiresVariant: variantsEnabled || undefined,
+      variantLabelFr: variantLabelFr || undefined,
+      variantLabelAr: variantLabelAr || undefined,
+    },
+  };
+}
+
+function normalizeCartPayload(raw: Record<string, unknown>): CartModel {
+  const itemsRaw = raw.items;
+  const items = Array.isArray(itemsRaw)
+    ? itemsRaw.map((it) => normalizeCartItem(it as Record<string, unknown>))
+    : [];
+  return {
+    id: String(raw.id ?? "cart"),
+    items,
+  };
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -135,8 +224,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (data.guestToken) {
         localStorage.setItem(STORAGE_KEY, data.guestToken);
       }
-      persistGuestToken(data.cart);
-      setServerCart(data.cart);
+      const normalized = normalizeCartPayload(
+        data.cart as unknown as Record<string, unknown>,
+      );
+      const merged: CartModel = {
+        ...normalized,
+        guestToken: data.guestToken ?? null,
+      };
+      persistGuestToken(merged);
+      setServerCart(merged);
     } catch (e) {
       logApiFailure("cart refresh", e);
       setServerCart(null);
@@ -155,14 +251,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const addItem = useCallback(
-    async (productId: string, quantity: number, snapshot?: CartLineProduct) => {
+    async (
+      productId: string,
+      quantity: number,
+      snapshot?: CartLineProduct,
+      variantId?: string | null,
+    ) => {
       if (isOfflineProductId(productId)) {
         if (!snapshot) {
           throw new Error("Données produit manquantes pour le panier local.");
         }
+        const v = variantId ?? null;
         setLocalLines((prev) => {
-          const idx = prev.findIndex((l) => l.product.id === productId);
-          const lineId = `local-${productId}`;
+          const idx = prev.findIndex(
+            (l) =>
+              l.product.id === productId && (l.variantId ?? null) === v,
+          );
+          const lineId = v ? `local-${productId}-v-${v}` : `local-${productId}`;
           let next: CartLine[];
           if (idx >= 0) {
             next = [...prev];
@@ -173,7 +278,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           } else {
             next = [
               ...prev,
-              { id: lineId, quantity, product: snapshot },
+              { id: lineId, quantity, variantId: v, product: snapshot },
             ];
           }
           persistLocalLines(next);
@@ -190,6 +295,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           productId,
           quantity,
+          variantId: variantId?.trim() || undefined,
           guestToken: stored || undefined,
         }),
       });
@@ -203,26 +309,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
         throw new Error(txt || "Échec ajout panier");
       }
-      const next: CartModel = await res.json();
-      if (next.guestToken) {
-        localStorage.setItem(STORAGE_KEY, next.guestToken);
-      }
-      setServerCart(next);
+      const raw = (await res.json()) as Record<string, unknown>;
+      const normalized = normalizeCartPayload(raw);
+      setServerCart((prev) => ({
+        ...normalized,
+        guestToken: prev?.guestToken ?? stored ?? null,
+      }));
       bumpCart();
     },
     [apiRoot, bumpCart],
   );
 
   const setQty = useCallback(
-    async (productId: string, quantity: number) => {
-      if (isOfflineProductId(productId)) {
+    async (cartItemId: string, quantity: number) => {
+      if (cartItemId.startsWith("local-")) {
         setLocalLines((prev) => {
           let next: CartLine[];
           if (quantity <= 0) {
-            next = prev.filter((l) => l.product.id !== productId);
+            next = prev.filter((l) => l.id !== cartItemId);
           } else {
             next = prev.map((l) =>
-              l.product.id === productId ? { ...l, quantity } : l,
+              l.id === cartItemId ? { ...l, quantity } : l,
             );
           }
           persistLocalLines(next);
@@ -236,7 +343,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId,
+          cartItemId,
           quantity,
           guestToken: stored || undefined,
         }),
@@ -246,11 +353,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         logApiFailure("POST /cart/items/qty", { status: res.status, txt: txt.slice(0, 300) });
         throw new Error(txt || "Échec mise à jour panier");
       }
-      const next: CartModel = await res.json();
-      if (next.guestToken) {
-        localStorage.setItem(STORAGE_KEY, next.guestToken);
-      }
-      setServerCart(next);
+      const raw = (await res.json()) as Record<string, unknown>;
+      const normalized = normalizeCartPayload(raw);
+      setServerCart((prev) => ({
+        ...normalized,
+        guestToken: prev?.guestToken ?? stored ?? null,
+      }));
     },
     [apiRoot],
   );

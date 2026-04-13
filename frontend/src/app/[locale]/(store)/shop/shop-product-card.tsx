@@ -9,6 +9,7 @@ import { useCart, type CartLineProduct } from "@/contexts/cart-context";
 import { useCartFly } from "@/contexts/cart-fly-context";
 import { isOfflineProductId } from "@/lib/catalog-fallback";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { MiniSpinner } from "@/components/mini-spinner";
 import { formatSar } from "@/lib/price";
 
@@ -22,6 +23,7 @@ export function ShopProductCard({
   index: number;
 }) {
   const t = useTranslations("shop");
+  const router = useRouter();
   const imageWrapRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
   const { flyToCart } = useCartFly();
@@ -44,12 +46,16 @@ export function ShopProductCard({
     e.preventDefault();
     e.stopPropagation();
     if (product.stock < 1 || adding) return;
+    if (product.variantsEnabled) {
+      router.push(`/product/${product.slug}`);
+      return;
+    }
     setAdding(true);
     try {
       if (isOfflineProductId(product.id)) {
-        await addItem(product.id, 1, snapshot());
+        await addItem(product.id, 1, snapshot(), null);
       } else {
-        await addItem(product.id, 1, snapshot());
+        await addItem(product.id, 1, snapshot(), null);
       }
       flyToCart({
         imageSrc: product.images?.[0] ?? null,

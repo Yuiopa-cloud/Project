@@ -212,6 +212,10 @@ export function CartDrawer() {
                         const p = line.product;
                         const title =
                           locale === "ar" ? p.nameAr : p.nameFr;
+                        const variantHint =
+                          locale === "ar"
+                            ? p.variantLabelAr ?? p.variantLabelFr
+                            : p.variantLabelFr ?? p.variantLabelAr;
                         const price =
                           typeof p.priceMad === "string"
                             ? p.priceMad
@@ -251,6 +255,11 @@ export function CartDrawer() {
                               >
                                 {title}
                               </MotionLink>
+                              {variantHint ? (
+                                <p className="mt-0.5 text-[11px] text-[var(--muted)]">
+                                  {variantHint}
+                                </p>
+                              ) : null}
                               <p className="mt-1 text-xs font-semibold tabular-nums text-[var(--accent)]">
                                 {formatSar(price, locale)}
                               </p>
@@ -261,7 +270,7 @@ export function CartDrawer() {
                                   whileTap={{ scale: 0.9 }}
                                   onClick={() =>
                                     void setQty(
-                                      p.id,
+                                      line.id,
                                       Math.max(0, line.quantity - 1),
                                     )
                                   }
@@ -276,7 +285,7 @@ export function CartDrawer() {
                                   className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--press-bg)] text-base font-bold"
                                   whileTap={{ scale: 0.9 }}
                                   onClick={() =>
-                                    void setQty(p.id, line.quantity + 1)
+                                    void setQty(line.id, line.quantity + 1)
                                   }
                                 >
                                   +

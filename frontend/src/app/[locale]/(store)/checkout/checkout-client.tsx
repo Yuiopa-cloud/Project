@@ -157,6 +157,7 @@ export function CheckoutClient() {
         {
           id: "buy-now-line",
           quantity: buyNowPayload.quantity,
+          variantId: buyNowPayload.variantId ?? null,
           product: buyNowPayload.snapshot,
         },
       ];
@@ -203,6 +204,7 @@ export function CheckoutClient() {
         items: shippableItems.map((l) => ({
           productId: l.product.id,
           quantity: l.quantity,
+          ...(l.variantId ? { variantId: l.variantId } : {}),
         })),
         paymentMethod: payment,
         firstName,

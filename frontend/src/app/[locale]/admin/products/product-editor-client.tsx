@@ -32,9 +32,47 @@ type AdminProductDetail = {
   lowStockThreshold?: number;
   images: string[];
   isActive: boolean;
+  variantsEnabled?: boolean;
   categoryId: string;
   category: { id: string; nameFr: string; slug: string };
   metadata?: Record<string, unknown> | null;
+  options?: Array<{
+    id: string;
+    nameFr: string;
+    nameAr: string;
+    values: Array<{
+      id: string;
+      valueFr: string;
+      valueAr: string;
+      colorHex?: string | null;
+    }>;
+  }>;
+  variants?: Array<{
+    id: string;
+    sku: string;
+    priceMad: string | null;
+    compareAtMad: string | null;
+    stock: number;
+    images: string[];
+    isDefault: boolean;
+    valueIndexes: number[];
+  }>;
+};
+
+type VeOption = {
+  nameFr: string;
+  nameAr: string;
+  values: Array<{ valueFr: string; valueAr: string; colorHex: string }>;
+};
+
+type VeVariant = {
+  sku: string;
+  priceMad: string;
+  compareAtMad: string;
+  stock: number;
+  imagesLine: string;
+  isDefault: boolean;
+  valueIndexes: number[];
 };
 
 function friendlyNetworkError(err: unknown): string {
@@ -197,6 +235,10 @@ export function ProductEditorClient({
   const [imageUrlDraft, setImageUrlDraft] = useState("");
   const [showArabic, setShowArabic] = useState(false);
 
+  const [veEnabled, setVeEnabled] = useState(false);
+  const [veOptions, setVeOptions] = useState<VeOption[]>([]);
+  const [veVariants, setVeVariants] = useState<VeVariant[]>([]);
+
   const productUrlPrefix = useMemo(() => {
     if (typeof window === "undefined") return `/${locale}/product/`;
     return `${window.location.origin}/${locale}/product/`;
@@ -321,6 +363,29 @@ export function ProductEditorClient({
         setShowArabic(
           p.nameAr !== p.nameFr || p.descriptionAr !== p.descriptionFr,
         );
+        setVeEnabled(Boolean(p.variantsEnabled));
+        setVeOptions(
+          (p.options ?? []).map((o) => ({
+            nameFr: o.nameFr,
+            nameAr: o.nameAr,
+            values: (o.values ?? []).map((v) => ({
+              valueFr: v.valueFr,
+              valueAr: v.valueAr,
+              colorHex: v.colorHex ?? "",
+            })),
+          })),
+        );
+        setVeVariants(
+          (p.variants ?? []).map((v) => ({
+            sku: v.sku,
+            priceMad: v.priceMad ?? "",
+            compareAtMad: v.compareAtMad ?? "",
+            stock: v.stock,
+            imagesLine: (v.images ?? []).join(", "),
+            isDefault: v.isDefault,
+            valueIndexes: [...(v.valueIndexes ?? [])],
+          })),
+        );
       } catch (e) {
         logApiFailure("admin product load", e);
         setMsg(friendlyNetworkError(e));
@@ -376,6 +441,100 @@ export function ProductEditorClient({
     setImages((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function buildVariantsPutBody(): Record<string, unknown> {
+    const options = veOptions.map((o) => ({
+      nameFr: o.nameFr.trim(),
+      nameAr: (o.nameAr || o.nameFr).trim(),
+      values: o.values.map((v) => ({
+        valueFr: v.valueFr.trim(),
+        valueAr: (v.valueAr || v.valueFr).trim(),
+        colorHex: v.colorHex?.trim() || undefined,
+      })),
+    }));
+    const variants = veVariants.map((v) => ({
+      sku: v.sku.trim().toUpperCase(),
+      priceMad: v.priceMad.trim() ? v.priceMad.trim().replace(",", ".") : null,
+      compareAtMad: v.compareAtMad.trim()
+        ? v.compareAtMad.trim().replace(",", ".")
+        : null,
+      stock: v.stock,
+      images: v.imagesLine
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      isDefault: v.isDefault,
+      valueIndexes: v.valueIndexes,
+    }));
+    return {
+      variantsEnabled: veEnabled,
+      options: veEnabled ? options : [],
+      variants: veEnabled ? variants : [],
+    };
+  }
+
+  function validateVariantConfig(): string | null {
+    if (!veEnabled) return null;
+    if (!veOptions.length) {
+      return "Variants on: add at least one option (e.g. Color).";
+    }
+    if (veOptions.some((o) => !o.values.length)) {
+      return "Each option needs at least one value.";
+    }
+    if (!veVariants.length) {
+      return "Add variant rows or click “Generate all combinations”.";
+    }
+    for (let i = 0; i < veVariants.length; i += 1) {
+      if (veVariants[i].valueIndexes.length !== veOptions.length) {
+        return `Variant row ${i + 1}: needs one value index per option — use Generate.`;
+      }
+      for (let j = 0; j < veOptions.length; j += 1) {
+        const ix = veVariants[i].valueIndexes[j];
+        if (ix < 0 || ix >= veOptions[j].values.length) {
+          return `Variant row ${i + 1}: invalid index for option “${veOptions[j].nameFr}”.`;
+        }
+      }
+    }
+    return null;
+  }
+
+  function generateVariantGrid() {
+    if (!veOptions.length) {
+      setMsg("Add at least one option with values first.");
+      return;
+    }
+    if (veOptions.some((o) => !o.values.length)) {
+      setMsg("Each option needs at least one value.");
+      return;
+    }
+    const base = (skuReadonly || slug || "VAR")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 24);
+    const counts = veOptions.map((o) => o.values.length);
+    const idxRows: number[][] = [];
+    function walk(depth: number, cur: number[]) {
+      if (depth >= counts.length) {
+        idxRows.push([...cur]);
+        return;
+      }
+      for (let i = 0; i < counts[depth]; i += 1) walk(depth + 1, [...cur, i]);
+    }
+    walk(0, []);
+    setVeVariants(
+      idxRows.map((valueIndexes, i) => ({
+        sku: `${base || "VAR"}-${i + 1}`,
+        priceMad: "",
+        compareAtMad: "",
+        stock: 0,
+        imagesLine: "",
+        isDefault: i === 0,
+        valueIndexes,
+      })),
+    );
+    setMsg(null);
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!token) {
@@ -384,6 +543,12 @@ export function ProductEditorClient({
     }
     setSaving(true);
     setMsg(null);
+    const veErr = validateVariantConfig();
+    if (veErr) {
+      setMsg(veErr);
+      setSaving(false);
+      return;
+    }
     const metadata = buildMetadataPatch();
     const lst = parseInt(lowStockThreshold, 10);
     const lowStock =
@@ -401,6 +566,7 @@ export function ProductEditorClient({
           images,
           lowStockThreshold: lowStock,
           metadata,
+          variantsEnabled: veEnabled,
         };
         const na = nameAr.trim();
         const da = descriptionAr.trim();
@@ -421,6 +587,29 @@ export function ProductEditorClient({
           setMsg(raw.slice(0, 800));
           return;
         }
+        let newId: string | undefined;
+        try {
+          newId = (JSON.parse(raw) as { id?: string }).id;
+        } catch {
+          /* non-JSON */
+        }
+        if (newId) {
+          const vr = await fetch(
+            `${apiRoot}/admin/products/${newId}/variants`,
+            {
+              method: "PUT",
+              headers: authHeaders(),
+              body: JSON.stringify(buildVariantsPutBody()),
+            },
+          );
+          const vtxt = await vr.text();
+          if (!vr.ok) {
+            setMsg(
+              `Product created but variants failed: ${vtxt.slice(0, 500)}`,
+            );
+            return;
+          }
+        }
         router.push("/admin?tab=products");
         return;
       }
@@ -439,6 +628,7 @@ export function ProductEditorClient({
         images,
         lowStockThreshold: lowStock,
         metadata,
+        variantsEnabled: veEnabled,
       };
       const cmp = compareAtMad.trim();
       body.compareAtMad = cmp;
@@ -451,6 +641,19 @@ export function ProductEditorClient({
       const raw = await r.text();
       if (!r.ok) {
         setMsg(raw.slice(0, 800));
+        return;
+      }
+      const vr = await fetch(
+        `${apiRoot}/admin/products/${productId}/variants`,
+        {
+          method: "PUT",
+          headers: authHeaders(),
+          body: JSON.stringify(buildVariantsPutBody()),
+        },
+      );
+      const vtxt = await vr.text();
+      if (!vr.ok) {
+        setMsg(`Saved product, but variants failed: ${vtxt.slice(0, 500)}`);
         return;
       }
       router.push("/admin?tab=products");
@@ -895,15 +1098,412 @@ export function ProductEditorClient({
             </div>
           </CollapsibleSection>
 
-          <details className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 opacity-90">
-            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[var(--muted)] [&::-webkit-details-marker]:hidden">
-              Variants — off (coming soon)
-            </summary>
-            <div className="border-t border-[var(--border)] px-4 pb-4 pt-2 text-xs text-[var(--muted)]">
-              Size/color matrix and per-variant stock will plug into the same
-              product record later.
-            </div>
-          </details>
+          <CollapsibleSection
+            title="Variants (sizes, colors, SKUs)"
+            defaultOpen
+          >
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={veEnabled}
+                onChange={(e) => setVeEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent-hot)]"
+              />
+              <span className="text-sm font-medium text-[var(--fg)]">
+                Enable variants on the storefront
+              </span>
+            </label>
+            <p className="mt-2 text-xs text-[var(--muted)]">
+              Shoppers pick one value per option (e.g. Color then Size). Each
+              combination is a SKU with its own stock and optional images.
+              Quick-add from the shop grid opens the product page when this is
+              on.
+            </p>
+            {veEnabled ? (
+              <div className="mt-4 space-y-5">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="rounded-xl border border-[var(--border)] bg-white/90 px-3 py-2 text-xs font-semibold dark:bg-black/25"
+                    onClick={() => {
+                      setVeOptions((prev) => [
+                        ...prev,
+                        {
+                          nameFr: "Option",
+                          nameAr: "Option",
+                          values: [
+                            {
+                              valueFr: "Value 1",
+                              valueAr: "Value 1",
+                              colorHex: "",
+                            },
+                          ],
+                        },
+                      ]);
+                      setVeVariants((rows) =>
+                        rows.map((r) => ({
+                          ...r,
+                          valueIndexes: [...r.valueIndexes, 0],
+                        })),
+                      );
+                    }}
+                  >
+                    + Add option
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-3 py-2 text-xs font-semibold text-slate-900"
+                    onClick={() => generateVariantGrid()}
+                  >
+                    Generate all combinations
+                  </button>
+                </div>
+
+                {veOptions.map((opt, oi) => (
+                  <div
+                    key={oi}
+                    className="rounded-xl border border-[var(--border)] bg-white/60 p-3 dark:bg-black/20"
+                  >
+                    <div className="flex flex-wrap items-end gap-2">
+                      <label className="min-w-[8rem] flex-1">
+                        <span className="text-[11px] text-[var(--muted)]">
+                          Option name (FR)
+                        </span>
+                        <input
+                          value={opt.nameFr}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setVeOptions((prev) =>
+                              prev.map((o, i) =>
+                                i === oi ? { ...o, nameFr: v } : o,
+                              ),
+                            );
+                          }}
+                          className={inputClass()}
+                        />
+                      </label>
+                      <label className="min-w-[8rem] flex-1">
+                        <span className="text-[11px] text-[var(--muted)]">
+                          Option name (AR)
+                        </span>
+                        <input
+                          value={opt.nameAr}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setVeOptions((prev) =>
+                              prev.map((o, i) =>
+                                i === oi ? { ...o, nameAr: v } : o,
+                              ),
+                            );
+                          }}
+                          className={inputClass()}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="text-xs text-rose-600"
+                        onClick={() => {
+                          setVeOptions((prev) =>
+                            prev.filter((_, i) => i !== oi),
+                          );
+                          setVeVariants((rows) =>
+                            rows.map((r) => ({
+                              ...r,
+                              valueIndexes: r.valueIndexes.filter(
+                                (_, j) => j !== oi,
+                              ),
+                            })),
+                          );
+                        }}
+                      >
+                        Remove option
+                      </button>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {opt.values.map((val, vi) => (
+                        <div
+                          key={vi}
+                          className="flex flex-wrap items-end gap-2 border-t border-[var(--border)] pt-2"
+                        >
+                          <input
+                            placeholder="Value FR"
+                            value={val.valueFr}
+                            onChange={(e) => {
+                              const t = e.target.value;
+                              setVeOptions((prev) =>
+                                prev.map((o, i) =>
+                                  i !== oi
+                                    ? o
+                                    : {
+                                        ...o,
+                                        values: o.values.map((vv, j) =>
+                                          j === vi ? { ...vv, valueFr: t } : vv,
+                                        ),
+                                      },
+                                ),
+                              );
+                            }}
+                            className={`${inputClass()} min-w-[6rem] flex-1`}
+                          />
+                          <input
+                            placeholder="#hex optional"
+                            value={val.colorHex}
+                            onChange={(e) => {
+                              const t = e.target.value;
+                              setVeOptions((prev) =>
+                                prev.map((o, i) =>
+                                  i !== oi
+                                    ? o
+                                    : {
+                                        ...o,
+                                        values: o.values.map((vv, j) =>
+                                          j === vi
+                                            ? { ...vv, colorHex: t }
+                                            : vv,
+                                        ),
+                                      },
+                                ),
+                              );
+                            }}
+                            className={`${inputClass()} w-28`}
+                          />
+                          <button
+                            type="button"
+                            className="text-[11px] text-rose-600"
+                            onClick={() => {
+                              setVeOptions((prev) =>
+                                prev.map((o, i) =>
+                                  i !== oi
+                                    ? o
+                                    : {
+                                        ...o,
+                                        values: o.values.filter(
+                                          (_, j) => j !== vi,
+                                        ),
+                                      },
+                                ),
+                              );
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-[var(--accent)]"
+                        onClick={() => {
+                          setVeOptions((prev) =>
+                            prev.map((o, i) =>
+                              i !== oi
+                                ? o
+                                : {
+                                    ...o,
+                                    values: [
+                                      ...o.values,
+                                      {
+                                        valueFr: `Value ${o.values.length + 1}`,
+                                        valueAr: `Value ${o.values.length + 1}`,
+                                        colorHex: "",
+                                      },
+                                    ],
+                                  },
+                            ),
+                          );
+                        }}
+                      >
+                        + Add value
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                <p className="text-xs font-semibold text-[var(--fg)]">
+                  Variant rows
+                </p>
+                <div className="space-y-3">
+                  {veVariants.map((row, vi) => (
+                    <div
+                      key={vi}
+                      className="rounded-xl border border-[var(--border)] bg-white/60 p-3 dark:bg-black/20"
+                    >
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        <label className="block sm:col-span-2">
+                          <span className="text-[11px] text-[var(--muted)]">
+                            SKU
+                          </span>
+                          <input
+                            value={row.sku}
+                            onChange={(e) => {
+                              const t = e.target.value;
+                              setVeVariants((prev) =>
+                                prev.map((r, i) =>
+                                  i === vi ? { ...r, sku: t } : r,
+                                ),
+                              );
+                            }}
+                            className={`${inputClass()} font-mono text-xs`}
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-[11px] text-[var(--muted)]">
+                            Stock
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={row.stock}
+                            onChange={(e) => {
+                              const n = parseInt(e.target.value, 10) || 0;
+                              setVeVariants((prev) =>
+                                prev.map((r, i) =>
+                                  i === vi ? { ...r, stock: n } : r,
+                                ),
+                              );
+                            }}
+                            className={inputClass(true)}
+                          />
+                        </label>
+                        <label className="flex items-center gap-2 pt-5">
+                          <input
+                            type="radio"
+                            name="default-variant"
+                            checked={row.isDefault}
+                            onChange={() => {
+                              setVeVariants((prev) =>
+                                prev.map((r, i) => ({
+                                  ...r,
+                                  isDefault: i === vi,
+                                })),
+                              );
+                            }}
+                          />
+                          <span className="text-xs">Default</span>
+                        </label>
+                        <label className="block sm:col-span-2">
+                          <span className="text-[11px] text-[var(--muted)]">
+                            Price override (MAD, empty = product base)
+                          </span>
+                          <input
+                            value={row.priceMad}
+                            onChange={(e) => {
+                              const t = e.target.value;
+                              setVeVariants((prev) =>
+                                prev.map((r, i) =>
+                                  i === vi ? { ...r, priceMad: t } : r,
+                                ),
+                              );
+                            }}
+                            className={inputClass(true)}
+                          />
+                        </label>
+                        <label className="block sm:col-span-2">
+                          <span className="text-[11px] text-[var(--muted)]">
+                            Compare-at (MAD)
+                          </span>
+                          <input
+                            value={row.compareAtMad}
+                            onChange={(e) => {
+                              const t = e.target.value;
+                              setVeVariants((prev) =>
+                                prev.map((r, i) =>
+                                  i === vi
+                                    ? { ...r, compareAtMad: t }
+                                    : r,
+                                ),
+                              );
+                            }}
+                            className={inputClass(true)}
+                          />
+                        </label>
+                        <label className="block sm:col-span-2 lg:col-span-4">
+                          <span className="text-[11px] text-[var(--muted)]">
+                            Image URLs (comma-separated, optional)
+                          </span>
+                          <input
+                            value={row.imagesLine}
+                            onChange={(e) => {
+                              const t = e.target.value;
+                              setVeVariants((prev) =>
+                                prev.map((r, i) =>
+                                  i === vi ? { ...r, imagesLine: t } : r,
+                                ),
+                              );
+                            }}
+                            className={inputClass()}
+                          />
+                        </label>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {veOptions.map((opt, oix) => (
+                          <label
+                            key={opt.nameFr + String(oix)}
+                            className="flex min-w-[8rem] flex-col gap-1"
+                          >
+                            <span className="text-[10px] text-[var(--muted)]">
+                              {opt.nameFr}
+                            </span>
+                            <select
+                              value={row.valueIndexes[oix] ?? 0}
+                              onChange={(e) => {
+                                const n = parseInt(e.target.value, 10) || 0;
+                                setVeVariants((prev) =>
+                                  prev.map((r, i) => {
+                                    if (i !== vi) return r;
+                                    const next = [...r.valueIndexes];
+                                    next[oix] = n;
+                                    return { ...r, valueIndexes: next };
+                                  }),
+                                );
+                              }}
+                              className={inputClass()}
+                            >
+                              {opt.values.map((val, j) => (
+                                <option key={val.valueFr + String(j)} value={j}>
+                                  {val.valueFr}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className="mt-2 text-xs text-rose-600"
+                        onClick={() =>
+                          setVeVariants((prev) =>
+                            prev.filter((_, i) => i !== vi),
+                          )
+                        }
+                      >
+                        Remove row
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="text-xs font-medium text-[var(--accent)]"
+                  onClick={() =>
+                    setVeVariants((prev) => [
+                      ...prev,
+                      {
+                        sku: `${(skuReadonly || slug || "VAR").toUpperCase()}-${prev.length + 1}`,
+                        priceMad: "",
+                        compareAtMad: "",
+                        stock: 0,
+                        imagesLine: "",
+                        isDefault: prev.length === 0,
+                        valueIndexes: veOptions.map(() => 0),
+                      },
+                    ])
+                  }
+                >
+                  + Add variant row manually
+                </button>
+              </div>
+            ) : null}
+          </CollapsibleSection>
 
           <details className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 opacity-90">
             <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[var(--muted)] [&::-webkit-details-marker]:hidden">

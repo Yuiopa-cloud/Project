@@ -5,6 +5,8 @@ const STORAGE_KEY = "atlas-buy-now";
 export type BuyNowPayload = {
   productId: string;
   quantity: number;
+  /** Set when the product uses variants (size, color, …). */
+  variantId?: string | null;
   snapshot: CartLineProduct;
 };
 
@@ -29,6 +31,10 @@ export function getBuyNow(): BuyNowPayload | null {
       p.quantity < 1 ||
       !p.snapshot?.id
     ) {
+      return null;
+    }
+    const snap = p.snapshot as CartLineProduct & { requiresVariant?: boolean };
+    if (snap.requiresVariant && !(p.variantId && String(p.variantId).trim())) {
       return null;
     }
     return p;

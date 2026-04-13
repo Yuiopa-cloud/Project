@@ -37,6 +37,7 @@ export type ProductList = {
     purchaseCount: number;
     stock: number;
     lowStock?: boolean;
+    variantsEnabled?: boolean;
     ratingAvg: number | null;
     category: { slug: string; nameFr: string; nameAr: string };
   }[];

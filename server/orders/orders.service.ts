@@ -57,9 +57,37 @@ export class OrdersService {
       throw new NotFoundException('One or more products unavailable');
     }
 
+    const variantIds = dto.items
+      .map((i) => i.variantId?.trim())
+      .filter((v): v is string => Boolean(v));
+    const variantRows =
+      variantIds.length > 0
+        ? await this.prisma.productVariant.findMany({
+            where: { id: { in: variantIds } },
+            include: {
+              selections: {
+                include: { option: true, optionValue: true },
+              },
+            },
+          })
+        : [];
+    const variantById = new Map(variantRows.map((v) => [v.id, v]));
+
+    const variantLabelFr = (
+      v: (typeof variantRows)[0],
+    ): string =>
+      [...v.selections]
+        .sort(
+          (a, b) => (a.option.sortOrder ?? 0) - (b.option.sortOrder ?? 0),
+        )
+        .map((s) => s.optionValue.valueFr)
+        .join(' · ');
+
     let subtotal = new Prisma.Decimal(0);
     const lineCalcs: {
       productId: string;
+      variantId: string | null;
+      variantLabel: string | null;
       qty: number;
       unit: Prisma.Decimal;
       title: string;
@@ -67,17 +95,51 @@ export class OrdersService {
 
     for (const line of dto.items) {
       const p = products.find((x) => x.id === line.productId)!;
-      if (p.stock < line.quantity) {
-        throw new BadRequestException(`Insufficient stock for ${p.sku}`);
+      if (p.variantsEnabled) {
+        const vid = line.variantId?.trim();
+        if (!vid) {
+          throw new BadRequestException(
+            `Choose a variant for “${p.nameFr}” (size, color, …).`,
+          );
+        }
+        const v = variantById.get(vid);
+        if (!v || v.productId !== p.id) {
+          throw new NotFoundException(`Variant not found for ${p.sku}`);
+        }
+        if (v.stock < line.quantity) {
+          throw new BadRequestException(
+            `Insufficient stock for ${p.sku} (${variantLabelFr(v)})`,
+          );
+        }
+        const unit = v.priceMad ?? p.priceMad;
+        const label = variantLabelFr(v);
+        subtotal = subtotal.add(unit.mul(line.quantity));
+        lineCalcs.push({
+          productId: p.id,
+          variantId: v.id,
+          variantLabel: label,
+          qty: line.quantity,
+          unit,
+          title: `${p.nameFr} (${label})`,
+        });
+      } else {
+        if (line.variantId?.trim()) {
+          throw new BadRequestException(`Product ${p.sku} has no variants`);
+        }
+        if (p.stock < line.quantity) {
+          throw new BadRequestException(`Insufficient stock for ${p.sku}`);
+        }
+        const unit = p.priceMad;
+        subtotal = subtotal.add(unit.mul(line.quantity));
+        lineCalcs.push({
+          productId: p.id,
+          variantId: null,
+          variantLabel: null,
+          qty: line.quantity,
+          unit,
+          title: p.nameFr,
+        });
       }
-      const unit = p.priceMad;
-      subtotal = subtotal.add(unit.mul(line.quantity));
-      lineCalcs.push({
-        productId: p.id,
-        qty: line.quantity,
-        unit,
-        title: p.nameFr,
-      });
     }
 
     let discount = new Prisma.Decimal(0);
@@ -169,20 +231,38 @@ export class OrdersService {
     };
 
     const order = await this.prisma.$transaction(async (tx) => {
-      for (const line of dto.items) {
-        const updated = await tx.product.updateMany({
-          where: {
-            id: line.productId,
-            stock: { gte: line.quantity },
-          },
-          data: {
-            stock: { decrement: line.quantity },
-            purchaseCount: { increment: line.quantity },
-          },
-        });
-        if (updated.count !== 1) {
-          throw new BadRequestException('Stock conflict');
+      for (const l of lineCalcs) {
+        const p = products.find((x) => x.id === l.productId)!;
+        if (p.variantsEnabled && l.variantId) {
+          const updated = await tx.productVariant.updateMany({
+            where: {
+              id: l.variantId,
+              productId: p.id,
+              stock: { gte: l.qty },
+            },
+            data: { stock: { decrement: l.qty } },
+          });
+          if (updated.count !== 1) {
+            throw new BadRequestException('Stock conflict');
+          }
+        } else {
+          const updated = await tx.product.updateMany({
+            where: {
+              id: l.productId,
+              stock: { gte: l.qty },
+            },
+            data: {
+              stock: { decrement: l.qty },
+            },
+          });
+          if (updated.count !== 1) {
+            throw new BadRequestException('Stock conflict');
+          }
         }
+        await tx.product.update({
+          where: { id: l.productId },
+          data: { purchaseCount: { increment: l.qty } },
+        });
       }
 
       if (couponId) {
@@ -230,6 +310,8 @@ export class OrdersService {
         data: lineCalcs.map((l) => ({
           orderId: created.id,
           productId: l.productId,
+          variantId: l.variantId,
+          variantLabel: l.variantLabel,
           quantity: l.qty,
           unitPriceMad: l.unit,
           titleSnapshot: l.title,

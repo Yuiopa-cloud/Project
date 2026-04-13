@@ -11,6 +11,13 @@ export class AddCartItemDto {
   @Min(1)
   quantity!: number;
 
+  @ApiPropertyOptional({
+    description: 'Required when the product has variants (size, color, …)',
+  })
+  @IsOptional()
+  @IsString()
+  variantId?: string;
+
   @ApiPropertyOptional({ description: 'Guest cart token from first GET /cart' })
   @IsOptional()
   @IsString()
@@ -18,9 +25,9 @@ export class AddCartItemDto {
 }
 
 export class SetCartQtyDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'Cart line id from GET /cart → items[].id' })
   @IsString()
-  productId!: string;
+  cartItemId!: string;
 
   @ApiProperty()
   @IsInt()

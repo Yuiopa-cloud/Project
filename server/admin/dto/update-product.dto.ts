@@ -71,6 +71,14 @@ export class UpdateProductDto {
   @IsBoolean()
   isActive?: boolean;
 
+  @ApiPropertyOptional({
+    description:
+      'When true, storefront requires a variant (size/color, etc.). Configure options/variants via PUT /admin/products/:id/variants.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  variantsEnabled?: boolean;
+
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()

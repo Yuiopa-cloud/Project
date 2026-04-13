@@ -88,6 +88,18 @@ export class ProductsService {
           orderBy: { createdAt: 'desc' },
           take: 20,
         },
+        options: {
+          orderBy: { sortOrder: 'asc' },
+          include: { values: { orderBy: { sortOrder: 'asc' } } },
+        },
+        variants: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            selections: {
+              include: { option: true, optionValue: true },
+            },
+          },
+        },
       },
     });
     if (!p) throw new NotFoundException();
@@ -95,10 +107,83 @@ export class ProductsService {
       p.reviews.length > 0
         ? p.reviews.reduce((s, r) => s + r.rating, 0) / p.reviews.length
         : null;
+
+    const variantLabel = (
+      v: (typeof p.variants)[0],
+      locale: 'fr' | 'ar',
+    ) =>
+      [...v.selections]
+        .sort(
+          (a, b) => (a.option.sortOrder ?? 0) - (b.option.sortOrder ?? 0),
+        )
+        .map((s) =>
+          locale === 'ar' ? s.optionValue.valueAr : s.optionValue.valueFr,
+        )
+        .join(' · ');
+
+    const mapVariant = (v: (typeof p.variants)[0]) => {
+      const price = v.priceMad ?? p.priceMad;
+      const compare = v.compareAtMad ?? p.compareAtMad;
+      const imgs = v.images.length > 0 ? v.images : p.images;
+      return {
+        id: v.id,
+        sku: v.sku,
+        stock: v.stock,
+        priceMad: price.toString(),
+        compareAtMad: compare?.toString() ?? null,
+        images: [...imgs],
+        isDefault: v.isDefault,
+        labelFr: variantLabel(v, 'fr'),
+        labelAr: variantLabel(v, 'ar'),
+        selection: Object.fromEntries(
+          v.selections.map((s) => [s.optionId, s.optionValueId]),
+        ),
+      };
+    };
+
+    const optionsOut = p.options.map((o) => ({
+      id: o.id,
+      nameFr: o.nameFr,
+      nameAr: o.nameAr,
+      sortOrder: o.sortOrder,
+      values: o.values.map((v) => ({
+        id: v.id,
+        valueFr: v.valueFr,
+        valueAr: v.valueAr,
+        colorHex: v.colorHex,
+        imageUrl: v.imageUrl,
+        sortOrder: v.sortOrder,
+      })),
+    }));
+
+    const variantsOut = p.variants.map(mapVariant);
+
+    let displayStock = p.stock;
+    let displayPrice = p.priceMad;
+    let displayCompare = p.compareAtMad;
+    let displayImages = [...p.images];
+    if (p.variantsEnabled && p.variants.length > 0) {
+      const def =
+        p.variants.find((v) => v.isDefault) ?? p.variants[0]!;
+      displayStock = def.stock;
+      displayPrice = def.priceMad ?? p.priceMad;
+      displayCompare = def.compareAtMad ?? p.compareAtMad;
+      displayImages =
+        def.images.length > 0 ? [...def.images] : [...p.images];
+    }
+
+    const { options: _o, variants: _v, ...rest } = p;
     return {
-      ...p,
+      ...rest,
+      priceMad: displayPrice.toString(),
+      compareAtMad: displayCompare?.toString() ?? null,
+      stock: displayStock,
+      images: displayImages,
       ratingAvg: avg,
-      lowStock: p.stock <= p.lowStockThreshold,
+      lowStock: displayStock <= p.lowStockThreshold,
+      variantsEnabled: p.variantsEnabled,
+      options: optionsOut,
+      variants: variantsOut,
     };
   }
 

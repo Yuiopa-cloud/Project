@@ -238,6 +238,7 @@
     "upsellTitle": "Au passage…",
     "upsellHint": "La liste défile doucement. Faites défiler ou touchez pour la mettre en pause, puis ajoutez à votre panier.",
     "upsellAdd": "Ajouter au panier",
+    "upsellChooseOptions": "Choisir les options",
     "upsellAria": "Suggestions de produits avant le paiement",
     "address": {
       "line1": "Adresse (rue, n°, bâtiment)",

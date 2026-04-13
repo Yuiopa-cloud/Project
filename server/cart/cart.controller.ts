@@ -23,13 +23,24 @@ export class CartController {
     @Body() dto: AddCartItemDto,
     @CurrentUser() u?: JwtPayloadUser,
   ) {
-    return this.cart.addItem(u?.sub, dto.guestToken, dto.productId, dto.quantity);
+    return this.cart.addItem(
+      u?.sub,
+      dto.guestToken,
+      dto.productId,
+      dto.quantity,
+      dto.variantId,
+    );
   }
 
   @Public()
   @Post('items/qty')
   setQty(@Body() dto: SetCartQtyDto, @CurrentUser() u?: JwtPayloadUser) {
-    return this.cart.setQty(u?.sub, dto.guestToken, dto.productId, dto.quantity);
+    return this.cart.setQty(
+      u?.sub,
+      dto.guestToken,
+      dto.cartItemId,
+      dto.quantity,
+    );
   }
 
   @ApiBearerAuth()

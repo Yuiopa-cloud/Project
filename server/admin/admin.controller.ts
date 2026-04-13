@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import { UserRole, OrderStatus } from '@prisma/client';
 import { FraudDecideDto } from './dto/fraud-decide.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateProductDto } from './dto/create-product.dto';
+import { ReplaceProductVariantsDto } from './dto/replace-product-variants.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { JwtPayloadUser } from '../common/decorators/current-user.decorator';
@@ -99,6 +101,14 @@ export class AdminController {
   @Patch('products/:id')
   patchProduct(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.admin.updateProduct(id, dto);
+  }
+
+  @Put('products/:id/variants')
+  replaceVariants(
+    @Param('id') id: string,
+    @Body() dto: ReplaceProductVariantsDto,
+  ) {
+    return this.admin.replaceProductVariants(id, dto);
   }
 
   @Post('products')

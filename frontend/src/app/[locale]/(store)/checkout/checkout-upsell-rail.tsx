@@ -221,6 +221,7 @@ function UpsellCard({
       priceMad: product.priceMad,
       images: product.images ?? [],
       stock: product.stock,
+      requiresVariant: product.variantsEnabled || undefined,
     };
   }
 
@@ -228,6 +229,7 @@ function UpsellCard({
     e.preventDefault();
     e.stopPropagation();
     if (product.stock < 1 || busy) return;
+    if (product.variantsEnabled) return;
     setBusy(true);
     try {
       if (buyNowActive && buyNowMerge) {
@@ -237,9 +239,10 @@ function UpsellCard({
           buyNowMerge.productId,
           buyNowMerge.quantity,
           buyNowMerge.snapshot,
+          buyNowMerge.variantId ?? null,
         );
       }
-      await addItem(product.id, 1, snapshot());
+      await addItem(product.id, 1, snapshot(), null);
       void refresh();
       flyToCart({
         imageSrc: product.images?.[0] ?? null,
@@ -274,16 +277,25 @@ function UpsellCard({
         <p className="mt-0.5 text-[11px] tabular-nums text-[var(--muted)]">
           {String(product.priceMad)} MAD
         </p>
-        <button
-          type="button"
-          ref={addBtnRef}
-          disabled={product.stock < 1 || busy}
-          onClick={(e) => void onAdd(e)}
-          className="mt-1.5 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--accent)] px-2 py-1.5 text-[11px] font-semibold text-white disabled:opacity-40"
-        >
-          {busy ? <MiniSpinner className="h-3.5 w-3.5" /> : null}
-          {t("upsellAdd")}
-        </button>
+        {product.variantsEnabled ? (
+          <MotionLink
+            href={`/product/${product.slug}`}
+            className="mt-1.5 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
+          >
+            {t("upsellChooseOptions")}
+          </MotionLink>
+        ) : (
+          <button
+            type="button"
+            ref={addBtnRef}
+            disabled={product.stock < 1 || busy}
+            onClick={(e) => void onAdd(e)}
+            className="mt-1.5 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--accent)] px-2 py-1.5 text-[11px] font-semibold text-white disabled:opacity-40"
+          >
+            {busy ? <MiniSpinner className="h-3.5 w-3.5" /> : null}
+            {t("upsellAdd")}
+          </button>
+        )}
       </div>
     </div>
   );
