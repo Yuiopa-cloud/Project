@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { ProductList } from "@/lib/api";
-import { ShopProductCard } from "@/app/[locale]/shop/shop-product-card";
+import { ShopProductCard } from "@/app/[locale]/(store)/shop/shop-product-card";
 
 export function HomeProductGallery({
   products,

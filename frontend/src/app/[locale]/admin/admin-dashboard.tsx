@@ -5,7 +5,9 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ComponentProps,
   type ReactElement,
+  type ReactNode,
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -158,94 +160,45 @@ function nestErrorMessage(raw: string): string | undefined {
   return undefined;
 }
 
-const ADMIN_NAV: {
-  id: "dash" | "orders" | "products" | "members";
-  label: string;
-  icon: (props: { className?: string }) => ReactElement;
-}[] = [
-  {
-    id: "dash",
-    label: "Tableau de bord",
-    icon: ({ className }) => (
-      <svg
-        className={className}
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        aria-hidden
-      >
-        <rect x="3" y="3" width="7" height="9" rx="1" />
-        <rect x="14" y="3" width="7" height="5" rx="1" />
-        <rect x="14" y="12" width="7" height="9" rx="1" />
-        <rect x="3" y="16" width="7" height="5" rx="1" />
-      </svg>
-    ),
+type AdminTab = "dash" | "orders" | "products" | "members";
+
+const ADMIN_PLACEHOLDERS: Record<
+  string,
+  { title: string; body: string }
+> = {
+  upsells: {
+    title: "Ventes additionnelles",
+    body: "Gérez les suggestions et bundles après panier. Cette section sera branchée sur vos règles de vente croisée.",
   },
-  {
-    id: "orders",
-    label: "Commandes",
-    icon: ({ className }) => (
-      <svg
-        className={className}
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        aria-hidden
-      >
-        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-        <path d="M3 6h18" />
-        <path d="M16 10a4 4 0 0 1-8 0" />
-      </svg>
-    ),
+  coupons: {
+    title: "Coupons",
+    body: "Créez et suivez les codes promo (pourcentage ou montant MAD). Bientôt : liste, création et stats d’usage.",
   },
-  {
-    id: "products",
-    label: "Produits",
-    icon: ({ className }) => (
-      <svg
-        className={className}
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        aria-hidden
-      >
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" />
-        <path d="M12 22.08V12" />
-      </svg>
-    ),
+  invoices: {
+    title: "Factures",
+    body: "Export PDF / numérotation — à connecter à vos commandes et TVA.",
   },
-  {
-    id: "members",
-    label: "Clients",
-    icon: ({ className }) => (
-      <svg
-        className={className}
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        aria-hidden
-      >
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
+  apps: {
+    title: "Applications",
+    body: "Intégrations tierces (livraison, compta, marketing).",
   },
-];
+  affiliate: {
+    title: "Affiliation",
+    body: "Suivi des affiliés et commissions — lié au programme déjà prévu côté API.",
+  },
+  support: {
+    title: "Support",
+    body: "Centre d’aide interne : tickets et base de connaissances (à venir).",
+  },
+  settings: {
+    title: "Paramètres",
+    body: "Préférences boutique, devises, zones, notifications — bientôt ici.",
+  },
+  insights: {
+    title: "Insights",
+    body: "Rapports détaillés, trafic et entonnoir — en cours. En attendant, la vue d’ensemble agrège CA et commandes sur la période choisie.",
+  },
+};
 
 function AdminOverviewSpark({
   orders,
@@ -330,14 +283,49 @@ function AdminOverviewSpark({
   );
 }
 
+function AdminPlaceholderPanel({
+  title,
+  body,
+  onBack,
+}: {
+  title: string;
+  body: string;
+  onBack: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mx-auto max-w-lg rounded-2xl border border-[var(--border)] bg-[var(--card)] px-8 py-12 text-center shadow-sm"
+    >
+      <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent)]">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4M12 8h.01" />
+        </svg>
+      </div>
+      <h2 className="font-display text-xl font-semibold text-[var(--fg)]">{title}</h2>
+      <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">{body}</p>
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-6 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-sm"
+      >
+        Retour au tableau de bord
+      </button>
+    </motion.div>
+  );
+}
+
 export function AdminDashboard() {
   const tAdmin = useTranslations("admin");
   const searchParams = useSearchParams();
   const apiRoot = useMemo(() => clientApiRoot(), []);
   const [token, setToken] = useState<string | null>(null);
   const [password, setPassword] = useState("");
-  const [tab, setTab] = useState<"dash" | "orders" | "members" | "products">(
-    "dash",
+  const [tab, setTab] = useState<AdminTab>("dash");
+  const [sidebarExtra, setSidebarExtra] = useState<{ slug: string } | null>(
+    null,
   );
   const [dash, setDash] = useState<Dash | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
@@ -363,8 +351,14 @@ export function AdminDashboard() {
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t === "products") setTab("products");
-    if (t === "orders") setTab("orders");
+    if (t === "products") {
+      setSidebarExtra(null);
+      setTab("products");
+    }
+    if (t === "orders") {
+      setSidebarExtra(null);
+      setTab("orders");
+    }
   }, [searchParams]);
 
   const authHeaders = useCallback(
@@ -603,6 +597,7 @@ export function AdminDashboard() {
     setOrders([]);
     setMembers([]);
     setProductRows([]);
+    setSidebarExtra(null);
   }
 
   async function fraudDecision(orderId: string, decision: "APPROVED" | "REJECTED") {
@@ -723,8 +718,9 @@ export function AdminDashboard() {
     );
   }
 
-  const tabTitle =
-    tab === "dash"
+  const tabTitle = sidebarExtra
+    ? ADMIN_PLACEHOLDERS[sidebarExtra.slug]?.title ?? "Section"
+    : tab === "dash"
       ? "Vue d’ensemble"
       : tab === "orders"
         ? "Commandes"
@@ -732,39 +728,252 @@ export function AdminDashboard() {
           ? "Produits"
           : "Clients";
 
-  const NavButtons = ({ onPick }: { onPick?: () => void }) => (
-    <nav className="space-y-1 px-2 py-3">
-      {ADMIN_NAV.map(({ id, label, icon: Icon }) => {
-        const active = tab === id;
-        return (
-          <motion.button
-            key={id}
-            type="button"
-            onClick={() => {
-              setTab(id);
-              onPick?.();
-            }}
-            whileTap={{ scale: 0.98 }}
-            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
-              active
-                ? "border-l-2 border-[var(--accent)] bg-white/10 text-[#fffdf9] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
-                : "border-l-2 border-transparent text-[#e8ddd4]/85 hover:bg-white/5 hover:text-[#fffdf9]"
-            }`}
-          >
-            <Icon
-              className={
-                active ? "text-[var(--accent)]" : "text-[#c4a990]/90"
-              }
-            />
-            {label}
-          </motion.button>
-        );
-      })}
-    </nav>
+  const navBtn = (
+    active: boolean,
+    content: ReactNode,
+    props: ComponentProps<typeof motion.button>,
+  ) => (
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.98 }}
+      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+        active
+          ? "border-l-2 border-[var(--accent)] bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
+          : "border-l-2 border-transparent text-slate-300/90 hover:bg-white/5 hover:text-white"
+      }`}
+      {...props}
+    >
+      {content}
+    </motion.button>
   );
 
+  const NavButtons = ({ onPick }: { onPick?: () => void }) => {
+    const ic = (active: boolean) => (active ? "text-[var(--accent)]" : "text-slate-400");
+    const goTab = (t: AdminTab) => {
+      setSidebarExtra(null);
+      setTab(t);
+      onPick?.();
+    };
+    const goSoon = (slug: string) => {
+      setSidebarExtra({ slug });
+      onPick?.();
+    };
+    return (
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
+        <nav className="space-y-0.5 px-2 py-2">
+          {navBtn(
+            !sidebarExtra && tab === "dash",
+            <>
+              <svg className={ic(!sidebarExtra && tab === "dash")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              Tableau de bord
+            </>,
+            { onClick: () => goTab("dash") },
+          )}
+          {navBtn(
+            !sidebarExtra && tab === "orders",
+            <>
+              <svg className={ic(!sidebarExtra && tab === "orders")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                <path d="M3 6h18" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+              </svg>
+              Commandes
+            </>,
+            { onClick: () => goTab("orders") },
+          )}
+          {navBtn(
+            !sidebarExtra && tab === "products",
+            <>
+              <svg className={ic(!sidebarExtra && tab === "products")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                <line x1="7" y1="7" x2="7.01" y2="7" />
+              </svg>
+              Produits
+            </>,
+            { onClick: () => goTab("products") },
+          )}
+          {navBtn(
+            sidebarExtra?.slug === "upsells",
+            <>
+              <svg className={ic(sidebarExtra?.slug === "upsells")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="m18 15-6-6-6 6" />
+                <path d="m18 9-6-6-6 6" />
+              </svg>
+              Ventes additionnelles
+            </>,
+            { onClick: () => goSoon("upsells") },
+          )}
+          {navBtn(
+            sidebarExtra?.slug === "coupons",
+            <>
+              <svg className={ic(sidebarExtra?.slug === "coupons")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M2.5 8.5 8.5 2.5" />
+                <path d="M14 2 2 14" />
+                <path d="M21.5 15.5 15.5 21.5" />
+                <path d="M22 10 10 22" />
+                <path d="M8.5 2.5 12 6l-4 4L2.5 8.5z" />
+                <path d="M15.5 15.5 19 19l-4 4-2.5-4.5z" />
+              </svg>
+              Coupons
+            </>,
+            { onClick: () => goSoon("coupons") },
+          )}
+          {navBtn(
+            !sidebarExtra && tab === "members",
+            <>
+              <svg className={ic(!sidebarExtra && tab === "members")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              Clients
+            </>,
+            { onClick: () => goTab("members") },
+          )}
+          <Link
+            href="/shop"
+            onClick={() => onPick?.()}
+            className="flex w-full items-center gap-3 rounded-xl border-l-2 border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300/90 transition hover:bg-white/5 hover:text-white"
+          >
+            <svg className="text-slate-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+              <path d="M3 9 12 2l9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
+              <path d="M9 22V12h6v10" />
+            </svg>
+            Boutique (site)
+          </Link>
+        </nav>
+        <p className="px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+          Analyse
+        </p>
+        <nav className="space-y-0.5 px-2 pb-2">
+          {navBtn(
+            sidebarExtra?.slug === "insights",
+            <>
+              <svg className={ic(sidebarExtra?.slug === "insights")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M3 3v18h18" />
+                <path d="M18 17V9" />
+                <path d="M13 17V5" />
+                <path d="M8 17v-3" />
+              </svg>
+              Insights
+            </>,
+            { onClick: () => goSoon("insights") },
+          )}
+          {navBtn(
+            sidebarExtra?.slug === "invoices",
+            <>
+              <svg className={ic(sidebarExtra?.slug === "invoices")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+                <path d="M16 13H8" />
+                <path d="M16 17H8" />
+                <path d="M10 9H8" />
+              </svg>
+              Factures
+            </>,
+            { onClick: () => goSoon("invoices") },
+          )}
+          {navBtn(
+            sidebarExtra?.slug === "apps",
+            <>
+              <svg className={ic(sidebarExtra?.slug === "apps")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              Apps
+            </>,
+            { onClick: () => goSoon("apps") },
+          )}
+        </nav>
+
+        <div className="mx-2 my-3 space-y-2 border-y border-white/10 py-3">
+          <p className="px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            Actions rapides
+          </p>
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.99 }}
+            onClick={() => {
+              setSidebarExtra(null);
+              setTab("orders");
+              setConfirmationFilter("blue");
+              onPick?.();
+            }}
+            className="relative w-full rounded-xl bg-slate-700/80 px-3 py-2.5 text-left text-xs font-semibold text-white shadow-sm ring-1 ring-white/10 hover:bg-slate-600/90"
+          >
+            <span className="absolute right-2 top-2 inline-flex items-center gap-0.5 rounded-md bg-amber-500/25 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-200">
+              New
+            </span>
+            File de confirmation
+          </motion.button>
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.99 }}
+            onClick={() => {
+              setSidebarExtra(null);
+              setTab("orders");
+              setConfirmationFilter("green");
+              onPick?.();
+            }}
+            className="relative w-full rounded-xl bg-slate-700/80 px-3 py-2.5 text-left text-xs font-semibold text-white shadow-sm ring-1 ring-white/10 hover:bg-slate-600/90"
+          >
+            <span className="absolute right-2 top-2 inline-flex items-center gap-0.5 rounded-md bg-amber-500/25 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-200">
+              New
+            </span>
+            Expéditions / livrées
+          </motion.button>
+        </div>
+
+        <nav className="mt-auto space-y-0.5 border-t border-white/10 px-2 py-3">
+          {navBtn(
+            sidebarExtra?.slug === "affiliate",
+            <>
+              <svg className={ic(sidebarExtra?.slug === "affiliate")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <path d="m8.59 13.51 6.83 3.98" />
+                <path d="m15.41 6.51-6.82 3.98" />
+              </svg>
+              Affiliation
+            </>,
+            { onClick: () => goSoon("affiliate") },
+          )}
+          {navBtn(
+            sidebarExtra?.slug === "support",
+            <>
+              <svg className={ic(sidebarExtra?.slug === "support")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2h3" />
+                <path d="M21 11h-3a2 2 0 0 0-2-2V6a2 2 0 0 0-2-2H9" />
+              </svg>
+              Support
+            </>,
+            { onClick: () => goSoon("support") },
+          )}
+          {navBtn(
+            sidebarExtra?.slug === "settings",
+            <>
+              <svg className={ic(sidebarExtra?.slug === "settings")} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+              Paramètres
+            </>,
+            { onClick: () => goSoon("settings") },
+          )}
+        </nav>
+      </div>
+    );
+  };
+
   return (
-    <div className="flex min-h-[calc(100dvh-5rem)] flex-col gap-3 md:flex-row md:gap-0">
+    <div className="flex min-h-dvh flex-col gap-3 px-3 py-3 md:flex-row md:gap-0 md:px-4 md:py-4">
       {mobileNavOpen ? (
         <button
           type="button"
@@ -775,27 +984,27 @@ export function AdminDashboard() {
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(17rem,88vw)] -translate-x-full flex-col border-r border-[#3d2a22] bg-gradient-to-b from-[#2a1810] via-[#1f120c] to-[#140c08] text-[#f5ebe3] shadow-2xl transition-transform duration-200 md:static md:z-0 md:w-56 md:translate-x-0 md:rounded-2xl md:border md:shadow-md lg:w-60 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(18rem,90vw)] max-h-dvh -translate-x-full flex-col border border-slate-700/80 bg-gradient-to-b from-slate-900 via-slate-900 to-[#0f172a] text-slate-100 shadow-2xl transition-transform duration-200 md:static md:z-0 md:max-h-[min(100dvh-2rem,56rem)] md:w-56 md:translate-x-0 md:rounded-2xl md:shadow-xl lg:w-60 ${
           mobileNavOpen ? "translate-x-0" : ""
         }`}
       >
-        <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-4">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-3 py-3 md:px-4 md:py-4">
           <div className="flex min-w-0 items-center gap-2.5">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fffdf9]/95 shadow-sm">
               <AtlasLogo size={24} />
             </div>
             <div className="min-w-0">
-              <p className="font-display truncate text-base font-semibold tracking-tight text-[#fffdf9]">
+              <p className="font-display truncate text-base font-semibold tracking-tight text-white">
                 Easy Handles
               </p>
-              <p className="truncate text-[10px] uppercase tracking-[0.14em] text-[#c4a990]">
+              <p className="truncate text-[10px] uppercase tracking-[0.14em] text-slate-400">
                 Admin
               </p>
             </div>
           </div>
           <button
             type="button"
-            className="rounded-lg p-2 text-[#c4a990] hover:bg-white/10 md:hidden"
+            className="rounded-lg p-2 text-slate-400 hover:bg-white/10 md:hidden"
             aria-label="Fermer"
             onClick={() => setMobileNavOpen(false)}
           >
@@ -805,10 +1014,10 @@ export function AdminDashboard() {
           </button>
         </div>
         <NavButtons onPick={() => setMobileNavOpen(false)} />
-        <div className="mt-auto space-y-1 border-t border-white/10 p-3">
+        <div className="shrink-0 space-y-1 border-t border-white/10 p-3">
           <Link
             href="/"
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-[#e8ddd4]/90 hover:bg-white/5"
+            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
               <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -857,6 +1066,7 @@ export function AdminDashboard() {
             <motion.button
               type="button"
               onClick={() => {
+                setSidebarExtra(null);
                 if (tab === "dash") loadDash();
                 else if (tab === "orders") loadOrders();
                 else if (tab === "members") loadMembers();
@@ -895,6 +1105,22 @@ export function AdminDashboard() {
         ) : null}
       </AnimatePresence>
 
+      {sidebarExtra ? (
+        <AdminPlaceholderPanel
+          title={
+            ADMIN_PLACEHOLDERS[sidebarExtra.slug]?.title ?? "Bientôt disponible"
+          }
+          body={
+            ADMIN_PLACEHOLDERS[sidebarExtra.slug]?.body ??
+            "Cette section sera ajoutée dans une prochaine version."
+          }
+          onBack={() => {
+            setSidebarExtra(null);
+            setTab("dash");
+          }}
+        />
+      ) : (
+        <>
       {tab === "dash" ? (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -1539,6 +1765,8 @@ export function AdminDashboard() {
           </div>
         </motion.section>
       ) : null}
+        </>
+      )}
         </div>
       </div>
     </div>

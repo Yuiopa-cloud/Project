@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
-import { Navbar } from "@/components/navbar";
-import { TopAnnouncementMarquee } from "@/components/top-announcement-marquee";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleHtmlAttributes } from "@/components/locale-html";
 import { CartProvider } from "@/contexts/cart-context";
 import { CartFlyProvider } from "@/contexts/cart-fly-context";
-import { CartDrawer } from "@/components/cart-drawer";
 import { CustomerAuthProvider } from "@/contexts/customer-auth-context";
-import { SiteFooter } from "@/components/site-footer";
 import { GoogleAnalytics } from "@/components/google-analytics";
 
 export const metadata: Metadata = {
@@ -58,22 +53,8 @@ export default async function LocaleLayout({
         <CustomerAuthProvider>
           <CartProvider>
             <CartFlyProvider>
-            <GoogleAnalytics />
-            <CartDrawer />
-            <div className="flex min-h-dvh min-h-full flex-col">
-              <TopAnnouncementMarquee />
-              <Suspense
-                fallback={
-                  <div className="h-14 border-b border-[var(--border)] bg-white sm:h-16" />
-                }
-              >
-                <Navbar />
-              </Suspense>
-              <main className="min-w-0 flex-1 pb-[max(0px,env(safe-area-inset-bottom))]">
-                {children}
-              </main>
-              <SiteFooter />
-            </div>
+              <GoogleAnalytics />
+              {children}
             </CartFlyProvider>
           </CartProvider>
         </CustomerAuthProvider>
