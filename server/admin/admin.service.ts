@@ -211,6 +211,7 @@ export class AdminService {
       purchaseCount: true,
       images: true,
       isActive: true,
+      metadata: true,
       categoryId: true,
       createdAt: true,
       updatedAt: true,
@@ -275,6 +276,12 @@ export class AdminService {
         stock: dto.stock ?? 0,
         images,
         isActive: dto.isActive ?? true,
+        ...(typeof dto.lowStockThreshold === 'number'
+          ? { lowStockThreshold: dto.lowStockThreshold }
+          : {}),
+        ...(dto.metadata && Object.keys(dto.metadata).length > 0
+          ? { metadata: dto.metadata as Prisma.InputJsonValue }
+          : {}),
         category: { connect: { id: dto.categoryId } },
       },
       select: this.adminProductSelect(),
@@ -403,6 +410,26 @@ export class AdminService {
     if (typeof dto.stock === 'number') data.stock = dto.stock;
     if (typeof dto.isActive === 'boolean') data.isActive = dto.isActive;
     if (dto.images !== undefined) data.images = dto.images;
+
+    if (typeof dto.lowStockThreshold === 'number')
+      data.lowStockThreshold = dto.lowStockThreshold;
+
+    if (dto.metadata !== undefined) {
+      const prev = await this.prisma.product.findUnique({
+        where: { id },
+        select: { metadata: true },
+      });
+      const base =
+        prev?.metadata &&
+        typeof prev.metadata === 'object' &&
+        !Array.isArray(prev.metadata)
+          ? (prev.metadata as Record<string, unknown>)
+          : {};
+      data.metadata = {
+        ...base,
+        ...dto.metadata,
+      } as Prisma.InputJsonValue;
+    }
 
     if (Object.keys(data).length === 0) {
       return this.productByIdForAdmin(id);

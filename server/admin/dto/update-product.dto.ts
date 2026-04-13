@@ -3,6 +3,7 @@ import {
   IsArray,
   IsBoolean,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Min,
@@ -75,4 +76,18 @@ export class UpdateProductDto {
   @IsArray()
   @IsString({ each: true })
   images?: string[];
+
+  @ApiPropertyOptional({ description: 'Alert when stock is at or below this level' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  lowStockThreshold?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Extra fields: costMad, barcode, weightKg, videoUrl, seoTitleFr, seoDescriptionFr, tags (string[]), vendorNote, trackInventory (boolean), etc.',
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
 }
