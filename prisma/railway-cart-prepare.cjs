@@ -73,6 +73,42 @@ async function main() {
       );
     }
 
+    // Same cart + lineKey must be unique before Prisma adds @@unique([cartId, lineKey]).
+    const dupRows = await prisma.$queryRaw`
+      SELECT COUNT(*)::int AS c
+      FROM (
+        SELECT 1
+        FROM "CartItem"
+        GROUP BY "cartId", "lineKey"
+        HAVING COUNT(*) > 1
+      ) t;
+    `;
+    if (Number(dupRows[0]?.c ?? 0) > 0) {
+      // eslint-disable-next-line no-console
+      console.log('[railway-cart-prepare] Merging duplicate cart lines (same cartId + lineKey)…');
+      await prisma.$executeRawUnsafe(`
+        WITH agg AS (
+          SELECT "cartId", "lineKey",
+                 (array_agg(id ORDER BY id))[1] AS keep_id,
+                 SUM(quantity)::integer AS total_qty
+          FROM "CartItem"
+          GROUP BY "cartId", "lineKey"
+          HAVING COUNT(*) > 1
+        )
+        UPDATE "CartItem" AS ci
+        SET quantity = agg.total_qty
+        FROM agg
+        WHERE ci.id = agg.keep_id;
+      `);
+      await prisma.$executeRawUnsafe(`
+        DELETE FROM "CartItem" AS a
+        USING "CartItem" AS b
+        WHERE a."cartId" = b."cartId"
+          AND a."lineKey" = b."lineKey"
+          AND a.id > b.id;
+      `);
+    }
+
     // eslint-disable-next-line no-console
     console.log('[railway-cart-prepare] OK');
   } finally {
