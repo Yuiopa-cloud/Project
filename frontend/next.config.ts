@@ -22,9 +22,13 @@ function resolveBackendOrigin(): string {
 
 const backendOrigin = resolveBackendOrigin();
 
+const tracingRoot = path.resolve(__dirname);
+
 const nextConfig: NextConfig = {
+  /** Must match `turbopack.root` or Next warns (and Vercel often infers a different tracing root). */
+  outputFileTracingRoot: tracingRoot,
   turbopack: {
-    root: path.resolve(__dirname),
+    root: tracingRoot,
   },
   typescript: {
     tsconfigPath: "./tsconfig.json",
