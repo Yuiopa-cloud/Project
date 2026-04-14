@@ -120,7 +120,7 @@ export function ProductClient({
   demoMode: boolean;
 }) {
   const router = useRouter();
-  const [img, setImg] = useState(0);
+  const [manualMainImage, setManualMainImage] = useState<string | null>(null);
   const [zoom, setZoom] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addedPulse, setAddedPulse] = useState(false);
@@ -267,10 +267,11 @@ export function ProductClient({
     : Boolean(product.lowStock);
 
   useEffect(() => {
-    setImg(0);
+    // On variant change (e.g. clicking a color), reset manual thumbnail override.
+    setManualMainImage(null);
   }, [mainImages.join("|")]);
 
-  const main = galleryImages[img] ?? mainImages[0];
+  const main = manualMainImage ?? mainImages[0] ?? galleryImages[0];
 
   function pickValue(option: ProductOptionDef, value: ProductOptionVal) {
     const token = isColorOption(option)
@@ -421,9 +422,9 @@ export function ProductClient({
                 key={`${url}-${i}`}
                 type="button"
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setImg(i)}
+                onClick={() => setManualMainImage(url)}
                 className={`relative h-[3.25rem] w-[3.25rem] shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-16 sm:w-16 ${
-                  i === img
+                  (manualMainImage ? manualMainImage === url : main === url)
                     ? "border-[var(--accent)] shadow-[0_0_14px_var(--accent-glow)]"
                     : "border-transparent opacity-75 hover:opacity-100"
                 }`}
