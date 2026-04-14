@@ -151,6 +151,13 @@ function isColorOptionName(option: VeOption): boolean {
   return /color|couleur|لون/.test(combined);
 }
 
+function isSizeOptionName(option: VeOption): boolean {
+  const combined = `${option.nameFr} ${option.nameAr}`.toLowerCase();
+  return /\b(size|sizes|taille|tailles|pointure|pointures|dimension|dimensions|measure|مقاس|المقاس)\b/.test(
+    combined,
+  );
+}
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const fr = new FileReader();
@@ -273,10 +280,17 @@ export function ProductEditorClient({
   const [veEnabled, setVeEnabled] = useState(false);
   const [veOptions, setVeOptions] = useState<VeOption[]>([]);
   const [veVariants, setVeVariants] = useState<VeVariant[]>([]);
-  const colorOptionIndex = useMemo(
-    () => veOptions.findIndex((o) => isColorOptionName(o)),
-    [veOptions],
-  );
+  const variantOptionGroups = useMemo(() => {
+    const colorIdx: number[] = [];
+    const sizeIdx: number[] = [];
+    const otherIdx: number[] = [];
+    veOptions.forEach((o, i) => {
+      if (isColorOptionName(o)) colorIdx.push(i);
+      else if (isSizeOptionName(o)) sizeIdx.push(i);
+      else otherIdx.push(i);
+    });
+    return { colorIdx, sizeIdx, otherIdx };
+  }, [veOptions]);
 
   const productUrlPrefix = useMemo(() => {
     if (typeof window === "undefined") return `/${locale}/product/`;
@@ -1570,24 +1584,127 @@ export function ProductEditorClient({
                 <div className="space-y-3">
                   {veVariants.map((row, vi) => (
                     (() => {
-                      const colorValueIdx =
-                        colorOptionIndex >= 0 ? row.valueIndexes[colorOptionIndex] : undefined;
-                      const colorValue =
-                        colorOptionIndex >= 0 && colorValueIdx != null
-                          ? veOptions[colorOptionIndex]?.values[colorValueIdx]
-                          : null;
-                      const rowLabel =
-                        colorValue?.valueFr?.trim() ||
-                        colorValue?.valueAr?.trim() ||
-                        `#${vi + 1}`;
+                      const valueLabelAt = (oix: number): string => {
+                        const ix = row.valueIndexes[oix];
+                        if (ix == null) return "";
+                        const v = veOptions[oix]?.values[ix];
+                        return (
+                          v?.valueFr?.trim() ||
+                          v?.valueAr?.trim() ||
+                          ""
+                        );
+                      };
+                      const colorLabels = variantOptionGroups.colorIdx
+                        .map(valueLabelAt)
+                        .filter(Boolean);
+                      const sizeLabels = variantOptionGroups.sizeIdx
+                        .map(valueLabelAt)
+                        .filter(Boolean);
+                      const otherLabels = variantOptionGroups.otherIdx
+                        .map(valueLabelAt)
+                        .filter(Boolean);
+                      const fallbackLabel =
+                        colorLabels.length || sizeLabels.length || otherLabels.length
+                          ? ""
+                          : `#${vi + 1}`;
+
+                      const renderOptionSelect = (oix: number) => {
+                        const opt = veOptions[oix];
+                        return (
+                          <label
+                            key={`${opt.nameFr}-${oix}`}
+                            className="flex min-w-[8rem] flex-col gap-1"
+                          >
+                            <span className="text-[10px] text-[var(--muted)]">
+                              {opt.nameFr}
+                            </span>
+                            <select
+                              value={row.valueIndexes[oix] ?? 0}
+                              onChange={(e) => {
+                                const n = parseInt(e.target.value, 10) || 0;
+                                setVeVariants((prev) =>
+                                  prev.map((r, i) => {
+                                    if (i !== vi) return r;
+                                    const next = [...r.valueIndexes];
+                                    next[oix] = n;
+                                    const selectedOpt = veOptions[oix];
+                                    if (
+                                      selectedOpt &&
+                                      isColorOptionName(selectedOpt)
+                                    ) {
+                                      const selectedVal = selectedOpt.values[n];
+                                      if (selectedVal?.imageUrl) {
+                                        return {
+                                          ...r,
+                                          valueIndexes: next,
+                                          media: [selectedVal.imageUrl],
+                                        };
+                                      }
+                                    }
+                                    return { ...r, valueIndexes: next };
+                                  }),
+                                );
+                              }}
+                              className={inputClass()}
+                            >
+                              {opt.values.map((val, j) => (
+                                <option
+                                  key={val.valueFr + String(j)}
+                                  value={j}
+                                >
+                                  {val.valueFr}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        );
+                      };
+
                       return (
                     <div
                       key={vi}
                       className="rounded-xl border border-[var(--border)] bg-white/60 p-3 dark:bg-black/20"
                     >
-                      <p className="mb-2 text-xs font-semibold text-[var(--fg)]">
-                        Variant: {rowLabel}
-                      </p>
+                      <div className="mb-2 space-y-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                          Variant row
+                        </p>
+                        {variantOptionGroups.colorIdx.length > 0 ? (
+                          <p className="text-xs font-semibold text-[var(--fg)]">
+                            <span className="font-medium text-[var(--muted)]">
+                              Color
+                            </span>{" "}
+                            {colorLabels.length
+                              ? colorLabels.join(", ")
+                              : "—"}
+                          </p>
+                        ) : null}
+                        {variantOptionGroups.sizeIdx.length > 0 ? (
+                          <p className="text-xs font-semibold text-[var(--fg)]">
+                            <span className="font-medium text-[var(--muted)]">
+                              Size
+                            </span>{" "}
+                            {sizeLabels.length
+                              ? sizeLabels.join(", ")
+                              : "—"}
+                          </p>
+                        ) : null}
+                        {variantOptionGroups.otherIdx.length > 0 ? (
+                          <p className="text-xs font-semibold text-[var(--fg)]">
+                            <span className="font-medium text-[var(--muted)]">
+                              Other
+                            </span>{" "}
+                            {otherLabels.length
+                              ? otherLabels.join(", ")
+                              : "—"}
+                          </p>
+                        ) : null}
+                        {fallbackLabel ? (
+                          <p className="text-xs font-semibold text-[var(--fg)]">
+                            {fallbackLabel}
+                          </p>
+                        ) : null}
+                      </div>
                       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         <label className="block sm:col-span-2">
                           <span className="text-[11px] text-[var(--muted)]">
@@ -1749,49 +1866,43 @@ export function ProductEditorClient({
                           ) : null}
                         </label>
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {veOptions.map((opt, oix) => (
-                          <label
-                            key={opt.nameFr + String(oix)}
-                            className="flex min-w-[8rem] flex-col gap-1"
-                          >
-                            <span className="text-[10px] text-[var(--muted)]">
-                              {opt.nameFr}
-                            </span>
-                            <select
-                              value={row.valueIndexes[oix] ?? 0}
-                              onChange={(e) => {
-                                const n = parseInt(e.target.value, 10) || 0;
-                                setVeVariants((prev) =>
-                                  prev.map((r, i) => {
-                                    if (i !== vi) return r;
-                                    const next = [...r.valueIndexes];
-                                    next[oix] = n;
-                                    const selectedOpt = veOptions[oix];
-                                    if (selectedOpt && isColorOptionName(selectedOpt)) {
-                                      const selectedVal = selectedOpt.values[n];
-                                      if (selectedVal?.imageUrl) {
-                                        return {
-                                          ...r,
-                                          valueIndexes: next,
-                                          media: [selectedVal.imageUrl],
-                                        };
-                                      }
-                                    }
-                                    return { ...r, valueIndexes: next };
-                                  }),
-                                );
-                              }}
-                              className={inputClass()}
-                            >
-                              {opt.values.map((val, j) => (
-                                <option key={val.valueFr + String(j)} value={j}>
-                                  {val.valueFr}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        ))}
+                      <div className="mt-3 space-y-3 border-t border-[var(--border)] pt-3">
+                        {variantOptionGroups.colorIdx.length > 0 ? (
+                          <div className="space-y-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                              Color / Couleur
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {variantOptionGroups.colorIdx.map((oix) =>
+                                renderOptionSelect(oix),
+                              )}
+                            </div>
+                          </div>
+                        ) : null}
+                        {variantOptionGroups.sizeIdx.length > 0 ? (
+                          <div className="space-y-2 rounded-lg border border-[var(--border)]/80 bg-[var(--surface)]/40 p-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                              Size / Taille
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {variantOptionGroups.sizeIdx.map((oix) =>
+                                renderOptionSelect(oix),
+                              )}
+                            </div>
+                          </div>
+                        ) : null}
+                        {variantOptionGroups.otherIdx.length > 0 ? (
+                          <div className="space-y-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                              Other options
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {variantOptionGroups.otherIdx.map((oix) =>
+                                renderOptionSelect(oix),
+                              )}
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                       <button
                         type="button"
