@@ -523,7 +523,8 @@ export function ProductEditorClient({
     setVeVariants((prev) =>
       prev.map((r, i) => {
         if (i !== rowIndex) return r;
-        return { ...r, media: [...r.media, ...next] };
+        // Keep a single media per row so each row stays specific to one variant.
+        return { ...r, media: [next[0]] };
       }),
     );
   }
@@ -1619,7 +1620,6 @@ export function ProductEditorClient({
                               <input
                                 type="file"
                                 accept="image/*,video/*"
-                                multiple
                                 className="sr-only"
                                 onChange={(e) => {
                                   void uploadVariantRowMedia(vi, e.target.files);
@@ -1644,52 +1644,40 @@ export function ProductEditorClient({
                           <p className="mt-1 text-[11px] text-[var(--muted)]">
                             Links are disabled here — upload files directly.
                           </p>
-                          {row.media.length > 0 ? (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {row.media.map((media, mediaIndex) => (
-                                  <div
-                                    key={`${vi}-${mediaIndex}`}
-                                    className="relative h-14 w-14 overflow-hidden rounded-lg border border-[var(--border)]"
-                                  >
-                                    {isVideoUrl(media) ? (
-                                      <video
-                                        src={media}
-                                        className="h-full w-full object-cover"
-                                        muted
-                                        playsInline
-                                        loop
-                                        autoPlay
-                                      />
-                                    ) : (
-                                      // eslint-disable-next-line @next/next/no-img-element
-                                      <img
-                                        src={media}
-                                        alt=""
-                                        className="h-full w-full object-cover"
-                                      />
-                                    )}
-                                    <button
-                                      type="button"
-                                      className="absolute right-0 top-0 rounded-bl-md bg-black/65 px-1 text-[10px] text-white"
-                                      onClick={() =>
-                                        setVeVariants((prev) =>
-                                          prev.map((r, i) => {
-                                            if (i !== vi) return r;
-                                            const kept = r.media.filter(
-                                              (_x, idx) => idx !== mediaIndex,
-                                            );
-                                            return {
-                                              ...r,
-                                              media: kept,
-                                            };
-                                          }),
-                                        )
-                                      }
-                                    >
-                                      x
-                                    </button>
-                                  </div>
-                                ))}
+                          {row.media[0] ? (
+                            <div className="mt-2">
+                              <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-[var(--border)]">
+                                {isVideoUrl(row.media[0]) ? (
+                                  <video
+                                    src={row.media[0]}
+                                    className="h-full w-full object-cover"
+                                    muted
+                                    playsInline
+                                    loop
+                                    autoPlay
+                                  />
+                                ) : (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={row.media[0]}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
+                                )}
+                                <button
+                                  type="button"
+                                  className="absolute right-0 top-0 rounded-bl-md bg-black/65 px-1 text-[10px] text-white"
+                                  onClick={() =>
+                                    setVeVariants((prev) =>
+                                      prev.map((r, i) =>
+                                        i === vi ? { ...r, media: [] } : r,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  x
+                                </button>
+                              </div>
                             </div>
                           ) : null}
                         </label>
