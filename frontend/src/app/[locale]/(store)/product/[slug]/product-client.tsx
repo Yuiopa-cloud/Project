@@ -267,10 +267,8 @@ export function ProductClient({
     setManualMainImage(null);
   }, [mainImages.join("|")]);
 
-  // With variants, selected option image always wins over manual thumbnail picks.
-  const main = variantsActive
-    ? mainImages[0] ?? galleryImages[0]
-    : manualMainImage ?? mainImages[0] ?? galleryImages[0];
+  // Thumbnail click can manually override the hero until next option change.
+  const main = manualMainImage ?? mainImages[0] ?? galleryImages[0];
 
   function pickValue(option: ProductOptionDef, value: ProductOptionVal) {
     setManualMainImage(null);
@@ -422,10 +420,7 @@ export function ProductClient({
                 key={`${url}-${i}`}
                 type="button"
                 whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  if (variantsActive) return;
-                  setManualMainImage(url);
-                }}
+                onClick={() => setManualMainImage(url)}
                 className={`relative h-[3.25rem] w-[3.25rem] shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-16 sm:w-16 ${
                   (manualMainImage ? manualMainImage === url : main === url)
                     ? "border-[var(--accent)] shadow-[0_0_14px_var(--accent-glow)]"
