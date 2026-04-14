@@ -130,6 +130,30 @@ function readTagsLine(
   return v.filter((x): x is string => typeof x === "string").join(", ");
 }
 
+function isVideoMime(type: string): boolean {
+  return type.startsWith("video/");
+}
+
+function isVideoUrl(url: string): boolean {
+  const u = url.trim().toLowerCase();
+  return (
+    u.startsWith("data:video/") ||
+    u.endsWith(".mp4") ||
+    u.endsWith(".webm") ||
+    u.endsWith(".ogg") ||
+    u.endsWith(".mov")
+  );
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result ?? ""));
+    fr.onerror = () => reject(fr.error ?? new Error("File read failed."));
+    fr.readAsDataURL(file);
+  });
+}
+
 function insertAroundSelection(
   el: HTMLTextAreaElement,
   before: string,
@@ -446,6 +470,74 @@ export function ProductEditorClient({
 
   function removeImage(index: number) {
     setImages((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function uploadOptionValueMedia(
+    optionIndex: number,
+    valueIndex: number,
+    file: File | null,
+  ) {
+    if (!file) return;
+    setMsg(null);
+    try {
+      const media = isVideoMime(file.type)
+        ? await fileToDataUrl(file)
+        : await compressImageFile(file);
+      setVeOptions((prev) =>
+        prev.map((o, oi) =>
+          oi !== optionIndex
+            ? o
+            : {
+                ...o,
+                values: o.values.map((v, vi) =>
+                  vi === valueIndex ? { ...v, imageUrl: media } : v,
+                ),
+              },
+        ),
+      );
+    } catch (e) {
+      logApiFailure("upload option value media", e);
+      setMsg(`Could not upload "${file.name}".`);
+    }
+  }
+
+  async function uploadVariantRowMedia(rowIndex: number, files: FileList | null) {
+    if (!files?.length) return;
+    setMsg(null);
+    const next: string[] = [];
+    for (let i = 0; i < files.length; i += 1) {
+      const file = files.item(i);
+      if (!file) continue;
+      try {
+        if (isVideoMime(file.type)) {
+          if (file.size > 25 * 1024 * 1024) {
+            setMsg(`Skipped "${file.name}" (max 25 MB for video).`);
+            continue;
+          }
+          next.push(await fileToDataUrl(file));
+        } else if (file.type.startsWith("image/")) {
+          if (file.size > 12 * 1024 * 1024) {
+            setMsg(`Skipped "${file.name}" (max 12 MB before compression).`);
+            continue;
+          }
+          next.push(await compressImageFile(file));
+        }
+      } catch (e) {
+        logApiFailure("upload variant media", e);
+        setMsg(`Could not process "${file.name}".`);
+      }
+    }
+    if (!next.length) return;
+    setVeVariants((prev) =>
+      prev.map((r, i) => {
+        if (i !== rowIndex) return r;
+        const existing = r.imagesLine
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        return { ...r, imagesLine: [...existing, ...next].join(", ") };
+      }),
+    );
   }
 
   function buildVariantsPutBody(): Record<string, unknown> {
@@ -1368,34 +1460,42 @@ export function ProductEditorClient({
                             className={`${inputClass()} w-28`}
                           />
                           <input
-                            placeholder="image URL (optional)"
+                            placeholder="Media (auto set after upload)"
                             value={val.imageUrl}
-                            onChange={(e) => {
-                              const t = e.target.value;
-                              setVeOptions((prev) =>
-                                prev.map((o, i) =>
-                                  i !== oi
-                                    ? o
-                                    : {
-                                        ...o,
-                                        values: o.values.map((vv, j) =>
-                                          j === vi
-                                            ? { ...vv, imageUrl: t }
-                                            : vv,
-                                        ),
-                                      },
-                                ),
-                              );
-                            }}
+                            readOnly
                             className={`${inputClass()} min-w-[14rem] flex-[2]`}
                           />
-                          {val.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={val.imageUrl}
-                              alt=""
-                              className="h-10 w-10 rounded-lg border border-[var(--border)] object-cover"
+                          <label className="cursor-pointer rounded-lg border border-[var(--border)] bg-white/90 px-2 py-2 text-[11px] font-medium text-[var(--fg)] dark:bg-black/25">
+                            Upload image/video
+                            <input
+                              type="file"
+                              accept="image/*,video/*"
+                              className="sr-only"
+                              onChange={(e) => {
+                                const file = e.target.files?.item(0) ?? null;
+                                void uploadOptionValueMedia(oi, vi, file);
+                                e.target.value = "";
+                              }}
                             />
+                          </label>
+                          {val.imageUrl ? (
+                            isVideoUrl(val.imageUrl) ? (
+                              <video
+                                src={val.imageUrl}
+                                className="h-10 w-10 rounded-lg border border-[var(--border)] object-cover"
+                                muted
+                                playsInline
+                                loop
+                                autoPlay
+                              />
+                            ) : (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={val.imageUrl}
+                                alt=""
+                                className="h-10 w-10 rounded-lg border border-[var(--border)] object-cover"
+                              />
+                            )
                           ) : null}
                           <button
                             type="button"
@@ -1549,20 +1649,96 @@ export function ProductEditorClient({
                         </label>
                         <label className="block sm:col-span-2 lg:col-span-4">
                           <span className="text-[11px] text-[var(--muted)]">
-                            Image URLs (comma-separated, optional)
+                            Variant media (upload images/videos)
                           </span>
-                          <input
-                            value={row.imagesLine}
-                            onChange={(e) => {
-                              const t = e.target.value;
-                              setVeVariants((prev) =>
-                                prev.map((r, i) =>
-                                  i === vi ? { ...r, imagesLine: t } : r,
-                                ),
-                              );
-                            }}
-                            className={inputClass()}
-                          />
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <label className="cursor-pointer rounded-lg border border-[var(--border)] bg-white/90 px-3 py-2 text-xs font-medium text-[var(--fg)] dark:bg-black/25">
+                              Upload image/video
+                              <input
+                                type="file"
+                                accept="image/*,video/*"
+                                multiple
+                                className="sr-only"
+                                onChange={(e) => {
+                                  void uploadVariantRowMedia(vi, e.target.files);
+                                  e.target.value = "";
+                                }}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              className="rounded-lg border border-[var(--border)] bg-white/90 px-3 py-2 text-xs font-medium text-[var(--fg)] dark:bg-black/25"
+                              onClick={() =>
+                                setVeVariants((prev) =>
+                                  prev.map((r, i) =>
+                                    i === vi ? { ...r, imagesLine: "" } : r,
+                                  ),
+                                )
+                              }
+                            >
+                              Clear media
+                            </button>
+                          </div>
+                          <p className="mt-1 text-[11px] text-[var(--muted)]">
+                            Links are disabled here — upload files directly.
+                          </p>
+                          {row.imagesLine.trim() ? (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {row.imagesLine
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean)
+                                .map((media, mediaIndex) => (
+                                  <div
+                                    key={`${vi}-${mediaIndex}`}
+                                    className="relative h-14 w-14 overflow-hidden rounded-lg border border-[var(--border)]"
+                                  >
+                                    {isVideoUrl(media) ? (
+                                      <video
+                                        src={media}
+                                        className="h-full w-full object-cover"
+                                        muted
+                                        playsInline
+                                        loop
+                                        autoPlay
+                                      />
+                                    ) : (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img
+                                        src={media}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                      />
+                                    )}
+                                    <button
+                                      type="button"
+                                      className="absolute right-0 top-0 rounded-bl-md bg-black/65 px-1 text-[10px] text-white"
+                                      onClick={() =>
+                                        setVeVariants((prev) =>
+                                          prev.map((r, i) => {
+                                            if (i !== vi) return r;
+                                            const kept = r.imagesLine
+                                              .split(",")
+                                              .map((x) => x.trim())
+                                              .filter(Boolean)
+                                              .filter(
+                                                (_x, idx) =>
+                                                  idx !== mediaIndex,
+                                              );
+                                            return {
+                                              ...r,
+                                              imagesLine: kept.join(", "),
+                                            };
+                                          }),
+                                        )
+                                      }
+                                    >
+                                      x
+                                    </button>
+                                  </div>
+                                ))}
+                            </div>
+                          ) : null}
                         </label>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">

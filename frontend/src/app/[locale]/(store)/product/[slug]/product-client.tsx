@@ -20,6 +20,18 @@ type ProductOptionVal = {
   sortOrder?: number;
 };
 
+function isVideoMedia(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const u = url.trim().toLowerCase();
+  return (
+    u.startsWith("data:video/") ||
+    u.endsWith(".mp4") ||
+    u.endsWith(".webm") ||
+    u.endsWith(".ogg") ||
+    u.endsWith(".mov")
+  );
+}
+
 type ProductOptionDef = {
   id: string;
   nameFr: string;
@@ -369,12 +381,23 @@ export function ProductClient({
                         >
                           {val.imageUrl ? (
                             <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full border border-[var(--border)]">
-                              <ProductImage
-                                src={val.imageUrl}
-                                alt=""
-                                fill
-                                className="object-cover"
-                              />
+                              {isVideoMedia(val.imageUrl) ? (
+                                <video
+                                  src={val.imageUrl}
+                                  className="h-full w-full object-cover"
+                                  muted
+                                  playsInline
+                                  loop
+                                  autoPlay
+                                />
+                              ) : (
+                                <ProductImage
+                                  src={val.imageUrl}
+                                  alt=""
+                                  fill
+                                  className="object-cover"
+                                />
+                              )}
                             </span>
                           ) : val.colorHex ? (
                             <span
