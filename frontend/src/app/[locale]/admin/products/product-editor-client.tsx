@@ -76,7 +76,7 @@ type VeVariant = {
   priceMad: string;
   compareAtMad: string;
   stock: number;
-  imagesLine: string;
+  media: string[];
   isDefault: boolean;
   valueIndexes: number[];
 };
@@ -143,6 +143,11 @@ function isVideoUrl(url: string): boolean {
     u.endsWith(".ogg") ||
     u.endsWith(".mov")
   );
+}
+
+function isColorOptionName(option: VeOption): boolean {
+  const combined = `${option.nameFr} ${option.nameAr}`.toLowerCase();
+  return /color|couleur|لون/.test(combined);
 }
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -411,7 +416,7 @@ export function ProductEditorClient({
             priceMad: v.priceMad ?? "",
             compareAtMad: v.compareAtMad ?? "",
             stock: v.stock,
-            imagesLine: (v.images ?? []).join(", "),
+            media: [...(v.images ?? [])],
             isDefault: v.isDefault,
             valueIndexes: [...(v.valueIndexes ?? [])],
           })),
@@ -518,11 +523,7 @@ export function ProductEditorClient({
     setVeVariants((prev) =>
       prev.map((r, i) => {
         if (i !== rowIndex) return r;
-        const existing = r.imagesLine
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
-        return { ...r, imagesLine: [...existing, ...next].join(", ") };
+        return { ...r, media: [...r.media, ...next] };
       }),
     );
   }
@@ -545,10 +546,7 @@ export function ProductEditorClient({
         ? v.compareAtMad.trim().replace(",", ".")
         : null,
       stock: v.stock,
-      images: v.imagesLine
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
+      images: v.media.filter(Boolean),
       isDefault: v.isDefault,
       valueIndexes: v.valueIndexes,
     }));
@@ -614,7 +612,7 @@ export function ProductEditorClient({
         priceMad: "",
         compareAtMad: "",
         stock: 0,
-        imagesLine: "",
+        media: [],
         isDefault: i === 0,
         valueIndexes,
       })),
@@ -1635,7 +1633,7 @@ export function ProductEditorClient({
                               onClick={() =>
                                 setVeVariants((prev) =>
                                   prev.map((r, i) =>
-                                    i === vi ? { ...r, imagesLine: "" } : r,
+                                    i === vi ? { ...r, media: [] } : r,
                                   ),
                                 )
                               }
@@ -1646,13 +1644,9 @@ export function ProductEditorClient({
                           <p className="mt-1 text-[11px] text-[var(--muted)]">
                             Links are disabled here — upload files directly.
                           </p>
-                          {row.imagesLine.trim() ? (
+                          {row.media.length > 0 ? (
                             <div className="mt-2 flex flex-wrap gap-2">
-                              {row.imagesLine
-                                .split(",")
-                                .map((s) => s.trim())
-                                .filter(Boolean)
-                                .map((media, mediaIndex) => (
+                              {row.media.map((media, mediaIndex) => (
                                   <div
                                     key={`${vi}-${mediaIndex}`}
                                     className="relative h-14 w-14 overflow-hidden rounded-lg border border-[var(--border)]"
@@ -1681,17 +1675,12 @@ export function ProductEditorClient({
                                         setVeVariants((prev) =>
                                           prev.map((r, i) => {
                                             if (i !== vi) return r;
-                                            const kept = r.imagesLine
-                                              .split(",")
-                                              .map((x) => x.trim())
-                                              .filter(Boolean)
-                                              .filter(
-                                                (_x, idx) =>
-                                                  idx !== mediaIndex,
-                                              );
+                                            const kept = r.media.filter(
+                                              (_x, idx) => idx !== mediaIndex,
+                                            );
                                             return {
                                               ...r,
-                                              imagesLine: kept.join(", "),
+                                              media: kept,
                                             };
                                           }),
                                         )
@@ -1723,6 +1712,17 @@ export function ProductEditorClient({
                                     if (i !== vi) return r;
                                     const next = [...r.valueIndexes];
                                     next[oix] = n;
+                                    const selectedOpt = veOptions[oix];
+                                    if (selectedOpt && isColorOptionName(selectedOpt)) {
+                                      const selectedVal = selectedOpt.values[n];
+                                      if (selectedVal?.imageUrl) {
+                                        return {
+                                          ...r,
+                                          valueIndexes: next,
+                                          media: [selectedVal.imageUrl],
+                                        };
+                                      }
+                                    }
                                     return { ...r, valueIndexes: next };
                                   }),
                                 );
@@ -1763,7 +1763,7 @@ export function ProductEditorClient({
                         priceMad: "",
                         compareAtMad: "",
                         stock: 0,
-                        imagesLine: "",
+                        media: [],
                         isDefault: prev.length === 0,
                         valueIndexes: veOptions.map(() => 0),
                       },
