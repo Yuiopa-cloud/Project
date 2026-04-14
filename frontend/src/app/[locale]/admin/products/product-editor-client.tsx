@@ -693,19 +693,12 @@ export function ProductEditorClient({
         imageUrl: v.imageUrl?.trim() || undefined,
       })),
     }));
-    const matrixMode = Boolean(colorSizeMatrix);
     const variants = veVariants.map((v) => ({
       sku: v.sku.trim().toUpperCase(),
-      priceMad: matrixMode
-        ? null
-        : v.priceMad.trim()
-          ? v.priceMad.trim().replace(",", ".")
-          : null,
-      compareAtMad: matrixMode
-        ? null
-        : v.compareAtMad.trim()
-          ? v.compareAtMad.trim().replace(",", ".")
-          : null,
+      priceMad: v.priceMad.trim() ? v.priceMad.trim().replace(",", ".") : null,
+      compareAtMad: v.compareAtMad.trim()
+        ? v.compareAtMad.trim().replace(",", ".")
+        : null,
       stock: v.stock,
       images: v.media.filter(Boolean),
       isDefault: v.isDefault,
@@ -755,19 +748,12 @@ export function ProductEditorClient({
     }
     setMsg(null);
     try {
-      const matrixMode = Boolean(colorSizeMatrix);
       const body = {
         sku: row.sku.trim().toUpperCase(),
-        priceMad: matrixMode
-          ? null
-          : row.priceMad.trim()
-            ? row.priceMad.trim().replace(",", ".")
-            : null,
-        compareAtMad: matrixMode
-          ? null
-          : row.compareAtMad.trim()
-            ? row.compareAtMad.trim().replace(",", ".")
-            : null,
+        priceMad: row.priceMad.trim() ? row.priceMad.trim().replace(",", ".") : null,
+        compareAtMad: row.compareAtMad.trim()
+          ? row.compareAtMad.trim().replace(",", ".")
+          : null,
         stock: row.stock,
         images: row.media.filter(Boolean),
         isDefault: row.isDefault,
@@ -1513,15 +1499,13 @@ export function ProductEditorClient({
                   >
                     + Size option (S → XXXL)
                   </button>
-                  {colorSizeMatrix ? null : (
-                    <button
-                      type="button"
-                      className="rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-3 py-2 text-xs font-semibold text-slate-900"
-                      onClick={() => generateVariantGrid()}
-                    >
-                      Generate all combinations
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-3 py-2 text-xs font-semibold text-slate-900"
+                    onClick={() => generateVariantGrid()}
+                  >
+                    Generate all combinations
+                  </button>
                   <button
                     type="button"
                     className="rounded-xl border border-[var(--accent)]/50 bg-[var(--accent-dim)] px-3 py-2 text-xs font-semibold text-[var(--fg)]"
@@ -1757,13 +1741,18 @@ export function ProductEditorClient({
                       Size availability by color (matrix)
                     </p>
                     <p className="mt-1 text-[11px] leading-relaxed text-[var(--muted)]">
-                      Manage everything here: one row per color, columns{" "}
+                      Quick editing: one row per color, columns{" "}
                       <span className="font-mono">S … XXXL</span>.{" "}
-                      <strong>Not offered (—)</strong> removes that color/size
-                      from the store. <strong>Stock</strong> is per cell; price
-                      uses the product’s base price (no per-size price). SKUs
-                      are generated automatically. Use “Add missing S–XXXL
-                      values” if a column shows “—”.
+                      <strong>Not offered (—)</strong> removes that color/size.
+                      <strong> Stock</strong> per cell stays in sync with the
+                      matching variant row below. For{" "}
+                      <strong>SKU</strong>,{" "}
+                      <strong>price override</strong>,{" "}
+                      <strong>compare-at</strong>, and{" "}
+                      <strong>variant media</strong>, use{" "}
+                      <strong>Variant rows</strong> under this table. New cells
+                      get an auto-SKU; you can change it in the row. Use “Add
+                      missing S–XXXL values” if a column shows “—”.
                     </p>
                     <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--border)]">
                       <table className="w-full min-w-[52rem] border-collapse text-left text-[11px]">
@@ -1877,13 +1866,15 @@ export function ProductEditorClient({
 
                 {colorSizeMatrix ? (
                   <p className="text-[11px] leading-relaxed text-[var(--muted)]">
-                    <strong className="text-[var(--fg)]">Behind the scenes</strong>{" "}
-                    each offered cell is still saved as one variant (for cart &
-                    inventory). You only edit the grid above — no long list of
-                    rows.
+                    <strong className="text-[var(--fg)]">Variant rows</strong>{" "}
+                    list every color × size combination (same data as the
+                    matrix). Use the matrix for fast availability and stock; use
+                    each row for SKU, optional price/compare-at overrides, media,
+                    and default variant.
                   </p>
-                ) : (
-                  <>
+                ) : null}
+
+                <>
                 <p className="text-xs font-semibold text-[var(--fg)]">
                   Variant rows
                 </p>
@@ -2253,8 +2244,7 @@ export function ProductEditorClient({
                 >
                   + Add variant row manually
                 </button>
-                  </>
-                )}
+                </>
               </div>
             ) : null}
           </CollapsibleSection>
