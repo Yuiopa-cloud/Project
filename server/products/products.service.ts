@@ -121,13 +121,21 @@ export class ProductsService {
         )
         .join(' · ');
 
+    const colorOption = p.options.find((o) =>
+      /color|couleur|لون/i.test(`${o.nameFr} ${o.nameAr}`),
+    );
+
     const mapVariant = (v: (typeof p.variants)[0]) => {
       const price = v.priceMad ?? p.priceMad;
       const compare = v.compareAtMad ?? p.compareAtMad;
       const imgs = v.images.length > 0 ? v.images : p.images;
+      const colorSelection = colorOption
+        ? v.selections.find((s) => s.optionId === colorOption.id)
+        : null;
       return {
         id: v.id,
         sku: v.sku,
+        color: colorSelection?.optionValue.valueFr ?? null,
         stock: v.stock,
         priceMad: price.toString(),
         compareAtMad: compare?.toString() ?? null,

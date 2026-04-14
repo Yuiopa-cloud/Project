@@ -43,6 +43,7 @@ type ProductOptionDef = {
 type ProductVariantRow = {
   id: string;
   sku: string;
+  color?: string | null;
   stock: number;
   priceMad: string;
   compareAtMad: string | null;
@@ -126,6 +127,9 @@ export function ProductClient({
   }, [product.options]);
 
   const [picked, setPicked] = useState<Record<string, string>>({});
+  const [lastChangedOptionId, setLastChangedOptionId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!variantsActive || !product.variants?.length) return;
@@ -160,7 +164,6 @@ export function ProductClient({
     );
   }, [variantsActive, product.variants, picked, sortedOptions]);
 
-  const previewVariant = compatibleVariants[0] ?? product.variants?.[0];
   const activeVariant = useMemo(() => {
     if (!variantsActive || !product.variants?.length) return null;
     if (!sortedOptions.length) return null;
@@ -172,6 +175,25 @@ export function ProductClient({
       ) ?? null
     );
   }, [variantsActive, product.variants, picked, sortedOptions]);
+
+  const previewVariant = useMemo(() => {
+    if (!variantsActive || !product.variants?.length) return null;
+    if (activeVariant) return activeVariant;
+    if (lastChangedOptionId && picked[lastChangedOptionId]) {
+      const pref = compatibleVariants.find(
+        (v) => v.selection[lastChangedOptionId] === picked[lastChangedOptionId],
+      );
+      if (pref) return pref;
+    }
+    return compatibleVariants[0] ?? product.variants[0] ?? null;
+  }, [
+    variantsActive,
+    product.variants,
+    activeVariant,
+    compatibleVariants,
+    lastChangedOptionId,
+    picked,
+  ]);
 
   const displayImages = useMemo(() => {
     const src =
@@ -194,6 +216,7 @@ export function ProductClient({
   const main = displayImages[img] ?? displayImages[0];
 
   function pickValue(optionId: string, valueId: string) {
+    setLastChangedOptionId(optionId);
     setPicked((prev) => {
       const next = { ...prev, [optionId]: valueId };
       const oi = sortedOptions.findIndex((o) => o.id === optionId);

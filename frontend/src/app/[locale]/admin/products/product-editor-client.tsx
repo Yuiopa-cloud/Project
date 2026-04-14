@@ -272,6 +272,10 @@ export function ProductEditorClient({
   const [veEnabled, setVeEnabled] = useState(false);
   const [veOptions, setVeOptions] = useState<VeOption[]>([]);
   const [veVariants, setVeVariants] = useState<VeVariant[]>([]);
+  const colorOptionIndex = useMemo(
+    () => veOptions.findIndex((o) => isColorOptionName(o)),
+    [veOptions],
+  );
 
   const productUrlPrefix = useMemo(() => {
     if (typeof window === "undefined") return `/${locale}/product/`;
@@ -1517,10 +1521,25 @@ export function ProductEditorClient({
                 </p>
                 <div className="space-y-3">
                   {veVariants.map((row, vi) => (
+                    (() => {
+                      const colorValueIdx =
+                        colorOptionIndex >= 0 ? row.valueIndexes[colorOptionIndex] : undefined;
+                      const colorValue =
+                        colorOptionIndex >= 0 && colorValueIdx != null
+                          ? veOptions[colorOptionIndex]?.values[colorValueIdx]
+                          : null;
+                      const rowLabel =
+                        colorValue?.valueFr?.trim() ||
+                        colorValue?.valueAr?.trim() ||
+                        `#${vi + 1}`;
+                      return (
                     <div
                       key={vi}
                       className="rounded-xl border border-[var(--border)] bg-white/60 p-3 dark:bg-black/20"
                     >
+                      <p className="mb-2 text-xs font-semibold text-[var(--fg)]">
+                        Variant: {rowLabel}
+                      </p>
                       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         <label className="block sm:col-span-2">
                           <span className="text-[11px] text-[var(--muted)]">
@@ -1738,6 +1757,8 @@ export function ProductEditorClient({
                         Remove row
                       </button>
                     </div>
+                      );
+                    })()
                   ))}
                 </div>
                 <button
