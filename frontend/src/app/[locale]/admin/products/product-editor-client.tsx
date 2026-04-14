@@ -1264,6 +1264,27 @@ export function ProductEditorClient({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         onSubmit={onSubmit}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          const t = e.target;
+          if (!(t instanceof HTMLElement)) return;
+          if (t.tagName === "TEXTAREA") return;
+          if (t.tagName !== "INPUT") return;
+          const inp = t as HTMLInputElement;
+          if (
+            inp.type === "submit" ||
+            inp.type === "button" ||
+            inp.type === "checkbox" ||
+            inp.type === "radio" ||
+            inp.type === "file" ||
+            inp.type === "reset"
+          ) {
+            return;
+          }
+          // Avoid nested-form bugs: Enter in a field must not submit the whole
+          // product form (use the Save button). Chip “Add” handles Enter itself.
+          e.preventDefault();
+        }}
         className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start"
       >
         {/* Main column */}
@@ -1659,26 +1680,27 @@ export function ProductEditorClient({
                             </div>
                           );
                         })}
-                        <form
-                          className="inline-flex min-w-[12rem] flex-1 gap-2 sm:max-w-sm"
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            addSimpleColor();
-                          }}
-                        >
+                        <div className="inline-flex min-w-[12rem] flex-1 gap-2 sm:max-w-sm">
                           <input
                             value={colorChipDraft}
                             onChange={(e) => setColorChipDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter") return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              addSimpleColor();
+                            }}
                             placeholder="Type a name — Enter to add"
                             className={`${inputClass()} !mt-0 min-w-0 flex-1 text-xs`}
                           />
                           <button
-                            type="submit"
+                            type="button"
                             className="shrink-0 rounded-xl bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-slate-900"
+                            onClick={() => addSimpleColor()}
                           >
                             Add
                           </button>
-                        </form>
+                        </div>
                       </div>
                     </div>
 
