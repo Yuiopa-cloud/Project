@@ -82,6 +82,14 @@ type VeVariant = {
   valueIndexes: number[];
 };
 
+type SimpleVariantCardRow = {
+  key: string;
+  ci: number;
+  si: number | null;
+  cv: VeOption["values"][number];
+  sv: VeOption["values"][number] | null;
+};
+
 function friendlyNetworkError(err: unknown): string {
   if (!(err instanceof Error)) return "Network error.";
   const m = err.message.toLowerCase();
@@ -337,27 +345,79 @@ export function ProductEditorClient({
   const [veOptions, setVeOptions] = useState<VeOption[]>([]);
   const [veVariants, setVeVariants] = useState<VeVariant[]>([]);
   const [colorChipDraft, setColorChipDraft] = useState("");
+  const [sizeChipDraft, setSizeChipDraft] = useState("");
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
+  const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
 
-  /** Simple chips + cards whenever there is exactly one variant option (any name). */
-  const simpleColorVariantMode = useMemo(() => {
-    if (!veEnabled || veOptions.length !== 1) return false;
-    return true;
+  /**
+   * Simple editor: one “primary” option (colors), optional second = sizes.
+   * Anything else falls back to the advanced panel.
+   */
+  const simpleUnifiedVariantMode = useMemo(() => {
+    if (!veEnabled || !veOptions.length) return false;
+    if (veOptions.length === 1) return true;
+    if (veOptions.length === 2 && isSizeOptionName(veOptions[1]!)) return true;
+    return false;
   }, [veEnabled, veOptions]);
+
+  const simpleSizesEnabled = useMemo(
+    () =>
+      simpleUnifiedVariantMode &&
+      veOptions.length === 2 &&
+      (veOptions[1]?.values.length ?? 0) > 0,
+    [simpleUnifiedVariantMode, veOptions],
+  );
+
+  const simpleVariantCardRows = useMemo((): SimpleVariantCardRow[] => {
+    const o0 = veOptions[0];
+    if (!simpleUnifiedVariantMode || !o0?.values.length) return [];
+    const colors = o0.values;
+    if (!simpleSizesEnabled) {
+      return colors.map((cv, ci) => ({
+        key: `simple-v-${ci}`,
+        ci,
+        si: null,
+        cv,
+        sv: null,
+      }));
+    }
+    const sizes = veOptions[1]!.values;
+    return colors.flatMap((cv, ci) =>
+      sizes.map((sv, si) => ({
+        key: `simple-v-${ci}-${si}`,
+        ci,
+        si,
+        cv,
+        sv,
+      })),
+    );
+  }, [simpleUnifiedVariantMode, simpleSizesEnabled, veOptions]);
 
   const simpleVariantUiLabels = useMemo(() => {
     const opt = veOptions[0];
     const colorish = opt ? isColorOptionName(opt) : false;
     const dim = opt?.nameFr?.trim() || "Option";
+    const hasSizeDim =
+      veOptions.length === 2 && (veOptions[1]?.values.length ?? 0) > 0;
     return {
       step1Title: colorish ? "Colors" : `${dim} choices`,
       step1Hint: colorish
         ? "Type a color name and press Enter, or click Add."
         : `Add each choice for “${dim}” (press Enter or Add).`,
-      step2Title: colorish ? "Each color" : "Each choice",
+      step2Title: colorish
+        ? hasSizeDim
+          ? "Each color & size"
+          : "Each color"
+        : hasSizeDim
+          ? "Each choice & size"
+          : "Each choice",
       step2Hint: colorish
-        ? "One card per color — image, price, stock, and SKU. Only this card changes when you edit it."
-        : "One card per choice — image, price, stock, and SKU. Only this card changes when you edit it.",
+        ? hasSizeDim
+          ? "One card per color and size — image, price, stock, and SKU per combination."
+          : "One card per color — image, price, stock, and SKU. Only this card changes when you edit it."
+        : hasSizeDim
+          ? "One card per primary choice and size combination."
+          : "One card per choice — image, price, stock, and SKU. Only this card changes when you edit it.",
       chipFallback: (i: number) => (colorish ? `Color ${i + 1}` : `${dim} ${i + 1}`),
       emptyHint: colorish
         ? "Add at least one color to create variant cards."
@@ -365,10 +425,13 @@ export function ProductEditorClient({
     };
   }, [veOptions]);
 
-  const simpleColorSignature = useMemo(() => {
-    if (!simpleColorVariantMode || !veOptions[0]) return "";
-    return veOptions[0].values.map((v) => v.valueFr.trim()).join("\u001f");
-  }, [simpleColorVariantMode, veOptions]);
+  const simpleSyncSignature = useMemo(() => {
+    if (!simpleUnifiedVariantMode || !veOptions[0]) return "";
+    const a = veOptions[0].values.map((v) => v.valueFr.trim()).join("\u001f");
+    const b =
+      veOptions[1]?.values.map((v) => v.valueFr.trim()).join("\u001f") ?? "";
+    return `${a}\u001e${b}\u001e${veOptions.length}`;
+  }, [simpleUnifiedVariantMode, veOptions]);
 
   const variantOptionGroups = useMemo(() => {
     const colorIdx: number[] = [];
@@ -530,64 +593,144 @@ export function ProductEditorClient({
   );
 
   useEffect(() => {
-    if (!simpleColorVariantMode || !veOptions[0]) return;
+    if (!simpleUnifiedVariantMode || !veOptions[0]) return;
     const colors = veOptions[0].values;
-    const n = colors.length;
+    const sizes = veOptions[1]?.values ?? [];
+    const nc = colors.length;
+    const ns = sizes.length;
+
     setVeVariants((prev) => {
-      const byIdx = new Map<number, VeVariant>();
-      for (const r of prev) {
-        const ci = r.valueIndexes[0];
-        if (typeof ci === "number" && ci >= 0 && ci < n) {
-          byIdx.set(ci, r);
-        }
-      }
       const base = (skuReadonly || slug || "VAR")
         .toUpperCase()
         .replace(/[^A-Z0-9]+/g, "-")
         .replace(/^-|-$/g, "")
         .slice(0, 20);
-      const next: VeVariant[] = [];
-      for (let i = 0; i < n; i++) {
-        const cv = colors[i]!;
-        let r = byIdx.get(i);
-        const label = cv.valueFr.trim() || `Color ${i + 1}`;
-        if (!r) {
-          r = {
-            sku: `${base || "VAR"}-${variantSkuSuffixFromLabel(label, i)}`
-              .toUpperCase()
-              .replace(/[^A-Z0-9-]+/g, "-")
-              .slice(0, 80),
-            priceMad: "",
-            compareAtMad: "",
-            stock: 0,
-            media: cv.imageUrl?.trim() ? [cv.imageUrl.trim()] : [],
-            isDefault: next.length === 0,
-            valueIndexes: [i],
-          };
-        } else {
-          r = { ...r, valueIndexes: [i] };
+
+      if (nc === 0) return [];
+
+      // Color-only (no size dimension or sizes not used yet)
+      if (ns === 0) {
+        const byCi = new Map<number, VeVariant>();
+        for (const r of prev) {
+          const ci = r.valueIndexes[0];
+          if (typeof ci !== "number" || ci < 0 || ci >= nc) continue;
+          const existing = byCi.get(ci);
+          if (!existing || r.valueIndexes.length === 1) byCi.set(ci, r);
         }
-        next.push(r);
+        const next: VeVariant[] = [];
+        for (let ci = 0; ci < nc; ci++) {
+          const cv = colors[ci]!;
+          let r = byCi.get(ci);
+          const label = cv.valueFr.trim() || `Color ${ci + 1}`;
+          if (!r) {
+            r = {
+              sku: `${base || "VAR"}-${variantSkuSuffixFromLabel(label, ci)}`
+                .toUpperCase()
+                .replace(/[^A-Z0-9-]+/g, "-")
+                .slice(0, 80),
+              priceMad: "",
+              compareAtMad: "",
+              stock: 0,
+              media: cv.imageUrl?.trim() ? [cv.imageUrl.trim()] : [],
+              isDefault: next.length === 0,
+              valueIndexes: [ci],
+            };
+          } else {
+            r = { ...r, valueIndexes: [ci] };
+          }
+          next.push(r);
+        }
+        if (next.length && !next.some((x) => x.isDefault)) {
+          next[0] = { ...next[0]!, isDefault: true };
+        }
+        return next;
+      }
+
+      // Color × size grid
+      const byPair = new Map<string, VeVariant>();
+      for (const r of prev) {
+        const ci = r.valueIndexes[0];
+        const si = r.valueIndexes[1];
+        if (
+          typeof ci === "number" &&
+          typeof si === "number" &&
+          ci >= 0 &&
+          ci < nc &&
+          si >= 0 &&
+          si < ns
+        ) {
+          byPair.set(`${ci},${si}`, r);
+        }
+        if (typeof ci === "number" && r.valueIndexes.length === 1 && ci < nc) {
+          const k = `${ci},0`;
+          if (!byPair.has(k)) {
+            byPair.set(k, { ...r, valueIndexes: [ci, 0] });
+          }
+        }
+      }
+
+      const next: VeVariant[] = [];
+      for (let ci = 0; ci < nc; ci++) {
+        const cv = colors[ci]!;
+        const colorLabel = cv.valueFr.trim() || `C${ci}`;
+        for (let si = 0; si < ns; si++) {
+          const sv = sizes[si]!;
+          const sizeLabel = sv.valueFr.trim() || `S${si}`;
+          const k = `${ci},${si}`;
+          let r = byPair.get(k);
+          if (!r) {
+            const inherit = byPair.get(`${ci},0`);
+            r = {
+              sku: `${base || "VAR"}-${variantSkuSuffixFromLabel(colorLabel, ci)}-${variantSkuSuffixFromLabel(sizeLabel, si)}`
+                .toUpperCase()
+                .replace(/[^A-Z0-9-]+/g, "-")
+                .slice(0, 80),
+              priceMad: inherit?.priceMad ?? "",
+              compareAtMad: inherit?.compareAtMad ?? "",
+              stock: inherit?.stock ?? 0,
+              media:
+                inherit?.media?.length && inherit.media[0]
+                  ? [...inherit.media]
+                  : cv.imageUrl?.trim()
+                    ? [cv.imageUrl.trim()]
+                    : [],
+              isDefault: next.length === 0,
+              valueIndexes: [ci, si],
+            };
+          } else {
+            r = { ...r, valueIndexes: [ci, si] };
+          }
+          next.push(r);
+        }
       }
       if (next.length && !next.some((x) => x.isDefault)) {
         next[0] = { ...next[0]!, isDefault: true };
       }
       return next;
     });
-  }, [simpleColorVariantMode, simpleColorSignature, skuReadonly, slug, veOptions]);
+  }, [simpleUnifiedVariantMode, simpleSyncSignature, skuReadonly, slug, veOptions]);
 
   useEffect(() => {
-    if (!simpleColorVariantMode) return;
-    const n = veOptions[0]?.values.length ?? 0;
-    if (n <= 0) return;
-    setSelectedColorIndex((i) => Math.min(Math.max(0, i), n - 1));
-  }, [simpleColorVariantMode, simpleColorSignature, veOptions]);
+    if (!simpleUnifiedVariantMode) return;
+    const nc = veOptions[0]?.values.length ?? 0;
+    const ns = veOptions[1]?.values.length ?? 0;
+    if (nc <= 0) return;
+    setSelectedColorIndex((i) => Math.min(Math.max(0, i), nc - 1));
+    if (ns > 0) {
+      setSelectedSizeIndex((i) => Math.min(Math.max(0, i), ns - 1));
+    } else {
+      setSelectedSizeIndex(0);
+    }
+  }, [simpleUnifiedVariantMode, simpleSyncSignature, veOptions]);
 
   const removeSimpleColor = useCallback((index: number) => {
     setVeOptions((prev) => {
-      if (prev.length !== 1 || !isColorOptionName(prev[0]!)) return prev;
-      const o = prev[0]!;
-      return [{ ...o, values: o.values.filter((_, j) => j !== index) }];
+      if (prev.length < 1) return prev;
+      const o0 = {
+        ...prev[0]!,
+        values: prev[0]!.values.filter((_, j) => j !== index),
+      };
+      return [o0, ...prev.slice(1)];
     });
   }, []);
 
@@ -596,7 +739,7 @@ export function ProductEditorClient({
     if (!name) return;
     setColorChipDraft("");
     setVeOptions((prev) => {
-      if (prev.length !== 1 || !isColorOptionName(prev[0]!)) return prev;
+      if (prev.length < 1) return prev;
       const o = prev[0]!;
       if (
         o.values.some(
@@ -616,9 +759,75 @@ export function ProductEditorClient({
       ];
       const pick = newValues.length - 1;
       setTimeout(() => setSelectedColorIndex(pick), 0);
-      return [{ ...o, values: newValues }];
+      return [{ ...o, values: newValues }, ...prev.slice(1)];
     });
   }, [colorChipDraft]);
+
+  const removeSimpleSize = useCallback((sizeIndex: number) => {
+    setVeOptions((prev) => {
+      if (prev.length !== 2) return prev;
+      const nextVals = prev[1]!.values.filter((_, j) => j !== sizeIndex);
+      if (nextVals.length === 0) {
+        return [prev[0]!];
+      }
+      return [{ ...prev[0]! }, { ...prev[1]!, values: nextVals }];
+    });
+  }, []);
+
+  const addSimpleSize = useCallback(() => {
+    const name = sizeChipDraft.trim();
+    if (!name) return;
+    setSizeChipDraft("");
+    setVeOptions((prev) => {
+      if (prev.length !== 2) return prev;
+      const o1 = prev[1]!;
+      if (
+        o1.values.some(
+          (v) => v.valueFr.trim().toLowerCase() === name.toLowerCase(),
+        )
+      ) {
+        return prev;
+      }
+      const newValues = [
+        ...o1.values,
+        {
+          valueFr: name,
+          valueAr: name,
+          colorHex: "",
+          imageUrl: "",
+        },
+      ];
+      const pick = newValues.length - 1;
+      setTimeout(() => setSelectedSizeIndex(pick), 0);
+      return [prev[0]!, { ...o1, values: newValues }];
+    });
+  }, [sizeChipDraft]);
+
+  const toggleSimpleSizes = useCallback((on: boolean) => {
+    if (on) {
+      setVeOptions((prev) => {
+        if (prev.length !== 1) return prev;
+        return [
+          prev[0]!,
+          {
+            nameFr: "Size",
+            nameAr: "المقاس",
+            values: STANDARD_SIZE_LABELS.map((label) => ({
+              valueFr: label,
+              valueAr: label,
+              colorHex: "",
+              imageUrl: "",
+            })),
+          },
+        ];
+      });
+      return;
+    }
+    setVeOptions((prev) => {
+      if (prev.length !== 2) return prev;
+      return [prev[0]!];
+    });
+  }, []);
 
   const productUrlPrefix = useMemo(() => {
     if (typeof window === "undefined") return `/${locale}/product/`;
@@ -954,14 +1163,37 @@ export function ProductEditorClient({
 
   function validateVariantConfig(): string | null {
     if (!veEnabled) return null;
-    const simple = veOptions.length === 1;
-    if (simple) {
-      const values = veOptions[0]!.values;
-      if (!values.length) {
+    const simpleOne = veOptions.length === 1;
+    const simpleTwo =
+      veOptions.length === 2 && isSizeOptionName(veOptions[1]!);
+    if (simpleOne || simpleTwo) {
+      const colors = veOptions[0]!.values;
+      if (!colors.length) {
         return "Add at least one variant choice, or turn off variants.";
       }
-      if (veVariants.length !== values.length) {
+      const sizes = veOptions[1]?.values ?? [];
+      const sizeGrid = simpleTwo && sizes.length > 0;
+      const expected = sizeGrid ? colors.length * sizes.length : colors.length;
+      if (veVariants.length !== expected) {
         return "Choices and variants are out of sync. Try editing the list again.";
+      }
+      if (sizeGrid) {
+        let k = 0;
+        for (let ci = 0; ci < colors.length; ci++) {
+          for (let si = 0; si < sizes.length; si++) {
+            const r = veVariants[k];
+            if (
+              !r ||
+              r.valueIndexes.length !== 2 ||
+              r.valueIndexes[0] !== ci ||
+              r.valueIndexes[1] !== si
+            ) {
+              return "A variant row does not match color × size — reload the editor.";
+            }
+            k += 1;
+          }
+        }
+        return null;
       }
       for (let i = 0; i < veVariants.length; i += 1) {
         if (
@@ -1626,7 +1858,7 @@ export function ProductEditorClient({
             </p>
             {veEnabled ? (
               <div className="mt-4 space-y-5">
-                {simpleColorVariantMode ? (
+                {simpleUnifiedVariantMode ? (
                   <div className="space-y-8">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
@@ -1704,6 +1936,92 @@ export function ProductEditorClient({
                       </div>
                     </div>
 
+                    {veOptions[0] ? (
+                      <label className="mt-2 flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--border)] bg-white/50 px-3 py-2.5 dark:bg-black/20">
+                        <input
+                          type="checkbox"
+                          checked={
+                            veOptions.length === 2 &&
+                            Boolean(veOptions[1]) &&
+                            isSizeOptionName(veOptions[1]!)
+                          }
+                          onChange={(e) => toggleSimpleSizes(e.target.checked)}
+                          className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent-hot)]"
+                        />
+                        <span className="text-sm text-[var(--fg)]">
+                          This product has sizes
+                        </span>
+                      </label>
+                    ) : null}
+
+                    {simpleSizesEnabled ? (
+                      <div className="mt-4">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                          Sizes
+                        </p>
+                        <p className="mt-1 text-[11px] text-[var(--muted)]">
+                          Select a size for the highlighted card below. Remove
+                          with × or add custom sizes.
+                        </p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          {(veOptions[1]?.values ?? []).map((chip, si) => {
+                            const sel = selectedSizeIndex === si;
+                            return (
+                              <div
+                                key={`size-chip-${si}-${chip.valueFr}`}
+                                className={`inline-flex items-center gap-2 rounded-full border px-2 py-1 text-xs font-medium transition ${
+                                  sel
+                                    ? "border-[var(--accent)] bg-[var(--accent-dim)] text-[var(--fg)] ring-2 ring-[var(--accent)]/30"
+                                    : "border-[var(--border)] bg-white/80 text-[var(--fg)] dark:bg-black/30"
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  title="Select this size"
+                                  onClick={() => setSelectedSizeIndex(si)}
+                                  className="rounded-full px-1.5"
+                                >
+                                  {chip.valueFr.trim() || `Size ${si + 1}`}
+                                </button>
+                                <button
+                                  type="button"
+                                  title="Remove size"
+                                  className="rounded-full px-1.5 text-base leading-none text-rose-600 hover:bg-rose-500/15"
+                                  onClick={(ev) => {
+                                    ev.stopPropagation();
+                                    removeSimpleSize(si);
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })}
+                          <div className="inline-flex min-w-[12rem] flex-1 gap-2 sm:max-w-sm">
+                            <input
+                              value={sizeChipDraft}
+                              onChange={(e) => setSizeChipDraft(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key !== "Enter") return;
+                                e.preventDefault();
+                                e.stopPropagation();
+                                addSimpleSize();
+                              }}
+                              placeholder="Size — Enter to add"
+                              className={`${inputClass()} !mt-0 min-w-0 flex-1 text-xs`}
+                            />
+                            <button
+                              type="button"
+                              className="shrink-0 rounded-xl bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-slate-900"
+                              onClick={() => addSimpleSize()}
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
                     {(veOptions[0]?.values ?? []).length > 0 ? (
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
@@ -1713,25 +2031,49 @@ export function ProductEditorClient({
                           {simpleVariantUiLabels.step2Hint}
                         </p>
                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                          {(veOptions[0]?.values ?? []).map((cv, ci) => {
-                            const vi = veVariants.findIndex(
-                              (r) => r.valueIndexes[0] === ci,
-                            );
+                          {simpleVariantCardRows.map(({ key, ci, si, cv, sv }) => {
+                            const vi =
+                              si != null
+                                ? veVariants.findIndex(
+                                    (r) =>
+                                      r.valueIndexes[0] === ci &&
+                                      r.valueIndexes[1] === si,
+                                  )
+                                : veVariants.findIndex(
+                                    (r) => r.valueIndexes[0] === ci,
+                                  );
                             const row = vi >= 0 ? veVariants[vi] : null;
                             if (!row) return null;
                             const sw =
                               cv.colorHex?.trim() ||
                               guessHexFromColorName(cv.valueFr);
-                            const cardSel = selectedColorIndex === ci;
+                            const cardSel =
+                              selectedColorIndex === ci &&
+                              (si == null || selectedSizeIndex === si);
+                            const colorLabel =
+                              cv.valueFr.trim() ||
+                              simpleVariantUiLabels.chipFallback(ci);
+                            const sizeLabel =
+                              sv != null && si != null
+                                ? sv.valueFr.trim() || `Size ${si + 1}`
+                                : "";
+                            const title = sizeLabel
+                              ? `${colorLabel} - ${sizeLabel} Variant`
+                              : `${colorLabel} Variant`;
                             return (
                               <div
-                                key={`card-${ci}-${cv.valueFr}`}
+                                key={key}
                                 role="button"
                                 tabIndex={0}
-                                onClick={() => setSelectedColorIndex(ci)}
+                                onClick={() => {
+                                  setSelectedColorIndex(ci);
+                                  if (si != null) setSelectedSizeIndex(si);
+                                }}
                                 onKeyDown={(e) => {
-                                  if (e.key === "Enter" || e.key === " ")
+                                  if (e.key === "Enter" || e.key === " ") {
                                     setSelectedColorIndex(ci);
+                                    if (si != null) setSelectedSizeIndex(si);
+                                  }
                                 }}
                                 className={`rounded-2xl border bg-white/70 p-4 text-left shadow-sm transition dark:bg-black/25 ${
                                   cardSel
@@ -1746,8 +2088,7 @@ export function ProductEditorClient({
                                   />
                                   <div className="min-w-0 flex-1">
                                     <p className="text-sm font-semibold text-[var(--fg)]">
-                                      {cv.valueFr.trim() ||
-                                        simpleVariantUiLabels.chipFallback(ci)}
+                                      {title}
                                     </p>
                                     <label className="mt-2 block">
                                       <span className="text-[10px] text-[var(--muted)]">
@@ -1774,6 +2115,7 @@ export function ProductEditorClient({
                                                     : vv,
                                                 ),
                                               },
+                                              ...prev.slice(1),
                                             ];
                                           });
                                         }}
@@ -1801,6 +2143,7 @@ export function ProductEditorClient({
                                                     : vv,
                                                 ),
                                               },
+                                              ...prev.slice(1),
                                             ];
                                           });
                                         }}
@@ -1808,6 +2151,43 @@ export function ProductEditorClient({
                                         className={`${inputClass()} !mt-1 font-mono text-xs`}
                                       />
                                     </label>
+                                    {simpleSizesEnabled &&
+                                    sv != null &&
+                                    si != null ? (
+                                      <label className="mt-2 block">
+                                        <span className="text-[10px] text-[var(--muted)]">
+                                          Size label
+                                        </span>
+                                        <input
+                                          value={sv.valueFr}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => {
+                                            const t = e.target.value;
+                                            setVeOptions((prev) => {
+                                              if (prev.length < 2) return prev;
+                                              const o1 = prev[1]!;
+                                              return [
+                                                prev[0]!,
+                                                {
+                                                  ...o1,
+                                                  values: o1.values.map(
+                                                    (vv, j) =>
+                                                      j === si
+                                                        ? {
+                                                            ...vv,
+                                                            valueFr: t,
+                                                            valueAr: t,
+                                                          }
+                                                        : vv,
+                                                  ),
+                                                },
+                                              ];
+                                            });
+                                          }}
+                                          className={`${inputClass()} !mt-1 text-sm`}
+                                        />
+                                      </label>
+                                    ) : null}
                                   </div>
                                 </div>
 
@@ -1953,7 +2333,9 @@ export function ProductEditorClient({
                                         void saveSingleVariantRow(vi)
                                       }
                                     >
-                                      Save this color only
+                                      {simpleSizesEnabled
+                                        ? "Save this variant"
+                                        : "Save this color only"}
                                     </button>
                                   ) : null}
                                 </div>
@@ -1974,10 +2356,10 @@ export function ProductEditorClient({
                   <strong className="font-semibold">Detailed variant setup</strong>{" "}
                   — this product has{" "}
                   <strong>{veOptions.length} option groups</strong> (for example
-                  color <em>and</em> size). The quick chip + card editor only
-                  appears when there is <strong>exactly one</strong> option. To use
-                  it, remove extra options below and keep a single group (e.g.
-                  only Color).
+                  color, size, and material). The quick chip + card editor is for{" "}
+                  <strong>one primary option</strong> (e.g. color) with an optional{" "}
+                  <strong>Size</strong> group. To use it, remove extra options below
+                  and keep only Color (or one primary option) plus optional Size.
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
