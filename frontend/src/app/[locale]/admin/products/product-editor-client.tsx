@@ -262,7 +262,6 @@ export function ProductEditorClient({
   const [tagsLine, setTagsLine] = useState("");
   const [vendorNote, setVendorNote] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
-  const [imageUrlDraft, setImageUrlDraft] = useState("");
   const [showArabic, setShowArabic] = useState(false);
 
   const [veEnabled, setVeEnabled] = useState(false);
@@ -454,18 +453,6 @@ export function ProductEditorClient({
       }
     }
     if (next.length) setImages((prev) => [...prev, ...next]);
-  }
-
-  function addImageUrl() {
-    const u = imageUrlDraft.trim();
-    if (!u) return;
-    if (!/^https?:\/\//i.test(u)) {
-      setMsg("Image URL must start with http:// or https://");
-      return;
-    }
-    setImages((prev) => [...prev, u]);
-    setImageUrlDraft("");
-    setMsg(null);
   }
 
   function removeImage(index: number) {
@@ -1043,32 +1030,9 @@ export function ProductEditorClient({
               Tip: for a sharp grid on the storefront, use square images around{" "}
               <strong>800×800</strong> px. The first image is the main photo.
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <input
-                type="url"
-                value={imageUrlDraft}
-                onChange={(e) => setImageUrlDraft(e.target.value)}
-                placeholder="https://… image URL"
-                className={`${inputClass()} min-w-[12rem] flex-1`}
-              />
-              <button
-                type="button"
-                onClick={addImageUrl}
-                className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-medium"
-              >
-                Add URL
-              </button>
-            </div>
-            <label className="mt-4 block">
-              <span className="text-xs text-[var(--muted)]">Video URL</span>
-              <input
-                type="url"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="https://… (YouTube, etc.) — stored for future product gallery"
-                className={inputClass()}
-              />
-            </label>
+            <p className="mt-3 text-xs text-[var(--muted)]">
+              Upload-only mode: links are disabled.
+            </p>
             {images.length > 0 ? (
               <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {images.map((src, i) => (
