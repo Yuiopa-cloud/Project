@@ -131,7 +131,7 @@ export class ProductsService {
         .join(' · ');
 
     const colorOption = p.options.find((o) =>
-      /color|couleur|لون/i.test(`${o.nameFr} ${o.nameAr}`),
+      /colou?r|color|couleur|teinte|لون|اللون/i.test(`${o.nameFr} ${o.nameAr}`),
     );
 
     const mapVariant = (v: (typeof p.variants)[0]) => {

@@ -88,7 +88,9 @@ function normalizeColorValue(input: string | null | undefined): string {
 }
 
 function isColorOption(opt: ProductOptionDef): boolean {
-  return /color|couleur|لون/i.test(`${opt.nameFr} ${opt.nameAr}`);
+  return /colou?r|color|couleur|teinte|لون|اللون/i.test(
+    `${opt.nameFr} ${opt.nameAr}`,
+  );
 }
 
 type ShortProduct = {

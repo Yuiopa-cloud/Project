@@ -148,7 +148,8 @@ function isVideoUrl(url: string): boolean {
 
 function isColorOptionName(option: VeOption): boolean {
   const combined = `${option.nameFr} ${option.nameAr}`.toLowerCase();
-  return /color|couleur|لون/.test(combined);
+  // "colour" (UK) does not match substring "color" — include colou?r
+  return /colou?r|color|couleur|teinte|لون|اللون/.test(combined);
 }
 
 /** Guess a swatch hex from common color words (admin UX only). */
@@ -338,10 +339,31 @@ export function ProductEditorClient({
   const [colorChipDraft, setColorChipDraft] = useState("");
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
 
+  /** Simple chips + cards whenever there is exactly one variant option (any name). */
   const simpleColorVariantMode = useMemo(() => {
     if (!veEnabled || veOptions.length !== 1) return false;
-    return isColorOptionName(veOptions[0]!);
+    return true;
   }, [veEnabled, veOptions]);
+
+  const simpleVariantUiLabels = useMemo(() => {
+    const opt = veOptions[0];
+    const colorish = opt ? isColorOptionName(opt) : false;
+    const dim = opt?.nameFr?.trim() || "Option";
+    return {
+      step1Title: colorish ? "Colors" : `${dim} choices`,
+      step1Hint: colorish
+        ? "Type a color name and press Enter, or click Add."
+        : `Add each choice for “${dim}” (press Enter or Add).`,
+      step2Title: colorish ? "Each color" : "Each choice",
+      step2Hint: colorish
+        ? "One card per color — image, price, stock, and SKU. Only this card changes when you edit it."
+        : "One card per choice — image, price, stock, and SKU. Only this card changes when you edit it.",
+      chipFallback: (i: number) => (colorish ? `Color ${i + 1}` : `${dim} ${i + 1}`),
+      emptyHint: colorish
+        ? "Add at least one color to create variant cards."
+        : `Add at least one “${dim}” value to create variant cards.`,
+    };
+  }, [veOptions]);
 
   const simpleColorSignature = useMemo(() => {
     if (!simpleColorVariantMode || !veOptions[0]) return "";
@@ -932,22 +954,21 @@ export function ProductEditorClient({
 
   function validateVariantConfig(): string | null {
     if (!veEnabled) return null;
-    const simple =
-      veOptions.length === 1 && isColorOptionName(veOptions[0]!);
+    const simple = veOptions.length === 1;
     if (simple) {
-      const colors = veOptions[0]!.values;
-      if (!colors.length) {
-        return "Add at least one color, or turn off variants.";
+      const values = veOptions[0]!.values;
+      if (!values.length) {
+        return "Add at least one variant choice, or turn off variants.";
       }
-      if (veVariants.length !== colors.length) {
-        return "Colors and variants are out of sync. Try changing the color list.";
+      if (veVariants.length !== values.length) {
+        return "Choices and variants are out of sync. Try editing the list again.";
       }
       for (let i = 0; i < veVariants.length; i += 1) {
         if (
           veVariants[i].valueIndexes.length !== 1 ||
           veVariants[i].valueIndexes[0] !== i
         ) {
-          return "A variant does not match its color — reload the editor.";
+          return "A variant row does not match its choice — reload the editor.";
         }
       }
       return null;
@@ -1588,10 +1609,10 @@ export function ProductEditorClient({
                   <div className="space-y-8">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                        1 · Colors
+                        1 · {simpleVariantUiLabels.step1Title}
                       </p>
                       <p className="mt-1 text-[11px] text-[var(--muted)]">
-                        Type a color name and press Enter, or click Add.
+                        {simpleVariantUiLabels.step1Hint}
                       </p>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         {(veOptions[0]?.values ?? []).map((chip, ci) => {
@@ -1619,7 +1640,10 @@ export function ProductEditorClient({
                                   className="h-6 w-6 shrink-0 rounded-full border border-black/10 shadow-inner"
                                   style={{ backgroundColor: sw }}
                                 />
-                                <span>{chip.valueFr.trim() || `Color ${ci + 1}`}</span>
+                                <span>
+                                  {chip.valueFr.trim() ||
+                                    simpleVariantUiLabels.chipFallback(ci)}
+                                </span>
                               </button>
                               <button
                                 type="button"
@@ -1645,7 +1669,7 @@ export function ProductEditorClient({
                           <input
                             value={colorChipDraft}
                             onChange={(e) => setColorChipDraft(e.target.value)}
-                            placeholder="e.g. Red — press Enter"
+                            placeholder="Type a name — Enter to add"
                             className={`${inputClass()} !mt-0 min-w-0 flex-1 text-xs`}
                           />
                           <button
@@ -1661,11 +1685,10 @@ export function ProductEditorClient({
                     {(veOptions[0]?.values ?? []).length > 0 ? (
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                          2 · Each color
+                          2 · {simpleVariantUiLabels.step2Title}
                         </p>
                         <p className="mt-1 text-[11px] text-[var(--muted)]">
-                          One card per color — image, price, stock, and SKU. Only
-                          this card changes when you edit it.
+                          {simpleVariantUiLabels.step2Hint}
                         </p>
                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
                           {(veOptions[0]?.values ?? []).map((cv, ci) => {
@@ -1701,7 +1724,8 @@ export function ProductEditorClient({
                                   />
                                   <div className="min-w-0 flex-1">
                                     <p className="text-sm font-semibold text-[var(--fg)]">
-                                      {cv.valueFr.trim() || `Color ${ci + 1}`}
+                                      {cv.valueFr.trim() ||
+                                        simpleVariantUiLabels.chipFallback(ci)}
                                     </p>
                                     <label className="mt-2 block">
                                       <span className="text-[10px] text-[var(--muted)]">
@@ -1918,17 +1942,20 @@ export function ProductEditorClient({
                       </div>
                     ) : (
                       <p className="text-sm text-[var(--muted)]">
-                        Add at least one color to create variant cards.
+                        {simpleVariantUiLabels.emptyHint}
                       </p>
                     )}
                   </div>
                 ) : (
                 <>
                 <div className="mb-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-[var(--fg)]">
-                  <strong className="font-semibold">Advanced layout</strong> — this
-                  product uses multiple options (e.g. sizes) or non-color options.
-                  Use the tools below; the simple color-only view is unavailable
-                  until only one “Color” option remains.
+                  <strong className="font-semibold">Detailed variant setup</strong>{" "}
+                  — this product has{" "}
+                  <strong>{veOptions.length} option groups</strong> (for example
+                  color <em>and</em> size). The quick chip + card editor only
+                  appears when there is <strong>exactly one</strong> option. To use
+                  it, remove extra options below and keep a single group (e.g.
+                  only Color).
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
