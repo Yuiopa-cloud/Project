@@ -243,13 +243,9 @@ export function ProductClient({
   ]);
 
   const galleryImages = useMemo(() => {
-    // Thumbnails below the main image come from product-level Images & media.
-    const src =
-      product.images?.length && product.images.length > 0
-        ? product.images
-        : previewVariant?.images;
-    return src?.length ? src : [];
-  }, [product.images, previewVariant]);
+    // Thumbnails below the main image must stay from product-level Images & media only.
+    return product.images?.length ? product.images : [];
+  }, [product.images]);
 
   const mainImages = useMemo(() => {
     // Main display follows selected variant first (color click updates image).
@@ -271,9 +267,13 @@ export function ProductClient({
     setManualMainImage(null);
   }, [mainImages.join("|")]);
 
-  const main = manualMainImage ?? mainImages[0] ?? galleryImages[0];
+  // With variants, selected option image always wins over manual thumbnail picks.
+  const main = variantsActive
+    ? mainImages[0] ?? galleryImages[0]
+    : manualMainImage ?? mainImages[0] ?? galleryImages[0];
 
   function pickValue(option: ProductOptionDef, value: ProductOptionVal) {
+    setManualMainImage(null);
     const token = isColorOption(option)
       ? normalizeColorValue(value.valueKey ?? value.valueFr)
       : value.id;
@@ -422,7 +422,10 @@ export function ProductClient({
                 key={`${url}-${i}`}
                 type="button"
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setManualMainImage(url)}
+                onClick={() => {
+                  if (variantsActive) return;
+                  setManualMainImage(url);
+                }}
                 className={`relative h-[3.25rem] w-[3.25rem] shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-16 sm:w-16 ${
                   (manualMainImage ? manualMainImage === url : main === url)
                     ? "border-[var(--accent)] shadow-[0_0_14px_var(--accent-glow)]"
