@@ -1976,7 +1976,8 @@ export function ProductEditorClient({
                               : "—"}
                           </p>
                         ) : null}
-                        {variantOptionGroups.sizeIdx.length > 0 ? (
+                        {variantOptionGroups.sizeIdx.length > 0 &&
+                        !colorSizeMatrix ? (
                           <p className="text-xs font-semibold text-[var(--fg)]">
                             <span className="font-medium text-[var(--muted)]">
                               Size
@@ -1984,6 +1985,18 @@ export function ProductEditorClient({
                             {sizeLabels.length
                               ? sizeLabels.join(", ")
                               : "—"}
+                          </p>
+                        ) : null}
+                        {colorSizeMatrix &&
+                        variantOptionGroups.sizeIdx.length > 0 ? (
+                          <p className="text-[10px] text-[var(--muted)]">
+                            Size{" "}
+                            <span className="font-semibold text-[var(--fg)]">
+                              {sizeLabels.length
+                                ? sizeLabels.join(", ")
+                                : "—"}
+                            </span>{" "}
+                            — use the matrix above (no size picker here).
                           </p>
                         ) : null}
                         {variantOptionGroups.otherIdx.length > 0 ? (
@@ -2176,7 +2189,8 @@ export function ProductEditorClient({
                             </div>
                           </div>
                         ) : null}
-                        {variantOptionGroups.sizeIdx.length > 0 ? (
+                        {variantOptionGroups.sizeIdx.length > 0 &&
+                        !colorSizeMatrix ? (
                           <div className="space-y-2 rounded-lg border border-[var(--border)]/80 bg-[var(--surface)]/40 p-2">
                             <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
                               Size / Taille
