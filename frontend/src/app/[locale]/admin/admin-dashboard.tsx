@@ -331,6 +331,9 @@ export function AdminDashboard() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [members, setMembers] = useState<CustomerRow[]>([]);
   const [productRows, setProductRows] = useState<ProductRow[]>([]);
+  const [dashboardEditorProductId, setDashboardEditorProductId] = useState<
+    string | null
+  >(null);
   const [productQuery, setProductQuery] = useState("");
   const [productStatus, setProductStatus] = useState<"all" | "active" | "draft">(
     "all",
@@ -597,6 +600,7 @@ export function AdminDashboard() {
     setOrders([]);
     setMembers([]);
     setProductRows([]);
+    setDashboardEditorProductId(null);
     setSidebarExtra(null);
   }
 
@@ -1553,6 +1557,7 @@ export function AdminDashboard() {
                   <th className="p-3">Inventory</th>
                   <th className="p-3">SKU</th>
                   <th className="p-3">Price</th>
+                  <th className="p-3">Variants</th>
                   <th className="p-3">Sales</th>
                   <th className="p-3">Updated</th>
                   <th className="p-3">Edit</th>
@@ -1654,6 +1659,15 @@ export function AdminDashboard() {
                         <span className="ml-1 text-xs text-[var(--muted)]">
                           MAD
                         </span>
+                      </td>
+                      <td className="p-3 align-middle">
+                        <button
+                          type="button"
+                          onClick={() => setDashboardEditorProductId(p.id)}
+                          className="inline-flex rounded-md border border-[var(--border)] bg-white/5 px-2 py-1 text-xs font-medium text-[var(--fg)] transition hover:bg-white/10"
+                        >
+                          Manage variants
+                        </button>
                       </td>
                       <td className="p-3 align-middle tabular-nums text-[var(--fg)]">
                         {new Intl.NumberFormat("en-SA-u-nu-latn", {
@@ -1765,6 +1779,54 @@ export function AdminDashboard() {
           </div>
         </motion.section>
       ) : null}
+      <AnimatePresence>
+        {dashboardEditorProductId ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-black/55 p-3 md:p-6"
+          >
+            <div className="mx-auto flex h-full w-full max-w-[1200px] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-2xl">
+              <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--fg)]">
+                    Product editor (variants, colors, sizes)
+                  </p>
+                  <p className="text-xs text-[var(--muted)]">
+                    Save inside the editor, then close this panel.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/admin/products/${dashboardEditorProductId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-[var(--border)] bg-white/5 px-3 py-1.5 text-xs font-medium text-[var(--fg)] transition hover:bg-white/10"
+                  >
+                    Open in new tab
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDashboardEditorProductId(null);
+                      void loadProducts();
+                    }}
+                    className="rounded-lg border border-[var(--border)] bg-white/5 px-3 py-1.5 text-xs font-medium text-[var(--fg)] transition hover:bg-white/10"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+              <iframe
+                title="Dashboard product editor"
+                src={`/admin/products/${dashboardEditorProductId}`}
+                className="h-full w-full border-0"
+              />
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
         </>
       )}
         </div>
