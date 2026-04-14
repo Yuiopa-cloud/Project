@@ -37,7 +37,7 @@ type CustomerAuthContextValue = {
     lastName: string;
     email?: string;
   }) => Promise<void>;
-  login: (phone: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
 };
@@ -138,11 +138,11 @@ export function CustomerAuthProvider({
   );
 
   const login = useCallback(
-    async (phone: string, password: string) => {
+    async (identifier: string, password: string) => {
       const r = await fetch(`${apiRoot}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, password }),
+        body: JSON.stringify({ identifier, password }),
       });
       const raw = await r.text();
       if (!r.ok) {

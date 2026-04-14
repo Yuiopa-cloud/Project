@@ -37,6 +37,7 @@ export function DashboardClient() {
   const [err, setErr] = useState<string | null>(null);
 
   const [phone, setPhone] = useState("");
+  const [loginIdentifier, setLoginIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -75,7 +76,7 @@ export function DashboardClient() {
     setErr(null);
     setBusy(true);
     try {
-      await login(phone, password);
+      await login(loginIdentifier, password);
     } catch (e: unknown) {
       setErr(
         friendlyErr(e instanceof Error ? e.message : "خطأ غير متوقع"),
@@ -258,15 +259,15 @@ export function DashboardClient() {
           ) : (
             <form onSubmit={onLogin} className="mt-6 space-y-3">
               <label className="block text-xs font-medium text-[var(--muted)]">
-                {t("phone")}
+                Email or phone
                 <input
                   className={inputClass}
                   dir="ltr"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  value={loginIdentifier}
+                  onChange={(e) => setLoginIdentifier(e.target.value)}
                   required
-                  minLength={8}
-                  autoComplete="tel"
+                  minLength={3}
+                  autoComplete="username"
                 />
               </label>
               <label className="block text-xs font-medium text-[var(--muted)]">

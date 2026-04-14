@@ -84,8 +84,16 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const phone = normalizePhone(dto.phone);
-    const user = await this.prisma.user.findUnique({ where: { phone } });
+    const rawIdentifier =
+      dto.identifier?.trim() || dto.phone?.trim() || '';
+    const isEmail = rawIdentifier.includes('@');
+    const user = isEmail
+      ? await this.prisma.user.findFirst({
+          where: { email: rawIdentifier.toLowerCase() },
+        })
+      : await this.prisma.user.findUnique({
+          where: { phone: normalizePhone(rawIdentifier) },
+        });
     if (!user?.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
     }

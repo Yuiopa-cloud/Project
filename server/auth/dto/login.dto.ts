@@ -1,11 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 
 export class LoginDto {
   @ApiProperty()
   @IsString()
+  @MinLength(3)
+  identifier!: string;
+
+  /** Backward compatibility for older clients sending { phone, password }. */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   @MinLength(8)
-  phone!: string;
+  phone?: string;
 
   @ApiProperty()
   @IsString()
