@@ -367,7 +367,16 @@ export function ProductClient({
                               : "border-[var(--border)] bg-[var(--card)] text-[var(--fg)] hover:border-[var(--accent)]/40"
                           }`}
                         >
-                          {val.colorHex ? (
+                          {val.imageUrl ? (
+                            <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full border border-[var(--border)]">
+                              <ProductImage
+                                src={val.imageUrl}
+                                alt=""
+                                fill
+                                className="object-cover"
+                              />
+                            </span>
+                          ) : val.colorHex ? (
                             <span
                               className="h-5 w-5 shrink-0 rounded-full border border-[var(--border)] shadow-inner"
                               style={{ backgroundColor: val.colorHex }}

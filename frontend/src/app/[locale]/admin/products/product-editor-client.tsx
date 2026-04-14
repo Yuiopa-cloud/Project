@@ -45,6 +45,7 @@ type AdminProductDetail = {
       valueFr: string;
       valueAr: string;
       colorHex?: string | null;
+      imageUrl?: string | null;
     }>;
   }>;
   variants?: Array<{
@@ -62,7 +63,12 @@ type AdminProductDetail = {
 type VeOption = {
   nameFr: string;
   nameAr: string;
-  values: Array<{ valueFr: string; valueAr: string; colorHex: string }>;
+  values: Array<{
+    valueFr: string;
+    valueAr: string;
+    colorHex: string;
+    imageUrl: string;
+  }>;
 };
 
 type VeVariant = {
@@ -372,6 +378,7 @@ export function ProductEditorClient({
               valueFr: v.valueFr,
               valueAr: v.valueAr,
               colorHex: v.colorHex ?? "",
+              imageUrl: v.imageUrl ?? "",
             })),
           })),
         );
@@ -449,6 +456,7 @@ export function ProductEditorClient({
         valueFr: v.valueFr.trim(),
         valueAr: (v.valueAr || v.valueFr).trim(),
         colorHex: v.colorHex?.trim() || undefined,
+        imageUrl: v.imageUrl?.trim() || undefined,
       })),
     }));
     const variants = veVariants.map((v) => ({
@@ -1136,6 +1144,7 @@ export function ProductEditorClient({
                               valueFr: "Value 1",
                               valueAr: "Value 1",
                               colorHex: "",
+                              imageUrl: "",
                             },
                           ],
                         },
@@ -1149,6 +1158,76 @@ export function ProductEditorClient({
                     }}
                   >
                     + Add option
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-xl border border-[var(--border)] bg-white/90 px-3 py-2 text-xs font-semibold dark:bg-black/25"
+                    onClick={() => {
+                      setVeOptions((prev) => [
+                        ...prev,
+                        {
+                          nameFr: "Color",
+                          nameAr: "اللون",
+                          values: [
+                            {
+                              valueFr: "Blue",
+                              valueAr: "ازرق",
+                              colorHex: "#2563eb",
+                              imageUrl: "",
+                            },
+                            {
+                              valueFr: "Black",
+                              valueAr: "اسود",
+                              colorHex: "#111827",
+                              imageUrl: "",
+                            },
+                          ],
+                        },
+                      ]);
+                      setVeVariants((rows) =>
+                        rows.map((r) => ({
+                          ...r,
+                          valueIndexes: [...r.valueIndexes, 0],
+                        })),
+                      );
+                    }}
+                  >
+                    + Color option preset
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-xl border border-[var(--border)] bg-white/90 px-3 py-2 text-xs font-semibold dark:bg-black/25"
+                    onClick={() => {
+                      setVeOptions((prev) => [
+                        ...prev,
+                        {
+                          nameFr: "Size",
+                          nameAr: "المقاس",
+                          values: [
+                            {
+                              valueFr: "S",
+                              valueAr: "S",
+                              colorHex: "",
+                              imageUrl: "",
+                            },
+                            {
+                              valueFr: "M",
+                              valueAr: "M",
+                              colorHex: "",
+                              imageUrl: "",
+                            },
+                          ],
+                        },
+                      ]);
+                      setVeVariants((rows) =>
+                        rows.map((r) => ({
+                          ...r,
+                          valueIndexes: [...r.valueIndexes, 0],
+                        })),
+                      );
+                    }}
+                  >
+                    + Size option preset
                   </button>
                   <button
                     type="button"
@@ -1246,6 +1325,27 @@ export function ProductEditorClient({
                             className={`${inputClass()} min-w-[6rem] flex-1`}
                           />
                           <input
+                            placeholder="Value AR"
+                            value={val.valueAr}
+                            onChange={(e) => {
+                              const t = e.target.value;
+                              setVeOptions((prev) =>
+                                prev.map((o, i) =>
+                                  i !== oi
+                                    ? o
+                                    : {
+                                        ...o,
+                                        values: o.values.map((vv, j) =>
+                                          j === vi ? { ...vv, valueAr: t } : vv,
+                                        ),
+                                      },
+                                ),
+                              );
+                            }}
+                            dir="rtl"
+                            className={`${inputClass()} min-w-[6rem] flex-1`}
+                          />
+                          <input
                             placeholder="#hex optional"
                             value={val.colorHex}
                             onChange={(e) => {
@@ -1267,6 +1367,36 @@ export function ProductEditorClient({
                             }}
                             className={`${inputClass()} w-28`}
                           />
+                          <input
+                            placeholder="image URL (optional)"
+                            value={val.imageUrl}
+                            onChange={(e) => {
+                              const t = e.target.value;
+                              setVeOptions((prev) =>
+                                prev.map((o, i) =>
+                                  i !== oi
+                                    ? o
+                                    : {
+                                        ...o,
+                                        values: o.values.map((vv, j) =>
+                                          j === vi
+                                            ? { ...vv, imageUrl: t }
+                                            : vv,
+                                        ),
+                                      },
+                                ),
+                              );
+                            }}
+                            className={`${inputClass()} min-w-[14rem] flex-[2]`}
+                          />
+                          {val.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={val.imageUrl}
+                              alt=""
+                              className="h-10 w-10 rounded-lg border border-[var(--border)] object-cover"
+                            />
+                          ) : null}
                           <button
                             type="button"
                             className="text-[11px] text-rose-600"
@@ -1305,6 +1435,7 @@ export function ProductEditorClient({
                                         valueFr: `Value ${o.values.length + 1}`,
                                         valueAr: `Value ${o.values.length + 1}`,
                                         colorHex: "",
+                                        imageUrl: "",
                                       },
                                     ],
                                   },
