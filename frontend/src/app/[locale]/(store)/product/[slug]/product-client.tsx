@@ -239,12 +239,13 @@ export function ProductClient({
   ]);
 
   const displayImages = useMemo(() => {
+    // Keep gallery media sourced from product-level Images & media, not variant rows.
     const src =
-      previewVariant?.images?.length && previewVariant.images.length > 0
-        ? previewVariant.images
-        : product.images;
+      product.images?.length && product.images.length > 0
+        ? product.images
+        : previewVariant?.images;
     return src?.length ? src : [];
-  }, [previewVariant, product.images]);
+  }, [product.images, previewVariant]);
 
   const displayPrice = previewVariant?.priceMad ?? product.priceMad;
   const displayStock = previewVariant?.stock ?? product.stock;
