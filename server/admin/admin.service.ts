@@ -13,6 +13,7 @@ import {
 import { customAlphabet } from 'nanoid';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateProductDto } from './dto/create-product.dto';
+import type { PatchProductVariantDto } from './dto/patch-product-variant.dto';
 import type { ReplaceProductVariantsDto } from './dto/replace-product-variants.dto';
 import type { UpdateProductDto } from './dto/update-product.dto';
 
@@ -535,6 +536,133 @@ export class AdminService {
         where: { id: productId },
         data: { variantsEnabled: true },
       });
+    });
+
+    return this.productByIdForAdmin(productId);
+  }
+
+  async patchProductVariant(
+    productId: string,
+    variantId: string,
+    dto: PatchProductVariantDto,
+  ) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        id: true,
+        sku: true,
+        options: {
+          orderBy: { sortOrder: 'asc' },
+          include: { values: { orderBy: { sortOrder: 'asc' } } },
+        },
+      },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+
+    const target = await this.prisma.productVariant.findFirst({
+      where: { id: variantId, productId },
+      include: { selections: true },
+    });
+    if (!target) throw new NotFoundException('Variant not found');
+
+    if (dto.sku !== undefined) {
+      const sku = dto.sku.trim().toUpperCase();
+      if (!sku.length) throw new BadRequestException('Variant SKU cannot be empty.');
+      if (sku === product.sku.toUpperCase()) {
+        throw new BadRequestException(
+          `Variant SKU must differ from the product SKU (${product.sku}).`,
+        );
+      }
+      const pClash = await this.prisma.product.findFirst({
+        where: { sku, NOT: { id: productId } },
+        select: { id: true },
+      });
+      if (pClash) throw new ConflictException(`SKU ${sku} is already used by another product.`);
+      const vClash = await this.prisma.productVariant.findFirst({
+        where: { sku, NOT: { id: variantId } },
+        select: { id: true },
+      });
+      if (vClash) throw new ConflictException(`SKU ${sku} is already used by another variant.`);
+    }
+
+    if (dto.valueIndexes) {
+      if (dto.valueIndexes.length !== product.options.length) {
+        throw new BadRequestException(
+          'Each variant must select exactly one value for every option.',
+        );
+      }
+      for (let oi = 0; oi < product.options.length; oi += 1) {
+        const ix = dto.valueIndexes[oi];
+        if (ix < 0 || ix >= product.options[oi].values.length) {
+          throw new BadRequestException('Invalid value index in this variant.');
+        }
+      }
+      const comboKey = dto.valueIndexes.join(':');
+      const siblings = await this.prisma.productVariant.findMany({
+        where: { productId, NOT: { id: variantId } },
+        include: { selections: true },
+      });
+      for (const sib of siblings) {
+        const sibKey = product.options
+          .map((opt) => {
+            const sel = sib.selections.find((s) => s.optionId === opt.id);
+            if (!sel) return '0';
+            const ix = opt.values.findIndex((v) => v.id === sel.optionValueId);
+            return String(ix >= 0 ? ix : 0);
+          })
+          .join(':');
+        if (sibKey === comboKey) {
+          throw new BadRequestException(
+            'Another variant already uses this option combination.',
+          );
+        }
+      }
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (dto.isDefault === true) {
+        await tx.productVariant.updateMany({
+          where: { productId, NOT: { id: variantId } },
+          data: { isDefault: false },
+        });
+      }
+
+      const data: Prisma.ProductVariantUpdateInput = {};
+      if (dto.sku !== undefined) data.sku = dto.sku.trim().toUpperCase();
+      if (dto.priceMad !== undefined) {
+        const p = dto.priceMad?.trim();
+        data.priceMad = p ? p : null;
+      }
+      if (dto.compareAtMad !== undefined) {
+        const c = dto.compareAtMad?.trim();
+        data.compareAtMad = c ? c : null;
+      }
+      if (dto.stock !== undefined) data.stock = dto.stock;
+      if (dto.images !== undefined) data.images = dto.images;
+      if (dto.isDefault !== undefined) data.isDefault = dto.isDefault;
+
+      if (Object.keys(data).length > 0) {
+        await tx.productVariant.update({
+          where: { id: variantId },
+          data,
+        });
+      }
+
+      if (dto.valueIndexes) {
+        await tx.productVariantSelection.deleteMany({ where: { variantId } });
+        for (let oi = 0; oi < product.options.length; oi += 1) {
+          const valueIx = dto.valueIndexes[oi]!;
+          const option = product.options[oi]!;
+          const optionValueId = option.values[valueIx]!.id;
+          await tx.productVariantSelection.create({
+            data: {
+              variantId,
+              optionId: option.id,
+              optionValueId,
+            },
+          });
+        }
+      }
     });
 
     return this.productByIdForAdmin(productId);

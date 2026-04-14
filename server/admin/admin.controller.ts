@@ -18,6 +18,7 @@ import { UserRole, OrderStatus } from '@prisma/client';
 import { FraudDecideDto } from './dto/fraud-decide.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateProductDto } from './dto/create-product.dto';
+import { PatchProductVariantDto } from './dto/patch-product-variant.dto';
 import { ReplaceProductVariantsDto } from './dto/replace-product-variants.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -109,6 +110,15 @@ export class AdminController {
     @Body() dto: ReplaceProductVariantsDto,
   ) {
     return this.admin.replaceProductVariants(id, dto);
+  }
+
+  @Patch('products/:id/variants/:variantId')
+  patchVariant(
+    @Param('id') id: string,
+    @Param('variantId') variantId: string,
+    @Body() dto: PatchProductVariantDto,
+  ) {
+    return this.admin.patchProductVariant(id, variantId, dto);
   }
 
   @Post('products')

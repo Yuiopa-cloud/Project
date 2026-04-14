@@ -72,6 +72,7 @@ type VeOption = {
 };
 
 type VeVariant = {
+  id?: string;
   sku: string;
   priceMad: string;
   compareAtMad: string;
@@ -401,30 +402,7 @@ export function ProductEditorClient({
         setShowArabic(
           p.nameAr !== p.nameFr || p.descriptionAr !== p.descriptionFr,
         );
-        setVeEnabled(Boolean(p.variantsEnabled));
-        setVeOptions(
-          (p.options ?? []).map((o) => ({
-            nameFr: o.nameFr,
-            nameAr: o.nameAr,
-            values: (o.values ?? []).map((v) => ({
-              valueFr: v.valueFr,
-              valueAr: v.valueAr,
-              colorHex: v.colorHex ?? "",
-              imageUrl: v.imageUrl ?? "",
-            })),
-          })),
-        );
-        setVeVariants(
-          (p.variants ?? []).map((v) => ({
-            sku: v.sku,
-            priceMad: v.priceMad ?? "",
-            compareAtMad: v.compareAtMad ?? "",
-            stock: v.stock,
-            media: [...(v.images ?? [])],
-            isDefault: v.isDefault,
-            valueIndexes: [...(v.valueIndexes ?? [])],
-          })),
-        );
+        setVariantsFromAdminDetail(p);
       } catch (e) {
         logApiFailure("admin product load", e);
         setMsg(friendlyNetworkError(e));
@@ -560,6 +538,76 @@ export function ProductEditorClient({
       options: veEnabled ? options : [],
       variants: veEnabled ? variants : [],
     };
+  }
+
+  function setVariantsFromAdminDetail(p: AdminProductDetail) {
+    setVeEnabled(Boolean(p.variantsEnabled));
+    setVeOptions(
+      (p.options ?? []).map((o) => ({
+        nameFr: o.nameFr,
+        nameAr: o.nameAr,
+        values: (o.values ?? []).map((v) => ({
+          valueFr: v.valueFr,
+          valueAr: v.valueAr,
+          colorHex: v.colorHex ?? "",
+          imageUrl: v.imageUrl ?? "",
+        })),
+      })),
+    );
+    setVeVariants(
+      (p.variants ?? []).map((v) => ({
+        id: v.id,
+        sku: v.sku,
+        priceMad: v.priceMad ?? "",
+        compareAtMad: v.compareAtMad ?? "",
+        stock: v.stock,
+        media: [...(v.images ?? [])],
+        isDefault: v.isDefault,
+        valueIndexes: [...(v.valueIndexes ?? [])],
+      })),
+    );
+  }
+
+  async function saveSingleVariantRow(rowIndex: number) {
+    if (!token || !productId) return;
+    const row = veVariants[rowIndex];
+    if (!row?.id) {
+      setMsg("This row is new. Use Save/Create to persist all rows first.");
+      return;
+    }
+    setMsg(null);
+    try {
+      const body = {
+        sku: row.sku.trim().toUpperCase(),
+        priceMad: row.priceMad.trim() ? row.priceMad.trim().replace(",", ".") : null,
+        compareAtMad: row.compareAtMad.trim()
+          ? row.compareAtMad.trim().replace(",", ".")
+          : null,
+        stock: row.stock,
+        images: row.media.filter(Boolean),
+        isDefault: row.isDefault,
+        valueIndexes: row.valueIndexes,
+      };
+      const r = await fetch(
+        `${apiRoot}/admin/products/${productId}/variants/${row.id}`,
+        {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify(body),
+        },
+      );
+      const raw = await r.text();
+      if (!r.ok) {
+        setMsg(raw.slice(0, 800));
+        return;
+      }
+      const data = JSON.parse(raw) as AdminProductDetail;
+      setVariantsFromAdminDetail(data);
+      setMsg("Variant row saved.");
+    } catch (e) {
+      logApiFailure("admin save single variant", e);
+      setMsg(friendlyNetworkError(e));
+    }
   }
 
   function validateVariantConfig(): string | null {
@@ -1745,6 +1793,13 @@ export function ProductEditorClient({
                           </label>
                         ))}
                       </div>
+                      <button
+                        type="button"
+                        className="mt-2 rounded-lg border border-[var(--border)] bg-white/90 px-2 py-1 text-xs font-medium text-[var(--fg)] dark:bg-black/25"
+                        onClick={() => void saveSingleVariantRow(vi)}
+                      >
+                        Save this row only
+                      </button>
                       <button
                         type="button"
                         className="mt-2 text-xs text-rose-600"
