@@ -15,6 +15,7 @@ type ProductOptionVal = {
   id: string;
   valueFr: string;
   valueAr: string;
+  valueKey?: string | null;
   colorHex?: string | null;
   imageUrl?: string | null;
   sortOrder?: number;
@@ -44,6 +45,7 @@ type ProductVariantRow = {
   id: string;
   sku: string;
   color?: string | null;
+  colorKey?: string | null;
   stock: number;
   priceMad: string;
   compareAtMad: string | null;
@@ -75,6 +77,19 @@ type Product = {
     user: { firstName: string; lastName: string };
   }[];
 };
+
+function normalizeColorValue(input: string | null | undefined): string {
+  return (input ?? "")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+function isColorOption(opt: ProductOptionDef): boolean {
+  return /color|couleur|لون/i.test(`${opt.nameFr} ${opt.nameAr}`);
+}
 
 type ShortProduct = {
   id: string;
@@ -135,19 +150,47 @@ export function ProductClient({
     if (!variantsActive || !product.variants?.length) return;
     const def =
       product.variants.find((v) => v.isDefault) ?? product.variants[0];
-    if (def?.selection) setPicked({ ...def.selection });
+    if (!def?.selection) return;
+    const next: Record<string, string> = {};
+    for (const opt of sortedOptions) {
+      const selectedId = def.selection[opt.id];
+      if (!selectedId) continue;
+      const selectedVal = opt.values.find((v) => v.id === selectedId);
+      if (!selectedVal) continue;
+      next[opt.id] = isColorOption(opt)
+        ? normalizeColorValue(def.colorKey ?? selectedVal.valueKey ?? selectedVal.valueFr)
+        : selectedId;
+    }
+    setPicked(next);
   }, [product.id, variantsActive, product.variants]);
 
-  const isValueAvailable = (optionId: string, valueId: string) => {
+  const variantTokenForOption = useMemo(() => {
+    return (v: ProductVariantRow, opt: ProductOptionDef): string | null => {
+      const selectedId = v.selection[opt.id];
+      if (!selectedId) return null;
+      const selectedVal = opt.values.find((x) => x.id === selectedId);
+      if (!selectedVal) return null;
+      if (isColorOption(opt)) {
+        return normalizeColorValue(
+          v.colorKey ?? selectedVal.valueKey ?? selectedVal.valueFr,
+        );
+      }
+      return selectedId;
+    };
+  }, []);
+
+  const isValueAvailable = (optionId: string, valueToken: string) => {
     const vars = product.variants ?? [];
     if (!vars.length) return true;
+    const option = sortedOptions.find((o) => o.id === optionId);
+    if (!option) return true;
     return vars.some((v) => {
-      if (v.selection[optionId] !== valueId) return false;
+      if (variantTokenForOption(v, option) !== valueToken) return false;
       return sortedOptions.every((o) => {
         if (o.id === optionId) return true;
         const p = picked[o.id];
         if (!p) return true;
-        return v.selection[o.id] === p;
+        return variantTokenForOption(v, o) === p;
       });
     });
   };
@@ -159,10 +202,10 @@ export function ProductClient({
       sortedOptions.every((o) => {
         const p = picked[o.id];
         if (!p) return true;
-        return v.selection[o.id] === p;
+        return variantTokenForOption(v, o) === p;
       }),
     );
-  }, [variantsActive, product.variants, picked, sortedOptions]);
+  }, [variantsActive, product.variants, picked, sortedOptions, variantTokenForOption]);
 
   const activeVariant = useMemo(() => {
     if (!variantsActive || !product.variants?.length) return null;
@@ -171,10 +214,10 @@ export function ProductClient({
     if (!allPicked) return null;
     return (
       product.variants.find((v) =>
-        sortedOptions.every((o) => v.selection[o.id] === picked[o.id]),
+        sortedOptions.every((o) => variantTokenForOption(v, o) === picked[o.id]),
       ) ?? null
     );
-  }, [variantsActive, product.variants, picked, sortedOptions]);
+  }, [variantsActive, product.variants, picked, sortedOptions, variantTokenForOption]);
 
   const previewVariant = useMemo(() => {
     if (!variantsActive || !product.variants?.length) return null;
@@ -215,11 +258,24 @@ export function ProductClient({
 
   const main = displayImages[img] ?? displayImages[0];
 
-  function pickValue(optionId: string, valueId: string) {
-    setLastChangedOptionId(optionId);
+  function pickValue(option: ProductOptionDef, value: ProductOptionVal) {
+    const token = isColorOption(option)
+      ? normalizeColorValue(value.valueKey ?? value.valueFr)
+      : value.id;
+    setLastChangedOptionId(option.id);
+    if (isColorOption(option)) {
+      console.log("Selected color:", token);
+      console.log("Variants:", product.variants);
+      const found = (product.variants ?? []).some(
+        (v) => variantTokenForOption(v, option) === token,
+      );
+      if (!found) {
+        console.warn("No variant found for selected color:", token);
+      }
+    }
     setPicked((prev) => {
-      const next = { ...prev, [optionId]: valueId };
-      const oi = sortedOptions.findIndex((o) => o.id === optionId);
+      const next = { ...prev, [option.id]: token };
+      const oi = sortedOptions.findIndex((o) => o.id === option.id);
       for (let j = oi + 1; j < sortedOptions.length; j += 1) {
         delete next[sortedOptions[j].id];
       }
@@ -386,16 +442,20 @@ export function ProductClient({
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {opt.values.map((val) => {
-                      const available = isValueAvailable(opt.id, val.id);
-                      const selected = picked[opt.id] === val.id;
+                      const valueToken = isColorOption(opt)
+                        ? normalizeColorValue(val.valueKey ?? val.valueFr)
+                        : val.id;
+                      const available = isValueAvailable(opt.id, valueToken);
+                      const selected = picked[opt.id] === valueToken;
                       const label =
                         locale === "ar" ? val.valueAr : val.valueFr;
                       return (
                         <button
                           key={val.id}
                           type="button"
+                          data-color={isColorOption(opt) ? valueToken : undefined}
                           disabled={!available}
-                          onClick={() => pickValue(opt.id, val.id)}
+                          onClick={() => pickValue(opt, val)}
                           className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-35 ${
                             selected
                               ? "border-[var(--accent)] bg-[var(--accent-dim)] text-[var(--fg)] shadow-[0_0_12px_var(--accent-glow)]"

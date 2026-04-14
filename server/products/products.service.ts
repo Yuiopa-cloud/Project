@@ -16,6 +16,15 @@ export type ProductFilters = {
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private normalizeVariantColor(input: string | null | undefined): string {
+    return (input ?? '')
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-');
+  }
+
   async list(f: ProductFilters) {
     const where: Prisma.ProductWhereInput = { isActive: true };
     if (f.categorySlug) {
@@ -136,6 +145,7 @@ export class ProductsService {
         id: v.id,
         sku: v.sku,
         color: colorSelection?.optionValue.valueFr ?? null,
+        colorKey: this.normalizeVariantColor(colorSelection?.optionValue.valueFr),
         stock: v.stock,
         priceMad: price.toString(),
         compareAtMad: compare?.toString() ?? null,
@@ -158,6 +168,7 @@ export class ProductsService {
         id: v.id,
         valueFr: v.valueFr,
         valueAr: v.valueAr,
+        valueKey: this.normalizeVariantColor(v.valueFr),
         colorHex: v.colorHex,
         imageUrl: v.imageUrl,
         sortOrder: v.sortOrder,
