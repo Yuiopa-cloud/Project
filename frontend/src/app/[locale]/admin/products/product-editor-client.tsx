@@ -158,6 +158,16 @@ function isSizeOptionName(option: VeOption): boolean {
   );
 }
 
+/** Display / matrix column order for apparel sizes */
+const STANDARD_SIZE_LABELS = ["S", "M", "L", "XL", "XXL", "XXXL"] as const;
+
+function normalizeSizeLabel(s: string): string {
+  const t = s.trim().toUpperCase().replace(/\s+/g, "");
+  if (t === "2XL") return "XXL";
+  if (t === "3XL") return "XXXL";
+  return t;
+}
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const fr = new FileReader();
@@ -291,6 +301,124 @@ export function ProductEditorClient({
     });
     return { colorIdx, sizeIdx, otherIdx };
   }, [veOptions]);
+
+  const colorSizeMatrix = useMemo(() => {
+    if (
+      variantOptionGroups.colorIdx.length !== 1 ||
+      variantOptionGroups.sizeIdx.length !== 1 ||
+      variantOptionGroups.otherIdx.length !== 0
+    ) {
+      return null;
+    }
+    const colorIx = variantOptionGroups.colorIdx[0]!;
+    const sizeIx = variantOptionGroups.sizeIdx[0]!;
+    const colorOpt = veOptions[colorIx];
+    const sizeOpt = veOptions[sizeIx];
+    if (!colorOpt?.values.length || !sizeOpt) return null;
+
+    const sizeLabelToIndex = new Map<string, number>();
+    sizeOpt.values.forEach((v, i) => {
+      const key = normalizeSizeLabel(v.valueFr || v.valueAr);
+      if (key && !sizeLabelToIndex.has(key)) sizeLabelToIndex.set(key, i);
+    });
+
+    const columns = STANDARD_SIZE_LABELS.map((label) => ({
+      label,
+      valueIndex: sizeLabelToIndex.get(label) ?? null,
+    }));
+
+    const colorRows = colorOpt.values.map((_v, ci) => ({
+      colorIndex: ci,
+      label:
+        colorOpt.values[ci]?.valueFr?.trim() ||
+        colorOpt.values[ci]?.valueAr?.trim() ||
+        `Color ${ci + 1}`,
+      swatch: colorOpt.values[ci]?.colorHex?.trim() || "",
+    }));
+
+    return { colorIx, sizeIx, columns, colorRows };
+  }, [veOptions, variantOptionGroups]);
+
+  const appendMissingStandardSizes = useCallback(() => {
+    const sizeIx = variantOptionGroups.sizeIdx[0];
+    if (sizeIx == null || sizeIx < 0) {
+      setMsg("Add a Size option first.");
+      return;
+    }
+    setVeOptions((prev) => {
+      const opt = prev[sizeIx];
+      if (!opt) return prev;
+      const map = new Map<string, number>();
+      opt.values.forEach((v, i) => {
+        const k = normalizeSizeLabel(v.valueFr || v.valueAr);
+        if (k && !map.has(k)) map.set(k, i);
+      });
+      let nextValues = [...opt.values];
+      for (const label of STANDARD_SIZE_LABELS) {
+        if (!map.has(label)) {
+          map.set(label, nextValues.length);
+          nextValues = [
+            ...nextValues,
+            {
+              valueFr: label,
+              valueAr: label,
+              colorHex: "",
+              imageUrl: "",
+            },
+          ];
+        }
+      }
+      return prev.map((o, i) => (i === sizeIx ? { ...o, values: nextValues } : o));
+    });
+    setMsg(null);
+  }, [variantOptionGroups.sizeIdx]);
+
+  const setColorSizePairOffered = useCallback(
+    (colorValueIndex: number, sizeValueIndex: number, offered: boolean) => {
+      if (!colorSizeMatrix) return;
+      const { colorIx, sizeIx } = colorSizeMatrix;
+      setVeVariants((prev) => {
+        const match = (r: VeVariant) =>
+          r.valueIndexes[colorIx] === colorValueIndex &&
+          r.valueIndexes[sizeIx] === sizeValueIndex;
+        const idx = prev.findIndex(match);
+        if (offered) {
+          if (idx >= 0) return prev;
+          const base = (skuReadonly || slug || "VAR")
+            .toUpperCase()
+            .replace(/[^A-Z0-9]+/g, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 24);
+          const valueIndexes = veOptions.map((_, oi) => {
+            if (oi === colorIx) return colorValueIndex;
+            if (oi === sizeIx) return sizeValueIndex;
+            return 0;
+          });
+          const colorVal = veOptions[colorIx]?.values[colorValueIndex];
+          const media =
+            colorVal?.imageUrl?.trim() ? [colorVal.imageUrl.trim()] : [];
+          const nextRow: VeVariant = {
+            sku: `${base || "VAR"}-${prev.length + 1}`,
+            priceMad: "",
+            compareAtMad: "",
+            stock: 0,
+            media,
+            isDefault: prev.length === 0,
+            valueIndexes,
+          };
+          return [...prev, nextRow];
+        }
+        if (idx < 0) return prev;
+        const wasDefault = prev[idx]!.isDefault;
+        let next = prev.filter((_, i) => i !== idx);
+        if (wasDefault && next.length > 0) {
+          next = next.map((r, i) => ({ ...r, isDefault: i === 0 }));
+        }
+        return next;
+      });
+    },
+    [colorSizeMatrix, veOptions, skuReadonly, slug],
+  );
 
   const productUrlPrefix = useMemo(() => {
     if (typeof window === "undefined") return `/${locale}/product/`;
@@ -1324,20 +1452,12 @@ export function ProductEditorClient({
                         {
                           nameFr: "Size",
                           nameAr: "المقاس",
-                          values: [
-                            {
-                              valueFr: "S",
-                              valueAr: "S",
-                              colorHex: "",
-                              imageUrl: "",
-                            },
-                            {
-                              valueFr: "M",
-                              valueAr: "M",
-                              colorHex: "",
-                              imageUrl: "",
-                            },
-                          ],
+                          values: STANDARD_SIZE_LABELS.map((label) => ({
+                            valueFr: label,
+                            valueAr: label,
+                            colorHex: "",
+                            imageUrl: "",
+                          })),
                         },
                       ]);
                       setVeVariants((rows) =>
@@ -1348,7 +1468,7 @@ export function ProductEditorClient({
                       );
                     }}
                   >
-                    + Size option preset
+                    + Size option (S → XXXL)
                   </button>
                   <button
                     type="button"
@@ -1356,6 +1476,14 @@ export function ProductEditorClient({
                     onClick={() => generateVariantGrid()}
                   >
                     Generate all combinations
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-xl border border-[var(--accent)]/50 bg-[var(--accent-dim)] px-3 py-2 text-xs font-semibold text-[var(--fg)]"
+                    onClick={() => appendMissingStandardSizes()}
+                    title="Adds any of S, M, L, XL, XXL, XXXL missing from the Size option"
+                  >
+                    + Add missing S–XXXL values
                   </button>
                 </div>
 
@@ -1577,6 +1705,102 @@ export function ProductEditorClient({
                     </div>
                   </div>
                 ))}
+
+                {colorSizeMatrix ? (
+                  <div className="rounded-xl border border-[var(--border)] bg-white/55 p-3 dark:bg-black/25">
+                    <p className="text-xs font-semibold text-[var(--fg)]">
+                      Size availability by color (matrix)
+                    </p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-[var(--muted)]">
+                      One row per color. Columns are{" "}
+                      <span className="font-mono">S, M, L, XL, XXL, XXXL</span>.
+                      Choose <strong>Offered</strong> to sell that color in that
+                      size, or <strong>Not offered (—)</strong> when that
+                      combination does not exist (e.g. no red shirt in XL). Use
+                      “Add missing S–XXXL values” if a column shows “—”.
+                    </p>
+                    <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--border)]">
+                      <table className="w-full min-w-[40rem] border-collapse text-left text-[11px]">
+                        <thead>
+                          <tr className="bg-[var(--surface)]/80">
+                            <th className="border border-[var(--border)] px-2 py-2 font-semibold text-[var(--fg)]">
+                              Color
+                            </th>
+                            {colorSizeMatrix.columns.map((col) => (
+                              <th
+                                key={col.label}
+                                className="border border-[var(--border)] px-1 py-2 text-center font-semibold text-[var(--fg)]"
+                              >
+                                {col.label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {colorSizeMatrix.colorRows.map((cr) => (
+                            <tr key={cr.colorIndex}>
+                              <td className="border border-[var(--border)] px-2 py-1.5 align-middle">
+                                <span className="inline-flex items-center gap-2">
+                                  {cr.swatch ? (
+                                    <span
+                                      className="h-5 w-5 shrink-0 rounded border border-[var(--border)]"
+                                      style={{ backgroundColor: cr.swatch }}
+                                      title={cr.swatch}
+                                    />
+                                  ) : null}
+                                  <span className="font-medium text-[var(--fg)]">
+                                    {cr.label}
+                                  </span>
+                                </span>
+                              </td>
+                              {colorSizeMatrix.columns.map((col) => {
+                                if (col.valueIndex == null) {
+                                  return (
+                                    <td
+                                      key={`${cr.colorIndex}-${col.label}`}
+                                      className="border border-[var(--border)] bg-black/[0.03] px-1 py-1 text-center align-middle text-[var(--muted)] dark:bg-white/[0.04]"
+                                      title={`Add “${col.label}” to the Size option`}
+                                    >
+                                      —
+                                    </td>
+                                  );
+                                }
+                                const offered = veVariants.some(
+                                  (r) =>
+                                    r.valueIndexes[colorSizeMatrix.colorIx] ===
+                                      cr.colorIndex &&
+                                    r.valueIndexes[colorSizeMatrix.sizeIx] ===
+                                      col.valueIndex,
+                                );
+                                return (
+                                  <td
+                                    key={`${cr.colorIndex}-${col.label}`}
+                                    className="border border-[var(--border)] p-1 align-middle"
+                                  >
+                                    <select
+                                      value={offered ? "yes" : "no"}
+                                      onChange={(e) =>
+                                        setColorSizePairOffered(
+                                          cr.colorIndex,
+                                          col.valueIndex!,
+                                          e.target.value === "yes",
+                                        )
+                                      }
+                                      className="w-full rounded-lg border border-[var(--border)] bg-white/90 px-1 py-1.5 text-[11px] text-[var(--fg)] dark:bg-black/30"
+                                    >
+                                      <option value="yes">Offered</option>
+                                      <option value="no">Not offered (—)</option>
+                                    </select>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : null}
 
                 <p className="text-xs font-semibold text-[var(--fg)]">
                   Variant rows
