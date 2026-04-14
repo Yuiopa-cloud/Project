@@ -180,15 +180,12 @@ export class ProductsService {
     let displayStock = p.stock;
     let displayPrice = p.priceMad;
     let displayCompare = p.compareAtMad;
-    let displayImages = [...p.images];
     if (p.variantsEnabled && p.variants.length > 0) {
       const def =
         p.variants.find((v) => v.isDefault) ?? p.variants[0]!;
       displayStock = def.stock;
       displayPrice = def.priceMad ?? p.priceMad;
       displayCompare = def.compareAtMad ?? p.compareAtMad;
-      displayImages =
-        def.images.length > 0 ? [...def.images] : [...p.images];
     }
 
     const { options: _o, variants: _v, ...rest } = p;
@@ -197,7 +194,9 @@ export class ProductsService {
       priceMad: displayPrice.toString(),
       compareAtMad: displayCompare?.toString() ?? null,
       stock: displayStock,
-      images: displayImages,
+      // Always product-level gallery (admin "Images & media"). Variant hero
+      // imagery is on each variant and used by the PDP when a variant matches.
+      images: [...p.images],
       ratingAvg: avg,
       lowStock: displayStock <= p.lowStockThreshold,
       variantsEnabled: p.variantsEnabled,
