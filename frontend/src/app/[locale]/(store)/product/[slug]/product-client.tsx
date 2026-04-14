@@ -223,8 +223,10 @@ export function ProductClient({
     if (!variantsActive || !product.variants?.length) return null;
     if (activeVariant) return activeVariant;
     if (lastChangedOptionId && picked[lastChangedOptionId]) {
+      const changedOpt = sortedOptions.find((o) => o.id === lastChangedOptionId);
+      if (!changedOpt) return compatibleVariants[0] ?? product.variants[0] ?? null;
       const pref = compatibleVariants.find(
-        (v) => v.selection[lastChangedOptionId] === picked[lastChangedOptionId],
+        (v) => variantTokenForOption(v, changedOpt) === picked[lastChangedOptionId],
       );
       if (pref) return pref;
     }
@@ -236,16 +238,27 @@ export function ProductClient({
     compatibleVariants,
     lastChangedOptionId,
     picked,
+    sortedOptions,
+    variantTokenForOption,
   ]);
 
-  const displayImages = useMemo(() => {
-    // Keep gallery media sourced from product-level Images & media, not variant rows.
+  const galleryImages = useMemo(() => {
+    // Thumbnails below the main image come from product-level Images & media.
     const src =
       product.images?.length && product.images.length > 0
         ? product.images
         : previewVariant?.images;
     return src?.length ? src : [];
   }, [product.images, previewVariant]);
+
+  const mainImages = useMemo(() => {
+    // Main display follows selected variant first (color click updates image).
+    const src =
+      previewVariant?.images?.length && previewVariant.images.length > 0
+        ? previewVariant.images
+        : galleryImages;
+    return src?.length ? src : [];
+  }, [previewVariant, galleryImages]);
 
   const displayPrice = previewVariant?.priceMad ?? product.priceMad;
   const displayStock = previewVariant?.stock ?? product.stock;
@@ -255,9 +268,9 @@ export function ProductClient({
 
   useEffect(() => {
     setImg(0);
-  }, [displayImages.join("|")]);
+  }, [mainImages.join("|")]);
 
-  const main = displayImages[img] ?? displayImages[0];
+  const main = galleryImages[img] ?? mainImages[0];
 
   function pickValue(option: ProductOptionDef, value: ProductOptionVal) {
     const token = isColorOption(option)
@@ -403,7 +416,7 @@ export function ProductClient({
             />
           </motion.button>
           <div className="-mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1">
-            {displayImages.map((url, i) => (
+            {galleryImages.map((url, i) => (
               <motion.button
                 key={`${url}-${i}`}
                 type="button"
