@@ -374,7 +374,12 @@ export function ProductEditorClient({
   }, [variantOptionGroups.sizeIdx]);
 
   const setColorSizePairOffered = useCallback(
-    (colorValueIndex: number, sizeValueIndex: number, offered: boolean) => {
+    (
+      colorValueIndex: number,
+      sizeValueIndex: number,
+      sizeCode: string,
+      offered: boolean,
+    ) => {
       if (!colorSizeMatrix) return;
       const { colorIx, sizeIx } = colorSizeMatrix;
       setVeVariants((prev) => {
@@ -388,7 +393,10 @@ export function ProductEditorClient({
             .toUpperCase()
             .replace(/[^A-Z0-9]+/g, "-")
             .replace(/^-|-$/g, "")
-            .slice(0, 24);
+            .slice(0, 20);
+          const safeSize = sizeCode
+            .toUpperCase()
+            .replace(/[^A-Z0-9]+/g, "");
           const valueIndexes = veOptions.map((_, oi) => {
             if (oi === colorIx) return colorValueIndex;
             if (oi === sizeIx) return sizeValueIndex;
@@ -397,8 +405,12 @@ export function ProductEditorClient({
           const colorVal = veOptions[colorIx]?.values[colorValueIndex];
           const media =
             colorVal?.imageUrl?.trim() ? [colorVal.imageUrl.trim()] : [];
+          const sku = `${base || "VAR"}-C${colorValueIndex}-${safeSize || "SZ"}`
+            .toUpperCase()
+            .replace(/[^A-Z0-9-]+/g, "-")
+            .slice(0, 80);
           const nextRow: VeVariant = {
-            sku: `${base || "VAR"}-${prev.length + 1}`,
+            sku,
             priceMad: "",
             compareAtMad: "",
             stock: 0,
@@ -418,6 +430,23 @@ export function ProductEditorClient({
       });
     },
     [colorSizeMatrix, veOptions, skuReadonly, slug],
+  );
+
+  const setColorSizeCellStock = useCallback(
+    (colorValueIndex: number, sizeValueIndex: number, stock: number) => {
+      if (!colorSizeMatrix) return;
+      const { colorIx, sizeIx } = colorSizeMatrix;
+      const n = Math.max(0, Math.floor(Number(stock)) || 0);
+      setVeVariants((prev) =>
+        prev.map((r) =>
+          r.valueIndexes[colorIx] === colorValueIndex &&
+          r.valueIndexes[sizeIx] === sizeValueIndex
+            ? { ...r, stock: n }
+            : r,
+        ),
+      );
+    },
+    [colorSizeMatrix],
   );
 
   const productUrlPrefix = useMemo(() => {
@@ -664,12 +693,19 @@ export function ProductEditorClient({
         imageUrl: v.imageUrl?.trim() || undefined,
       })),
     }));
+    const matrixMode = Boolean(colorSizeMatrix);
     const variants = veVariants.map((v) => ({
       sku: v.sku.trim().toUpperCase(),
-      priceMad: v.priceMad.trim() ? v.priceMad.trim().replace(",", ".") : null,
-      compareAtMad: v.compareAtMad.trim()
-        ? v.compareAtMad.trim().replace(",", ".")
-        : null,
+      priceMad: matrixMode
+        ? null
+        : v.priceMad.trim()
+          ? v.priceMad.trim().replace(",", ".")
+          : null,
+      compareAtMad: matrixMode
+        ? null
+        : v.compareAtMad.trim()
+          ? v.compareAtMad.trim().replace(",", ".")
+          : null,
       stock: v.stock,
       images: v.media.filter(Boolean),
       isDefault: v.isDefault,
@@ -719,12 +755,19 @@ export function ProductEditorClient({
     }
     setMsg(null);
     try {
+      const matrixMode = Boolean(colorSizeMatrix);
       const body = {
         sku: row.sku.trim().toUpperCase(),
-        priceMad: row.priceMad.trim() ? row.priceMad.trim().replace(",", ".") : null,
-        compareAtMad: row.compareAtMad.trim()
-          ? row.compareAtMad.trim().replace(",", ".")
-          : null,
+        priceMad: matrixMode
+          ? null
+          : row.priceMad.trim()
+            ? row.priceMad.trim().replace(",", ".")
+            : null,
+        compareAtMad: matrixMode
+          ? null
+          : row.compareAtMad.trim()
+            ? row.compareAtMad.trim().replace(",", ".")
+            : null,
         stock: row.stock,
         images: row.media.filter(Boolean),
         isDefault: row.isDefault,
@@ -1470,13 +1513,15 @@ export function ProductEditorClient({
                   >
                     + Size option (S → XXXL)
                   </button>
-                  <button
-                    type="button"
-                    className="rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-3 py-2 text-xs font-semibold text-slate-900"
-                    onClick={() => generateVariantGrid()}
-                  >
-                    Generate all combinations
-                  </button>
+                  {colorSizeMatrix ? null : (
+                    <button
+                      type="button"
+                      className="rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] px-3 py-2 text-xs font-semibold text-slate-900"
+                      onClick={() => generateVariantGrid()}
+                    >
+                      Generate all combinations
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="rounded-xl border border-[var(--accent)]/50 bg-[var(--accent-dim)] px-3 py-2 text-xs font-semibold text-[var(--fg)]"
@@ -1712,15 +1757,16 @@ export function ProductEditorClient({
                       Size availability by color (matrix)
                     </p>
                     <p className="mt-1 text-[11px] leading-relaxed text-[var(--muted)]">
-                      One row per color. Columns are{" "}
-                      <span className="font-mono">S, M, L, XL, XXL, XXXL</span>.
-                      Choose <strong>Offered</strong> to sell that color in that
-                      size, or <strong>Not offered (—)</strong> when that
-                      combination does not exist (e.g. no red shirt in XL). Use
-                      “Add missing S–XXXL values” if a column shows “—”.
+                      Manage everything here: one row per color, columns{" "}
+                      <span className="font-mono">S … XXXL</span>.{" "}
+                      <strong>Not offered (—)</strong> removes that color/size
+                      from the store. <strong>Stock</strong> is per cell; price
+                      uses the product’s base price (no per-size price). SKUs
+                      are generated automatically. Use “Add missing S–XXXL
+                      values” if a column shows “—”.
                     </p>
                     <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--border)]">
-                      <table className="w-full min-w-[40rem] border-collapse text-left text-[11px]">
+                      <table className="w-full min-w-[52rem] border-collapse text-left text-[11px]">
                         <thead>
                           <tr className="bg-[var(--surface)]/80">
                             <th className="border border-[var(--border)] px-2 py-2 font-semibold text-[var(--fg)]">
@@ -1765,32 +1811,59 @@ export function ProductEditorClient({
                                     </td>
                                   );
                                 }
-                                const offered = veVariants.some(
+                                const rowMatch = veVariants.find(
                                   (r) =>
                                     r.valueIndexes[colorSizeMatrix.colorIx] ===
                                       cr.colorIndex &&
                                     r.valueIndexes[colorSizeMatrix.sizeIx] ===
                                       col.valueIndex,
                                 );
+                                const offered = Boolean(rowMatch);
                                 return (
                                   <td
                                     key={`${cr.colorIndex}-${col.label}`}
-                                    className="border border-[var(--border)] p-1 align-middle"
+                                    className="border border-[var(--border)] p-1 align-top"
                                   >
-                                    <select
-                                      value={offered ? "yes" : "no"}
-                                      onChange={(e) =>
-                                        setColorSizePairOffered(
-                                          cr.colorIndex,
-                                          col.valueIndex!,
-                                          e.target.value === "yes",
-                                        )
-                                      }
-                                      className="w-full rounded-lg border border-[var(--border)] bg-white/90 px-1 py-1.5 text-[11px] text-[var(--fg)] dark:bg-black/30"
-                                    >
-                                      <option value="yes">Offered</option>
-                                      <option value="no">Not offered (—)</option>
-                                    </select>
+                                    <div className="flex min-w-[5.5rem] flex-col gap-1">
+                                      <select
+                                        value={offered ? "yes" : "no"}
+                                        onChange={(e) =>
+                                          setColorSizePairOffered(
+                                            cr.colorIndex,
+                                            col.valueIndex!,
+                                            col.label,
+                                            e.target.value === "yes",
+                                          )
+                                        }
+                                        className="w-full rounded-lg border border-[var(--border)] bg-white/90 px-1 py-1 text-[11px] text-[var(--fg)] dark:bg-black/30"
+                                      >
+                                        <option value="yes">Offered</option>
+                                        <option value="no">
+                                          Not offered (—)
+                                        </option>
+                                      </select>
+                                      {offered ? (
+                                        <label className="block">
+                                          <span className="text-[9px] font-medium uppercase tracking-wide text-[var(--muted)]">
+                                            Stock
+                                          </span>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            value={rowMatch?.stock ?? 0}
+                                            onChange={(e) =>
+                                              setColorSizeCellStock(
+                                                cr.colorIndex,
+                                                col.valueIndex!,
+                                                parseInt(e.target.value, 10) ||
+                                                  0,
+                                              )
+                                            }
+                                            className="mt-0.5 w-full rounded-md border border-[var(--border)] bg-white/90 px-1 py-1 text-[11px] tabular-nums text-[var(--fg)] dark:bg-black/30"
+                                          />
+                                        </label>
+                                      ) : null}
+                                    </div>
                                   </td>
                                 );
                               })}
@@ -1802,6 +1875,15 @@ export function ProductEditorClient({
                   </div>
                 ) : null}
 
+                {colorSizeMatrix ? (
+                  <p className="text-[11px] leading-relaxed text-[var(--muted)]">
+                    <strong className="text-[var(--fg)]">Behind the scenes</strong>{" "}
+                    each offered cell is still saved as one variant (for cart &
+                    inventory). You only edit the grid above — no long list of
+                    rows.
+                  </p>
+                ) : (
+                  <>
                 <p className="text-xs font-semibold text-[var(--fg)]">
                   Variant rows
                 </p>
@@ -2171,6 +2253,8 @@ export function ProductEditorClient({
                 >
                   + Add variant row manually
                 </button>
+                  </>
+                )}
               </div>
             ) : null}
           </CollapsibleSection>
