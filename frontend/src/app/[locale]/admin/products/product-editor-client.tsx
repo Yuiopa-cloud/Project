@@ -90,6 +90,25 @@ type SimpleVariantCardRow = {
   sv: VeOption["values"][number] | null;
 };
 
+const EDITOR_ALLOWED_CATEGORIES = [
+  { slug: "home-garden", label: "Home & Garden" },
+  { slug: "toys-hobbies", label: "Toys & Hobbies" },
+  { slug: "electronics", label: "Electronics" },
+  { slug: "jewelry-accessories", label: "Jewelry & accessories" },
+  { slug: "clothing", label: "Clothing" },
+] as const;
+
+function normalizeCategoryText(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+const ALLOWED_CATEGORY_SLUGS: ReadonlySet<string> = new Set(
+  EDITOR_ALLOWED_CATEGORIES.map((c) => c.slug),
+);
+const ALLOWED_CATEGORY_LABELS: ReadonlySet<string> = new Set(
+  EDITOR_ALLOWED_CATEGORIES.map((c) => normalizeCategoryText(c.label)),
+);
+
 function friendlyNetworkError(err: unknown): string {
   if (!(err instanceof Error)) return "Network error.";
   const m = err.message.toLowerCase();
@@ -834,16 +853,38 @@ export function ProductEditorClient({
     return `${window.location.origin}/${locale}/product/`;
   }, [locale]);
 
+  const allowedCategories = useMemo(() => {
+    const order = new Map<string, number>(
+      EDITOR_ALLOWED_CATEGORIES.map((c, i) => [c.slug, i]),
+    );
+    const filtered = categories.filter((c) => {
+      const slug = c.slug.toLowerCase();
+      const label = normalizeCategoryText(c.nameFr);
+      return ALLOWED_CATEGORY_SLUGS.has(slug) || ALLOWED_CATEGORY_LABELS.has(label);
+    });
+    return filtered.sort((a, b) => {
+      const ai = order.get(a.slug.toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+      const bi = order.get(b.slug.toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+      return ai - bi || a.nameFr.localeCompare(b.nameFr);
+    });
+  }, [categories]);
+
   const filteredCategories = useMemo(() => {
     const q = categoryQuery.trim().toLowerCase();
-    if (!q) return categories;
-    return categories.filter(
+    if (!q) return allowedCategories;
+    return allowedCategories.filter(
       (c) =>
         c.nameFr.toLowerCase().includes(q) ||
         c.nameAr.toLowerCase().includes(q) ||
         c.slug.toLowerCase().includes(q),
     );
-  }, [categories, categoryQuery]);
+  }, [allowedCategories, categoryQuery]);
+
+  useEffect(() => {
+    if (!categoryId) return;
+    const isAllowed = allowedCategories.some((c) => c.id === categoryId);
+    if (!isAllowed) setCategoryId("");
+  }, [allowedCategories, categoryId]);
 
   useEffect(() => {
     setToken(sessionStorage.getItem(TOKEN_KEY));
@@ -1570,7 +1611,7 @@ export function ProductEditorClient({
                 className={inputClass()}
               >
                 <option value="">Select a category</option>
-                {categories.map((c) => (
+                {allowedCategories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.nameFr}
                   </option>
@@ -3392,7 +3433,8 @@ export function ProductEditorClient({
             <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-xl border border-[var(--border)] bg-white/60 p-2 dark:bg-black/20">
               {filteredCategories.length === 0 ? (
                 <li className="px-2 py-2 text-xs text-[var(--muted)]">
-                  No match — clear search or add categories in the backend.
+                  No match — available categories are Home & Garden, Toys &
+                  Hobbies, Electronics, Jewelry & accessories, and Clothing.
                 </li>
               ) : (
                 filteredCategories.map((c) => (
@@ -3417,11 +3459,11 @@ export function ProductEditorClient({
               className="mt-2 text-xs font-semibold text-[var(--accent)]"
               onClick={() =>
                 setMsg(
-                  "New categories: add via API or a future Categories screen — this editor only assigns existing ones.",
+                  "This editor is restricted to: Home & Garden, Toys & Hobbies, Electronics, Jewelry & accessories, and Clothing.",
                 )
               }
             >
-              + Add a new category
+              Category policy
             </button>
           </CollapsibleSection>
 

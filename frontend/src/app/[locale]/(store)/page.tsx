@@ -33,10 +33,11 @@ export default async function HomePage({
   const items = await getProducts();
 
   const categories = [
-    { slug: "winter-tools", label: t("catInterior") },
-    { slug: "home-garden", label: t("catExterior") },
-    { slug: "power-tools", label: t("catPerformance") },
-    { slug: "cleaning-care", label: t("catCare") },
+    { slug: "home-garden", label: "Home & Garden" },
+    { slug: "toys-hobbies", label: "Toys & Hobbies" },
+    { slug: "electronics", label: "Electronics" },
+    { slug: "jewelry-accessories", label: "Jewelry & accessories" },
+    { slug: "clothing", label: "Clothing" },
   ];
 
   const featured = items.slice(0, 8);
