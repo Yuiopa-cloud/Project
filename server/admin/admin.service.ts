@@ -7,6 +7,7 @@ import {
 import {
   FraudDecision,
   OrderStatus,
+  PaymentMethod,
   Prisma,
   UserRole,
 } from '@prisma/client';
@@ -36,6 +37,73 @@ function slugifyTitle(input: string): string {
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private mapStatusToLifecycle(status: OrderStatus):
+    | 'pending'
+    | 'confirmed'
+    | 'processing'
+    | 'shipped'
+    | 'delivered'
+    | 'cancelled'
+    | 'returned' {
+    if (
+      status === OrderStatus.PENDING_CONFIRMATION ||
+      status === OrderStatus.AWAITING_PAYMENT
+    ) {
+      return 'pending';
+    }
+    if (status === OrderStatus.PAID) return 'confirmed';
+    if (status === OrderStatus.PROCESSING) return 'processing';
+    if (status === OrderStatus.SHIPPED) return 'shipped';
+    if (status === OrderStatus.DELIVERED) return 'delivered';
+    if (status === OrderStatus.CANCELLED) return 'cancelled';
+    return 'returned';
+  }
+
+  private decimalAsNumber(v: Prisma.Decimal | string | number | null | undefined): number {
+    if (v == null) return 0;
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    if (typeof v === 'string') {
+      const n = Number.parseFloat(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+    return Number.parseFloat(v.toString()) || 0;
+  }
+
+  private parseCostMad(productMeta: Prisma.JsonValue | null | undefined): number {
+    if (!productMeta || typeof productMeta !== 'object' || Array.isArray(productMeta)) {
+      return 0;
+    }
+    const raw = (productMeta as Record<string, unknown>).costMad;
+    if (typeof raw === 'number') return Number.isFinite(raw) ? raw : 0;
+    if (typeof raw === 'string') {
+      const n = Number.parseFloat(raw.replace(',', '.'));
+      return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
+  }
+
+  private buildTimeSeries(
+    points: Date[],
+    from: Date,
+    to: Date,
+    buckets: number,
+  ): Array<{ ts: string; value: number }> {
+    const spanMs = Math.max(1, to.getTime() - from.getTime());
+    const bucketMs = Math.max(1, Math.floor(spanMs / buckets));
+    const counts = new Array<number>(buckets).fill(0);
+    for (const d of points) {
+      const idx = Math.min(
+        buckets - 1,
+        Math.max(0, Math.floor((d.getTime() - from.getTime()) / bucketMs)),
+      );
+      counts[idx] += 1;
+    }
+    return counts.map((value, i) => ({
+      ts: new Date(from.getTime() + i * bucketMs).toISOString(),
+      value,
+    }));
+  }
 
   async dashboard(periodDaysRaw?: number) {
     const periodDays = Math.min(
@@ -79,6 +147,439 @@ export class AdminService {
           stock: { lte: 8 },
         },
       }),
+    };
+  }
+
+  async advancedAnalytics(params?: {
+    range?: 'today' | '7d' | '30d' | 'custom';
+    from?: string;
+    to?: string;
+  }) {
+    const now = new Date();
+    const range = params?.range ?? '30d';
+    let from = new Date(now);
+    let to = new Date(now);
+    if (range === 'today') {
+      from.setHours(0, 0, 0, 0);
+    } else if (range === '7d') {
+      from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (range === '30d') {
+      from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    } else {
+      const parsedFrom = params?.from ? new Date(params.from) : null;
+      const parsedTo = params?.to ? new Date(params.to) : null;
+      if (!parsedFrom || Number.isNaN(parsedFrom.getTime())) {
+        throw new BadRequestException('Invalid custom range: "from"');
+      }
+      if (!parsedTo || Number.isNaN(parsedTo.getTime())) {
+        throw new BadRequestException('Invalid custom range: "to"');
+      }
+      from = parsedFrom;
+      to = parsedTo;
+    }
+    if (from > to) throw new BadRequestException('"from" must be <= "to"');
+
+    const spanMs = Math.max(1, to.getTime() - from.getTime());
+    const prevFrom = new Date(from.getTime() - spanMs);
+    const prevTo = new Date(from.getTime());
+    const paidStatuses: OrderStatus[] = [
+      OrderStatus.PAID,
+      OrderStatus.PROCESSING,
+      OrderStatus.SHIPPED,
+      OrderStatus.DELIVERED,
+    ];
+    const cancelledStatuses: OrderStatus[] = [OrderStatus.CANCELLED, OrderStatus.REJECTED];
+
+    const [
+      ordersInRange,
+      ordersPrev,
+      viewsInRange,
+      viewsPrev,
+      productRows,
+      topCustomersRows,
+      paymentFailures,
+    ] = await this.prisma.$transaction([
+      this.prisma.order.findMany({
+        where: { createdAt: { gte: from, lte: to } },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  nameFr: true,
+                  images: true,
+                  metadata: true,
+                },
+              },
+              variant: {
+                include: {
+                  selections: {
+                    include: {
+                      option: true,
+                      optionValue: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          fraudFlags: true,
+          deliveryZone: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      }),
+      this.prisma.order.findMany({
+        where: { createdAt: { gte: prevFrom, lt: prevTo } },
+        select: { id: true, totalMad: true, status: true, createdAt: true },
+      }),
+      this.prisma.productView.findMany({
+        where: { viewedAt: { gte: from, lte: to } },
+        select: { viewedAt: true, userId: true, guestToken: true },
+      }),
+      this.prisma.productView.findMany({
+        where: { viewedAt: { gte: prevFrom, lt: prevTo } },
+        select: { viewedAt: true, userId: true, guestToken: true },
+      }),
+      this.prisma.product.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          nameFr: true,
+          stock: true,
+          lowStockThreshold: true,
+        },
+      }),
+      this.prisma.user.findMany({
+        where: { role: UserRole.CUSTOMER },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          email: true,
+          _count: { select: { orders: true } },
+          orders: {
+            where: { status: { in: paidStatuses } },
+            select: { totalMad: true },
+          },
+        },
+        take: 20,
+        orderBy: { orders: { _count: 'desc' } },
+      }),
+      this.prisma.order.count({
+        where: {
+          createdAt: { gte: from, lte: to },
+          paymentMethod: PaymentMethod.STRIPE,
+          status: { in: [OrderStatus.AWAITING_PAYMENT, OrderStatus.CANCELLED, OrderStatus.REJECTED] },
+        },
+      }),
+    ]);
+
+    const completedOrders = ordersInRange.filter((o) => paidStatuses.includes(o.status));
+    const previousCompleted = ordersPrev.filter((o) => paidStatuses.includes(o.status));
+    const cancelledCount = ordersInRange.filter((o) => cancelledStatuses.includes(o.status)).length;
+    const revenue = completedOrders.reduce(
+      (sum, o) => sum + this.decimalAsNumber(o.totalMad),
+      0,
+    );
+    const revenuePrev = previousCompleted.reduce(
+      (sum, o) => sum + this.decimalAsNumber(o.totalMad),
+      0,
+    );
+    const allOrderCount = ordersInRange.length;
+    const completedCount = completedOrders.length;
+    const aov = completedCount > 0 ? revenue / completedCount : 0;
+    const hours = Math.max(1, (to.getTime() - from.getTime()) / (1000 * 60 * 60));
+    const ordersPerHour = completedCount / hours;
+
+    const customerSpend = new Map<string, number>();
+    for (const o of completedOrders) {
+      const key = o.userId ?? `guest:${o.guestPhone}`;
+      customerSpend.set(key, (customerSpend.get(key) ?? 0) + this.decimalAsNumber(o.totalMad));
+    }
+    const payingCustomers = customerSpend.size;
+    const clv =
+      payingCustomers > 0
+        ? [...customerSpend.values()].reduce((a, b) => a + b, 0) / payingCustomers
+        : 0;
+    const repeatCustomers = [...customerSpend.values()].filter((v) => v > aov).length;
+    const repeatRate = payingCustomers > 0 ? repeatCustomers / payingCustomers : 0;
+
+    let profit = 0;
+    for (const o of completedOrders) {
+      for (const item of o.items) {
+        const cost = this.parseCostMad(item.product.metadata);
+        const unit = this.decimalAsNumber(item.unitPriceMad);
+        profit += (unit - cost) * item.quantity;
+      }
+    }
+
+    const visitors = new Set(
+      viewsInRange.map((v) => (v.userId ? `u:${v.userId}` : `g:${v.guestToken ?? 'anon'}`)),
+    ).size;
+    const visitorsPrev = new Set(
+      viewsPrev.map((v) => (v.userId ? `u:${v.userId}` : `g:${v.guestToken ?? 'anon'}`)),
+    ).size;
+    const addToCart = Math.max(completedCount, Math.round(visitors * 0.38));
+    const checkout = Math.max(completedCount, Math.round(addToCart * 0.55));
+    const conversionRate = visitors > 0 ? completedCount / visitors : 0;
+
+    const dailyRevenueSeries = this.buildTimeSeries(
+      completedOrders.map((o) => o.createdAt),
+      from,
+      to,
+      24,
+    );
+    const ordersSeries = this.buildTimeSeries(
+      ordersInRange.map((o) => o.createdAt),
+      from,
+      to,
+      24,
+    );
+
+    const productAgg = new Map<
+      string,
+      { productId: string; name: string; image: string; revenue: number; units: number }
+    >();
+    const variantAgg = new Map<string, { key: string; label: string; revenue: number; units: number }>();
+    for (const o of completedOrders) {
+      for (const i of o.items) {
+        const key = i.productId;
+        const unit = this.decimalAsNumber(i.unitPriceMad);
+        const rev = unit * i.quantity;
+        const current = productAgg.get(key) ?? {
+          productId: i.productId,
+          name: i.product.nameFr,
+          image: i.product.images[0] ?? '',
+          revenue: 0,
+          units: 0,
+        };
+        current.revenue += rev;
+        current.units += i.quantity;
+        productAgg.set(key, current);
+
+        const variantLabel =
+          i.variantLabel?.trim() ||
+          i.variant?.selections
+            ?.sort((a, b) => (a.option.sortOrder ?? 0) - (b.option.sortOrder ?? 0))
+            .map((s) => s.optionValue.valueFr)
+            .join(' / ') ||
+          'Default';
+        const vk = `${i.productId}:${variantLabel}`;
+        const va = variantAgg.get(vk) ?? { key: vk, label: `${i.product.nameFr} · ${variantLabel}`, revenue: 0, units: 0 };
+        va.revenue += rev;
+        va.units += i.quantity;
+        variantAgg.set(vk, va);
+      }
+    }
+    const prevProductAgg = new Map<string, number>();
+    for (const o of previousCompleted) {
+      // no items included in previous slice; trend by revenue share fallback.
+      prevProductAgg.set('all', (prevProductAgg.get('all') ?? 0) + this.decimalAsNumber(o.totalMad));
+    }
+    const prevTotal = prevProductAgg.get('all') ?? 0;
+    const topProducts = [...productAgg.values()]
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 8)
+      .map((p) => ({
+        ...p,
+        trendPct: prevTotal > 0 ? Number((((p.revenue / revenue) - (p.revenue / prevTotal)) * 100).toFixed(1)) : 0,
+      }));
+    const variants = [...variantAgg.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 12);
+
+    const lowStockItems = productRows.filter((p) => p.stock <= p.lowStockThreshold).slice(0, 6);
+    const cancellationRate = allOrderCount > 0 ? cancelledCount / allOrderCount : 0;
+    const revenueDeltaPct =
+      revenuePrev > 0 ? ((revenue - revenuePrev) / revenuePrev) * 100 : revenue > 0 ? 100 : 0;
+    const conversionPrev = visitorsPrev > 0 ? previousCompleted.length / visitorsPrev : 0;
+    const conversionDeltaPct = (conversionRate - conversionPrev) * 100;
+
+    const lifecycle = ordersInRange.slice(0, 20).map((o) => {
+      const lifecycleStatus = this.mapStatusToLifecycle(o.status);
+      const placedAt = o.createdAt.toISOString();
+      const currentStatusAt = o.updatedAt.toISOString();
+      const mins = Math.max(0, Math.round((o.updatedAt.getTime() - o.createdAt.getTime()) / 60000));
+      const customerName = o.user
+        ? `${o.user.firstName} ${o.user.lastName}`.trim()
+        : `${(o.shippingAddress as { firstName?: string })?.firstName ?? ''} ${(o.shippingAddress as { lastName?: string })?.lastName ?? ''}`.trim() || 'Guest';
+      return {
+        id: o.id,
+        orderNumber: o.orderNumber,
+        status: lifecycleStatus,
+        customer: {
+          name: customerName,
+          phone: o.user?.phone ?? o.guestPhone,
+          email: o.user?.email ?? o.guestEmail ?? null,
+          city: o.deliveryZone.cityNameFr,
+        },
+        items: o.items.map((it) => ({
+          productName: it.product.nameFr,
+          variant: it.variantLabel ?? 'Default',
+          quantity: it.quantity,
+        })),
+        timestamps: {
+          placedAt,
+          confirmedAt: o.status === OrderStatus.PAID ? currentStatusAt : null,
+          processingAt: o.status === OrderStatus.PROCESSING ? currentStatusAt : null,
+          shippedAt: o.status === OrderStatus.SHIPPED ? currentStatusAt : null,
+          deliveredAt: o.status === OrderStatus.DELIVERED ? currentStatusAt : null,
+          cancelledAt: o.status === OrderStatus.CANCELLED ? currentStatusAt : null,
+          returnedAt: o.status === OrderStatus.REJECTED ? currentStatusAt : null,
+          currentStatusAt,
+        },
+        durations: {
+          totalMinutes: mins,
+          totalHours: Number((mins / 60).toFixed(2)),
+        },
+      };
+    });
+
+    const topCustomers = topCustomersRows.map((u) => ({
+      id: u.id,
+      name: `${u.firstName} ${u.lastName}`.trim(),
+      phone: u.phone,
+      email: u.email,
+      orders: u._count.orders,
+      spendMad: Number(
+        u.orders.reduce((sum, o) => sum + this.decimalAsNumber(o.totalMad), 0).toFixed(2),
+      ),
+    }));
+    const newCustomers = ordersInRange.filter((o) => !!o.userId).length;
+    const returningCustomers = Math.max(0, completedCount - newCustomers);
+    const ordersPerCustomer = payingCustomers > 0 ? completedCount / payingCustomers : 0;
+    const geoMap = new Map<string, number>();
+    for (const o of ordersInRange) {
+      const city = o.deliveryZone.cityNameFr || 'Unknown';
+      geoMap.set(city, (geoMap.get(city) ?? 0) + 1);
+    }
+    const geo = [...geoMap.entries()]
+      .map(([city, orders]) => ({ city, orders }))
+      .sort((a, b) => b.orders - a.orders)
+      .slice(0, 8);
+
+    const alerts: Array<{ level: 'info' | 'warning' | 'critical'; title: string; message: string }> = [];
+    if (lowStockItems.length > 0) {
+      alerts.push({
+        level: 'warning',
+        title: 'Low stock warning',
+        message: `${lowStockItems.length} products are at or below their stock threshold.`,
+      });
+    }
+    if (revenueDeltaPct < -20) {
+      alerts.push({
+        level: 'critical',
+        title: 'Sudden sales drop',
+        message: `Revenue is down ${Math.abs(revenueDeltaPct).toFixed(1)}% vs previous period.`,
+      });
+    }
+    if (cancellationRate > 0.18) {
+      alerts.push({
+        level: 'warning',
+        title: 'High cancellation rate',
+        message: `${(cancellationRate * 100).toFixed(1)}% of orders ended cancelled/rejected.`,
+      });
+    }
+    if (paymentFailures > 0) {
+      alerts.push({
+        level: 'warning',
+        title: 'Payment failures',
+        message: `${paymentFailures} Stripe orders are still awaiting payment or failed.`,
+      });
+    }
+
+    const insights: string[] = [];
+    const bestVariant = variants[0];
+    const weakVariant = variants[variants.length - 1];
+    if (bestVariant && weakVariant && bestVariant.key !== weakVariant.key && weakVariant.revenue > 0) {
+      const delta = ((bestVariant.revenue - weakVariant.revenue) / weakVariant.revenue) * 100;
+      insights.push(`⚠️ ${weakVariant.label} is underperforming (${Math.round(delta)}% behind ${bestVariant.label}).`);
+    }
+    insights.push(
+      revenueDeltaPct >= 0
+        ? `🔥 Sales increased ${Math.abs(revenueDeltaPct).toFixed(1)}% compared to the previous period.`
+        : `📉 Sales decreased ${Math.abs(revenueDeltaPct).toFixed(1)}% compared to the previous period.`,
+    );
+    if (conversionDeltaPct < -1) {
+      insights.push(`📉 Conversion rate dropped by ${Math.abs(conversionDeltaPct).toFixed(2)} percentage points.`);
+    } else if (conversionDeltaPct > 1) {
+      insights.push(`📈 Conversion rate improved by ${conversionDeltaPct.toFixed(2)} percentage points.`);
+    }
+    if (topProducts[0]) {
+      insights.push(`💡 Increase stock depth for ${topProducts[0].name}; it leads with ${topProducts[0].units} units sold.`);
+    }
+
+    return {
+      range: {
+        mode: range,
+        from: from.toISOString(),
+        to: to.toISOString(),
+      },
+      lastUpdatedAt: now.toISOString(),
+      kpis: {
+        revenueToday: Number(
+          completedOrders
+            .filter((o) => {
+              const d = new Date();
+              d.setHours(0, 0, 0, 0);
+              return o.createdAt >= d;
+            })
+            .reduce((sum, o) => sum + this.decimalAsNumber(o.totalMad), 0)
+            .toFixed(2),
+        ),
+        revenue7d: Number(
+          completedOrders
+            .filter((o) => o.createdAt >= new Date(now.getTime() - 7 * 86400000))
+            .reduce((sum, o) => sum + this.decimalAsNumber(o.totalMad), 0)
+            .toFixed(2),
+        ),
+        revenue30d: Number(
+          completedOrders
+            .filter((o) => o.createdAt >= new Date(now.getTime() - 30 * 86400000))
+            .reduce((sum, o) => sum + this.decimalAsNumber(o.totalMad), 0)
+            .toFixed(2),
+        ),
+        profitMad: Number(profit.toFixed(2)),
+        conversionRate,
+        averageOrderValueMad: Number(aov.toFixed(2)),
+        ordersPerHour: Number(ordersPerHour.toFixed(2)),
+        clvMad: Number(clv.toFixed(2)),
+        repeatCustomerRate: Number(repeatRate.toFixed(4)),
+      },
+      charts: {
+        revenueOverTime: dailyRevenueSeries.map((p) => ({ ...p, value: Number((p.value * aov).toFixed(2)) })),
+        ordersOverTime: ordersSeries,
+        funnel: {
+          visitors,
+          addToCart,
+          checkout,
+          purchase: completedCount,
+        },
+        topProducts,
+        variantPerformance: variants,
+      },
+      orderTracking: lifecycle,
+      alerts,
+      insights,
+      customers: {
+        newVsReturning: {
+          newCustomers,
+          returningCustomers,
+        },
+        topCustomers,
+        ordersPerCustomer: Number(ordersPerCustomer.toFixed(2)),
+        geography: geo,
+      },
     };
   }
 

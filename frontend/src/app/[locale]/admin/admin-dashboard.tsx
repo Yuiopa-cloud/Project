@@ -6,7 +6,6 @@ import {
   useMemo,
   useState,
   type ComponentProps,
-  type ReactElement,
   type ReactNode,
 } from "react";
 import { useSearchParams } from "next/navigation";
@@ -15,11 +14,16 @@ import { useTranslations } from "next-intl";
 import { AtlasLogo } from "@/components/atlas-logo";
 import { clientApiRoot, logApiFailure } from "@/lib/api-config";
 import { Link } from "@/i18n/navigation";
+import {
+  AdminAdvancedAnalytics,
+  type AdvancedAnalyticsPayload,
+} from "@/components/admin-advanced-analytics";
 
 const TOKEN_KEY = "atlas-admin-jwt";
 const ORDER_STATUSES = [
   "PENDING_CONFIRMATION",
   "AWAITING_PAYMENT",
+  "PAID",
   "PROCESSING",
   "SHIPPED",
   "DELIVERED",
@@ -28,16 +32,6 @@ const ORDER_STATUSES = [
 ] as const;
 
 type ConfirmationTone = "red" | "green" | "blue" | "neutral";
-
-type Dash = {
-  periodDays: number;
-  revenueMad: string;
-  orders: number;
-  customers: number;
-  pendingFraudFlags: number;
-  conversionRateApprox: number;
-  inventoryLow: number;
-};
 
 type OrderRow = {
   id: string;
@@ -200,89 +194,6 @@ const ADMIN_PLACEHOLDERS: Record<
   },
 };
 
-function AdminOverviewSpark({
-  orders,
-  revenueMad,
-}: {
-  orders: number;
-  revenueMad: number;
-}) {
-  const w = 400;
-  const h = 180;
-  const pad = 28;
-  const gw = w - pad * 2;
-  const gh = h - pad * 2;
-  const rev = Number.isFinite(revenueMad) ? revenueMad : 0;
-  const oBoost = orders > 0 ? Math.min(1, 0.35 + orders / Math.max(orders + 8, 1) * 0.55) : 0.08;
-  const rBoost = rev > 0 ? Math.min(1, 0.3 + Math.log10(rev + 10) / 5) : 0.06;
-  const ptsO = [0, 1, 2, 3, 4].map((i) => {
-    const x = pad + (gw * i) / 4;
-    const t = i / 4;
-    const y = pad + gh * (1 - 0.12 - t * 0.78 * oBoost);
-    return `${x},${y}`;
-  });
-  const ptsR = [0, 1, 2, 3, 4].map((i) => {
-    const x = pad + (gw * i) / 4;
-    const t = i / 4;
-    const y = pad + gh * (1 - 0.18 - (1 - t) * 0.72 * rBoost);
-    return `${x},${y}`;
-  });
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      className="h-44 w-full max-h-52 text-[var(--fg)]"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id="adminSparkO" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id="adminSparkR" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--accent-hot)" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="var(--accent-hot)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {[0, 0.33, 0.66, 1].map((t) => (
-        <line
-          key={t}
-          x1={pad}
-          y1={pad + gh * t}
-          x2={w - pad}
-          y2={pad + gh * t}
-          stroke="var(--border)"
-          strokeWidth="1"
-        />
-      ))}
-      <polyline
-        fill="none"
-        stroke="var(--accent)"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={ptsO.join(" ")}
-      />
-      <polygon
-        fill="url(#adminSparkO)"
-        points={`${pad},${pad + gh} ${ptsO.join(" ")} ${w - pad},${pad + gh}`}
-      />
-      <polyline
-        fill="none"
-        stroke="var(--accent-hot)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeDasharray="4 4"
-        points={ptsR.join(" ")}
-      />
-      <polygon
-        fill="url(#adminSparkR)"
-        points={`${pad},${pad + gh} ${ptsR.join(" ")} ${w - pad},${pad + gh}`}
-        opacity={rev > 0 ? 0.85 : 0.35}
-      />
-    </svg>
-  );
-}
-
 function AdminPlaceholderPanel({
   title,
   body,
@@ -327,7 +238,7 @@ export function AdminDashboard() {
   const [sidebarExtra, setSidebarExtra] = useState<{ slug: string } | null>(
     null,
   );
-  const [dash, setDash] = useState<Dash | null>(null);
+  const [advanced, setAdvanced] = useState<AdvancedAnalyticsPayload | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [members, setMembers] = useState<CustomerRow[]>([]);
   const [productRows, setProductRows] = useState<ProductRow[]>([]);
@@ -340,7 +251,7 @@ export function AdminDashboard() {
   );
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [dashPeriodDays, setDashPeriodDays] = useState<1 | 7 | 30 | 365>(30);
+  const [dashRange, setDashRange] = useState<"today" | "7d" | "30d">("30d");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [orderQuery, setOrderQuery] = useState("");
   const [confirmationFilter, setConfirmationFilter] = useState<
@@ -372,15 +283,12 @@ export function AdminDashboard() {
     [token],
   );
 
-  const loadDash = useCallback(async () => {
+  const loadAdvanced = useCallback(async () => {
     if (!token) return;
     try {
-      const r = await fetch(
-        `${apiRoot}/admin/dashboard?days=${dashPeriodDays}`,
-        {
+      const r = await fetch(`${apiRoot}/admin/analytics/advanced?range=${dashRange}`, {
         headers: authHeaders(),
-        },
-      );
+      });
       if (!r.ok) {
         const txt = await r.text();
         setMsg(
@@ -392,12 +300,12 @@ export function AdminDashboard() {
         );
         return;
       }
-      setDash(await r.json());
+      setAdvanced(await r.json());
     } catch (e) {
-      logApiFailure("admin dashboard", e);
+      logApiFailure("admin advanced dashboard", e);
       setMsg(friendlyNetworkError(e));
     }
-  }, [apiRoot, token, authHeaders, dashPeriodDays]);
+  }, [apiRoot, token, authHeaders, dashRange]);
 
   const loadOrders = useCallback(async () => {
     if (!token) return;
@@ -479,10 +387,18 @@ export function AdminDashboard() {
   useEffect(() => {
     if (!token) return;
     setMsg(null);
-    if (tab === "dash") loadDash();
+    if (tab === "dash") loadAdvanced();
     else if (tab === "orders") loadOrders();
     else if (tab === "members") loadMembers();
-  }, [token, tab, loadDash, loadOrders, loadMembers]);
+  }, [token, tab, loadAdvanced, loadOrders, loadMembers]);
+
+  useEffect(() => {
+    if (!token || tab !== "dash") return;
+    const id = window.setInterval(() => {
+      void loadAdvanced();
+    }, 15000);
+    return () => window.clearInterval(id);
+  }, [token, tab, loadAdvanced]);
 
   useEffect(() => {
     if (!token || tab !== "products") return;
@@ -596,7 +512,7 @@ export function AdminDashboard() {
   function logout() {
     sessionStorage.removeItem(TOKEN_KEY);
     setToken(null);
-    setDash(null);
+    setAdvanced(null);
     setOrders([]);
     setMembers([]);
     setProductRows([]);
@@ -1071,7 +987,7 @@ export function AdminDashboard() {
               type="button"
               onClick={() => {
                 setSidebarExtra(null);
-                if (tab === "dash") loadDash();
+                if (tab === "dash") loadAdvanced();
                 else if (tab === "orders") loadOrders();
                 else if (tab === "members") loadMembers();
                 else void loadProducts();
@@ -1126,219 +1042,19 @@ export function AdminDashboard() {
       ) : (
         <>
       {tab === "dash" ? (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="font-display text-base font-semibold text-[var(--fg)]">
-              Aperçu
-            </h2>
-            <div className="flex flex-wrap gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--press-bg)] p-1">
-              {(
-                [
-                  [1, "Aujourd’hui"],
-                  [7, "7 jours"],
-                  [30, "30 jours"],
-                  [365, "12 mois"],
-                ] as const
-              ).map(([days, label]) => (
-                <button
-                  key={days}
-                  type="button"
-                  onClick={() => setDashPeriodDays(days)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                    dashPeriodDays === days
-                      ? "bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hot)] text-slate-900 shadow-sm"
-                      : "text-[var(--muted)] hover:text-[var(--fg)]"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+        advanced ? (
+          <AdminAdvancedAnalytics
+            data={advanced}
+            range={dashRange}
+            onChangeRange={setDashRange}
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-28 animate-pulse rounded-2xl bg-[var(--accent-dim)]" />
+            ))}
           </div>
-
-          {!dash ? (
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-28 animate-pulse rounded-2xl bg-[var(--accent-dim)]"
-                />
-              ))}
-            </div>
-          ) : (
-            <>
-              <div className="grid gap-4 sm:grid-cols-3">
-                {(
-                  [
-                    {
-                      k: "Commandes",
-                      v: String(dash.orders),
-                      sub: `sur ${dash.periodDays} jour(s)`,
-                    },
-                    {
-                      k: "Panier moyen",
-                      v:
-                        dash.orders > 0
-                          ? `${(parseFloat(dash.revenueMad || "0") / dash.orders).toFixed(2)} MAD`
-                          : "0.00 MAD",
-                      sub: "CA ÷ commandes",
-                    },
-                    {
-                      k: "Comptes clients",
-                      v: String(dash.customers),
-                      sub: "Inscrits (total)",
-                    },
-                  ] as const
-                ).map((item, i) => (
-                  <motion.div
-                    key={item.k}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm"
-                  >
-                    <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
-                      {item.k}
-                    </p>
-                    <p className="mt-2 font-display text-3xl font-semibold tabular-nums text-[var(--fg)]">
-                      {item.v}
-                    </p>
-                    <p className="mt-1 text-xs text-[var(--muted)]">{item.sub}</p>
-                  </motion.div>
-                ))}
-              </div>
-
-              <div className="grid gap-4 lg:grid-cols-3">
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm lg:col-span-2">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-[var(--fg)]">
-                      Activité
-                    </p>
-                    <div className="flex gap-4 text-xs">
-                      <span className="inline-flex items-center gap-1.5 text-[var(--muted)]">
-                        <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
-                        Commandes
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-[var(--muted)]">
-                        <span className="h-2 w-2 rounded-full bg-[var(--accent-hot)]" />
-                        Tendance CA
-                      </span>
-                    </div>
-                  </div>
-                  <AdminOverviewSpark
-                    orders={dash.orders}
-                    revenueMad={parseFloat(dash.revenueMad || "0")}
-                  />
-                  <p className="mt-2 text-center text-[11px] text-[var(--muted)]">
-                    Courbe indicative sur la période — pas un historique jour par jour.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
-                  <p className="text-sm font-semibold text-[var(--fg)]">
-                    Top produits
-                  </p>
-                  <div className="mt-10 flex flex-col items-center justify-center gap-3 text-center">
-                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--accent-dim)] text-[var(--accent)]">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                        <line x1="7" y1="7" x2="7.01" y2="7" />
-                      </svg>
-                    </div>
-                    <p className="text-sm font-medium text-[var(--fg)]">
-                      Pas encore de classement
-                    </p>
-                    <p className="text-xs text-[var(--muted)]">
-                      Les ventes par produit apparaîtront ici.
-                    </p>
-                    <Link
-                      href="/admin?tab=products"
-                      className="mt-1 text-xs font-semibold text-[var(--accent)] hover:underline"
-                    >
-                      Gérer les produits
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {(
-                  [
-                    ["Stock bas", String(dash.inventoryLow), "Produits actifs ≤ seuil"],
-                    ["Fraude en attente", String(dash.pendingFraudFlags), "À traiter"],
-                    [
-                      "CA (période)",
-                      `${dash.revenueMad} MAD`,
-                      "Hors annulé / refusé",
-                    ],
-                    [
-                      "Conversion (approx.)",
-                      `${(dash.conversionRateApprox * 100).toFixed(1)}%`,
-                      "Commandes / clients",
-                    ],
-                  ] as const
-                ).map(([title, val, hint]) => (
-                  <div
-                    key={title}
-                    className="rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_94%,var(--accent-dim))] px-4 py-3"
-                  >
-                    <p className="text-xs font-medium text-[var(--muted)]">{title}</p>
-                    <p className="mt-1 font-display text-lg font-semibold text-[var(--fg)]">
-                      {val}
-                    </p>
-                    <p className="text-[11px] text-[var(--muted)]">{hint}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <p className="mb-3 text-sm font-semibold text-[var(--fg)]">
-                  Ressources
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <Link
-                    href="/"
-                    className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm shadow-sm transition hover:border-[var(--accent)]/40 hover:shadow-md"
-                  >
-                    <p className="font-semibold text-[var(--fg)]">Boutique</p>
-                    <p className="mt-0.5 text-xs text-[var(--muted)]">
-                      Voir le site public
-                    </p>
-                  </Link>
-                  <Link
-                    href="/admin?tab=products"
-                    className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm shadow-sm transition hover:border-[var(--accent)]/40 hover:shadow-md"
-                  >
-                    <p className="font-semibold text-[var(--fg)]">Produits</p>
-                    <p className="mt-0.5 text-xs text-[var(--muted)]">Catalogue</p>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setTab("orders")}
-                    className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-left text-sm shadow-sm transition hover:border-[var(--accent)]/40 hover:shadow-md"
-                  >
-                    <p className="font-semibold text-[var(--fg)]">Commandes</p>
-                    <p className="mt-0.5 text-xs text-[var(--muted)]">
-                      Liste & statuts
-                    </p>
-                  </button>
-                  <Link
-                    href="/"
-                    className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm shadow-sm transition hover:border-[var(--accent)]/40 hover:shadow-md"
-                  >
-                    <p className="font-semibold text-[var(--fg)]">Aide</p>
-                    <p className="mt-0.5 text-xs text-[var(--muted)]">
-                      Page d’accueil & contact
-                    </p>
-                  </Link>
-                </div>
-              </div>
-            </>
-          )}
-        </motion.div>
+        )
       ) : null}
 
       {tab === "orders" ? (

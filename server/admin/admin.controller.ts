@@ -37,6 +37,15 @@ export class AdminController {
     return this.admin.dashboard(days ? Number(days) : undefined);
   }
 
+  @Get('analytics/advanced')
+  advancedAnalytics(
+    @Query('range') range?: 'today' | '7d' | '30d' | 'custom',
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.admin.advancedAnalytics({ range, from, to });
+  }
+
   @Get('customers')
   customers(@Query('take') take?: string) {
     return this.admin.listCustomers(take ? Number(take) : undefined);
