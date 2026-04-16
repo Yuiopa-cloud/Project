@@ -82,7 +82,6 @@ export default async function ProductPage({
           buyNow: t("buyNow"),
           offerCountdownTitle: t("offerCountdownTitle"),
           offerCountdownEndsIn: t("offerCountdownEndsIn"),
-          offerCountdownExpired: t("offerCountdownExpired"),
           offerUnitD: t("offerUnitD"),
           offerUnitH: t("offerUnitH"),
           offerUnitM: t("offerUnitM"),

@@ -149,9 +149,8 @@
   "product": {
     "addToCart": "Ajouter au panier",
     "buyNow": "Acheter maintenant",
-    "offerCountdownTitle": "Offre limitée",
-    "offerCountdownEndsIn": "Se termine dans",
-    "offerCountdownExpired": "Cette offre est terminée.",
+    "offerCountdownTitle": "Décidez vite",
+    "offerCountdownEndsIn": "Temps sur cette visite",
     "offerUnitD": "j",
     "offerUnitH": "h",
     "offerUnitM": "m",

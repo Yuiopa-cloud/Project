@@ -34,17 +34,15 @@ function pad2(n: number): string {
   return n < 10 ? `0${n}` : String(n);
 }
 
+/** Decorative urgency timer only — does not change catalog or checkout. */
 export function ProductOfferCountdown({
   endMs,
-  showExpired,
   labels,
 }: {
-  endMs: number | null;
-  showExpired: boolean;
+  endMs: number;
   labels: {
     title: string;
     endsIn: string;
-    expired: string;
     unitD: string;
     unitH: string;
     unitM: string;
@@ -54,28 +52,10 @@ export function ProductOfferCountdown({
   const nowMs = useNowMs();
 
   const remaining = useMemo(() => {
-    if (endMs == null) return null;
     return splitRemaining(endMs - nowMs);
   }, [endMs, nowMs]);
 
-  if (showExpired) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-rose-500/35 bg-gradient-to-br from-rose-500/15 via-transparent to-amber-500/10 px-4 py-3 text-center"
-      >
-        <p className="text-xs font-semibold uppercase tracking-wider text-rose-200/90">
-          {labels.title}
-        </p>
-        <p className="mt-1 text-sm text-rose-100/95">{labels.expired}</p>
-      </motion.div>
-    );
-  }
-
-  if (endMs == null || !remaining) return null;
-
-  const urgent = endMs - nowMs < 60 * 60 * 1000;
+  const urgent = endMs - nowMs < 8 * 60 * 1000;
 
   const blocks = [
     { v: remaining.d, u: labels.unitD },

@@ -149,9 +149,8 @@
   "product": {
     "addToCart": "أضف للسلة",
     "buyNow": "اشتر الآن",
-    "offerCountdownTitle": "عرض محدود",
-    "offerCountdownEndsIn": "ينتهي خلال",
-    "offerCountdownExpired": "انتهى هذا العرض.",
+    "offerCountdownTitle": "قرّب قرارك",
+    "offerCountdownEndsIn": "الوقت في هذه الزيارة",
     "offerUnitD": "ي",
     "offerUnitH": "س",
     "offerUnitM": "د",

@@ -11,7 +11,7 @@ import { useCartFly } from "@/contexts/cart-fly-context";
 import { setBuyNow } from "@/lib/buy-now";
 import { formatSar } from "@/lib/price";
 import { ProductOfferCountdown } from "@/components/product-offer-countdown";
-import { resolveOfferCountdownEndMs } from "@/lib/offer-deadline";
+import { PDP_URGENCY_COUNTDOWN_MS } from "@/lib/offer-deadline";
 
 type ProductOptionVal = {
   id: string;
@@ -68,7 +68,6 @@ type Product = {
   stock: number;
   purchaseCount: number;
   lowStock?: boolean;
-  metadata?: Record<string, unknown> | null;
   variantsEnabled?: boolean;
   options?: ProductOptionDef[];
   variants?: ProductVariantRow[];
@@ -135,10 +134,21 @@ export function ProductClient({
   const { addItem } = useCart();
   const { flyToCart } = useCartFly();
 
-  const offerCountdown = useMemo(
-    () => resolveOfferCountdownEndMs(product.metadata),
-    [product.metadata],
-  );
+  /** Per-visit decorative timer — resets on mount or when `product.id` changes. */
+  const urgencyAnchorRef = useRef<{
+    productId: string;
+    endMs: number;
+  } | null>(null);
+  if (
+    urgencyAnchorRef.current === null ||
+    urgencyAnchorRef.current.productId !== product.id
+  ) {
+    urgencyAnchorRef.current = {
+      productId: product.id,
+      endMs: Date.now() + PDP_URGENCY_COUNTDOWN_MS,
+    };
+  }
+  const urgencyEndMs = urgencyAnchorRef.current.endMs;
 
   const variantsActive = Boolean(
     product.variantsEnabled &&
@@ -667,21 +677,17 @@ export function ProductClient({
                 {labels.buyNow ?? "Buy now"}
               </motion.button>
             </div>
-            {offerCountdown.showExpired || offerCountdown.endMs != null ? (
-              <ProductOfferCountdown
-                endMs={offerCountdown.endMs}
-                showExpired={offerCountdown.showExpired}
-                labels={{
-                  title: labels.offerCountdownTitle,
-                  endsIn: labels.offerCountdownEndsIn,
-                  expired: labels.offerCountdownExpired,
-                  unitD: labels.offerUnitD,
-                  unitH: labels.offerUnitH,
-                  unitM: labels.offerUnitM,
-                  unitS: labels.offerUnitS,
-                }}
-              />
-            ) : null}
+            <ProductOfferCountdown
+              endMs={urgencyEndMs}
+              labels={{
+                title: labels.offerCountdownTitle,
+                endsIn: labels.offerCountdownEndsIn,
+                unitD: labels.offerUnitD,
+                unitH: labels.offerUnitH,
+                unitM: labels.offerUnitM,
+                unitS: labels.offerUnitS,
+              }}
+            />
             <span className="text-center text-xs text-[var(--muted)] md:text-start">
               {labels.shippingFreeHint}
             </span>

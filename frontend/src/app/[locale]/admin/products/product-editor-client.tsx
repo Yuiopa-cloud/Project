@@ -140,23 +140,6 @@ function readTagsLine(
   return v.filter((x): x is string => typeof x === "string").join(", ");
 }
 
-/** For `<input type="datetime-local" />` from stored ISO `metadata.saleEndsAt`. */
-function isoToDatetimeLocalInput(iso: string): string {
-  const ms = Date.parse(iso.trim());
-  if (!Number.isFinite(ms)) return "";
-  const d = new Date(ms);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function datetimeLocalToIsoOrNull(local: string): string | null {
-  const t = local.trim();
-  if (!t) return null;
-  const ms = new Date(t).getTime();
-  if (!Number.isFinite(ms)) return null;
-  return new Date(ms).toISOString();
-}
-
 function isVideoMime(type: string): boolean {
   return type.startsWith("video/");
 }
@@ -338,7 +321,6 @@ export function ProductEditorClient({
   const [priceMad, setPriceMad] = useState("");
   const [compareAtMad, setCompareAtMad] = useState("");
   const [costMad, setCostMad] = useState("");
-  const [saleEndsAtLocal, setSaleEndsAtLocal] = useState("");
   const [stock, setStock] = useState("0");
   const [lowStockThreshold, setLowStockThreshold] = useState("5");
   const [isActive, setIsActive] = useState(true);
@@ -897,7 +879,6 @@ export function ProductEditorClient({
       internalNotes: internalNotes.trim() || null,
       trackInventory,
       tags: tags.length ? tags : null,
-      saleEndsAt: datetimeLocalToIsoOrNull(saleEndsAtLocal),
     };
   }
 
@@ -956,7 +937,6 @@ export function ProductEditorClient({
         setSkuReadonly(p.sku);
         setLowStockThreshold(String(p.lowStockThreshold ?? 5));
         setCostMad(readMetaStr(meta, "costMad"));
-        setSaleEndsAtLocal(isoToDatetimeLocalInput(readMetaStr(meta, "saleEndsAt")));
         setBarcode(readMetaStr(meta, "barcode"));
         setWeightKg(readMetaStr(meta, "weightKg"));
         setLengthCm(readMetaStr(meta, "lengthCm"));
@@ -1683,22 +1663,6 @@ export function ProductEditorClient({
                 />
               </label>
             </div>
-            <label className="mt-4 block">
-              <span className="text-xs text-[var(--muted)]">
-                Offer ends at (storefront countdown)
-              </span>
-              <input
-                type="datetime-local"
-                value={saleEndsAtLocal}
-                onChange={(e) => setSaleEndsAtLocal(e.target.value)}
-                className={inputClass(true)}
-              />
-              <p className="mt-1.5 text-[11px] text-[var(--muted)]">
-                Leave empty to use end-of-day on the product page. Set a date to
-                show a fixed deadline; after it passes, shoppers see an expired
-                message.
-              </p>
-            </label>
           </CollapsibleSection>
 
           <CollapsibleSection title="Images & media" defaultOpen>
