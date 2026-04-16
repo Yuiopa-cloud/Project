@@ -149,6 +149,13 @@
   "product": {
     "addToCart": "أضف للسلة",
     "buyNow": "اشتر الآن",
+    "offerCountdownTitle": "عرض محدود",
+    "offerCountdownEndsIn": "ينتهي خلال",
+    "offerCountdownExpired": "انتهى هذا العرض.",
+    "offerUnitD": "ي",
+    "offerUnitH": "س",
+    "offerUnitM": "د",
+    "offerUnitS": "ث",
     "trustCod": "الدفع عند الاستلام",
     "trustDelivery": "توصيل سريع في المغرب",
     "trustClients": "+100 عميل راضٍ",

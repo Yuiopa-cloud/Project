@@ -10,6 +10,8 @@ import { useCart, type CartLineProduct } from "@/contexts/cart-context";
 import { useCartFly } from "@/contexts/cart-fly-context";
 import { setBuyNow } from "@/lib/buy-now";
 import { formatSar } from "@/lib/price";
+import { ProductOfferCountdown } from "@/components/product-offer-countdown";
+import { resolveOfferCountdownEndMs } from "@/lib/offer-deadline";
 
 type ProductOptionVal = {
   id: string;
@@ -66,6 +68,7 @@ type Product = {
   stock: number;
   purchaseCount: number;
   lowStock?: boolean;
+  metadata?: Record<string, unknown> | null;
   variantsEnabled?: boolean;
   options?: ProductOptionDef[];
   variants?: ProductVariantRow[];
@@ -131,6 +134,11 @@ export function ProductClient({
   const addToCartBtnRef = useRef<HTMLButtonElement>(null);
   const { addItem } = useCart();
   const { flyToCart } = useCartFly();
+
+  const offerCountdown = useMemo(
+    () => resolveOfferCountdownEndMs(product.metadata),
+    [product.metadata],
+  );
 
   const variantsActive = Boolean(
     product.variantsEnabled &&
@@ -659,6 +667,21 @@ export function ProductClient({
                 {labels.buyNow ?? "Buy now"}
               </motion.button>
             </div>
+            {offerCountdown.showExpired || offerCountdown.endMs != null ? (
+              <ProductOfferCountdown
+                endMs={offerCountdown.endMs}
+                showExpired={offerCountdown.showExpired}
+                labels={{
+                  title: labels.offerCountdownTitle,
+                  endsIn: labels.offerCountdownEndsIn,
+                  expired: labels.offerCountdownExpired,
+                  unitD: labels.offerUnitD,
+                  unitH: labels.offerUnitH,
+                  unitM: labels.offerUnitM,
+                  unitS: labels.offerUnitS,
+                }}
+              />
+            ) : null}
             <span className="text-center text-xs text-[var(--muted)] md:text-start">
               {labels.shippingFreeHint}
             </span>

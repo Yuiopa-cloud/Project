@@ -149,6 +149,13 @@
   "product": {
     "addToCart": "Ajouter au panier",
     "buyNow": "Acheter maintenant",
+    "offerCountdownTitle": "Offre limitée",
+    "offerCountdownEndsIn": "Se termine dans",
+    "offerCountdownExpired": "Cette offre est terminée.",
+    "offerUnitD": "j",
+    "offerUnitH": "h",
+    "offerUnitM": "m",
+    "offerUnitS": "s",
     "trustCod": "Paiement à la livraison",
     "trustDelivery": "Livraison rapide au Maroc",
     "trustClients": "+100 clients satisfaits",
