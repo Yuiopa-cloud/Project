@@ -9,7 +9,7 @@ import { MiniSpinner } from "@/components/mini-spinner";
 import { useCart, type CartLineProduct } from "@/contexts/cart-context";
 import { useCartFly } from "@/contexts/cart-fly-context";
 import { setBuyNow } from "@/lib/buy-now";
-import { formatSar } from "@/lib/price";
+import { formatSar, parseAmount } from "@/lib/price";
 import { ProductOfferCountdown } from "@/components/product-offer-countdown";
 import { PDP_URGENCY_COUNTDOWN_MS } from "@/lib/offer-deadline";
 
@@ -65,6 +65,7 @@ type Product = {
   nameAr?: string;
   images: string[];
   priceMad: string;
+  compareAtMad?: string | null;
   stock: number;
   purchaseCount: number;
   lowStock?: boolean;
@@ -277,6 +278,12 @@ export function ProductClient({
   }, [previewVariant, galleryImages]);
 
   const displayPrice = previewVariant?.priceMad ?? product.priceMad;
+  const displayCompareAt =
+    previewVariant?.compareAtMad ?? product.compareAtMad ?? null;
+  const showCompareAt =
+    displayCompareAt != null &&
+    String(displayCompareAt).trim() !== "" &&
+    parseAmount(displayCompareAt) > parseAmount(displayPrice);
   const displayStock = previewVariant?.stock ?? product.stock;
   const displayLowStock = variantsActive
     ? displayStock > 0 && displayStock <= 5
@@ -456,9 +463,16 @@ export function ProductClient({
           <h1 className="text-2xl font-semibold leading-tight text-[var(--fg)] sm:text-3xl lg:text-4xl">
             {title}
           </h1>
-          <p className="mt-4 text-3xl font-bold tabular-nums text-[var(--fg)] sm:text-4xl">
-            {formatSar(displayPrice, locale)}
-          </p>
+          <div className="mt-4 flex flex-col items-start gap-0.5">
+            <p className="text-3xl font-bold tabular-nums leading-tight text-[var(--fg)] sm:text-4xl">
+              {formatSar(displayPrice, locale)}
+            </p>
+            {showCompareAt ? (
+              <p className="text-base font-normal tabular-nums leading-tight text-[var(--muted)] line-through decoration-[var(--muted)] decoration-2 sm:text-lg">
+                {formatSar(displayCompareAt, locale)}
+              </p>
+            ) : null}
+          </div>
           <p className="mt-2 text-sm font-medium text-[var(--accent)]">
             {displayStock < 1
               ? labels.outOfStock
